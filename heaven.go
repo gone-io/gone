@@ -32,8 +32,9 @@ func Run(digGraves ...Digger) {
 
 // New 新建Heaven
 func New(digGraves ...Digger) Heaven {
+	cemetery := NewCemetery()
 	return &heaven{
-		cemetery:  NewCemetery(),
+		cemetery:  cemetery.Bury(cemetery, IdGoneCemetery),
 		digGraves: digGraves,
 		signal:    make(chan os.Signal),
 	}
@@ -113,14 +114,16 @@ func (h *heaven) Start() {
 	}
 }
 
-func (h *heaven) Stop() {}
+func (h *heaven) Stop() {
+	h.signal <- syscall.SIGINT
+}
 
 func (h *heaven) BeforeStart(p Process) Heaven {
-	h.beforeStartHandlers = append(h.beforeStopHandlers, p)
+	h.beforeStartHandlers = append(h.beforeStartHandlers, p)
 	return h
 }
 func (h *heaven) AfterStart(p Process) Heaven {
-	h.afterStopHandlers = append(h.afterStartHandlers, p)
+	h.afterStartHandlers = append(h.afterStartHandlers, p)
 	return h
 }
 

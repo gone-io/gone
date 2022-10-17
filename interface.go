@@ -19,6 +19,7 @@ type Tomb interface {
 
 // Cemetery 墓园
 type Cemetery interface {
+	Goner
 	Bury(Goner, ...GonerId) Cemetery     // 埋葬，将逝者埋葬到墓园
 	ReplaceBury(Goner, GonerId) Cemetery // 替换
 
@@ -52,7 +53,7 @@ type ReviveAfter interface {
 // Digger 掘墓
 type Digger func(cemetery Cemetery) error
 
-type Process func(Cemetery) error
+type Process func(cemetery Cemetery) error
 type Heaven interface {
 	Start()
 	Stop()

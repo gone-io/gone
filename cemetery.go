@@ -6,6 +6,9 @@ import (
 	"unsafe"
 )
 
+const IdGoneCemetery = "gone-cemetery"
+const IdGoneLogger = "gone-logger"
+
 func NewCemetery() Cemetery {
 	return &cemetery{
 		Logger:  &defaultLogger{},
@@ -14,7 +17,9 @@ func NewCemetery() Cemetery {
 }
 
 type cemetery struct {
-	Logger `inject:"-"`
+	GonerFlag
+
+	Logger `gone:"gone-logger"`
 
 	tombMap map[GonerId]Tomb
 	tombs   []Tomb
@@ -39,10 +44,71 @@ func (c *cemetery) Bury(goner Goner, ids ...GonerId) Cemetery {
 	return c
 }
 
-func (c *cemetery) ReplaceBury(Goner, GonerId) Cemetery {
+func (c *cemetery) ReplaceBury(goner Goner, id GonerId) Cemetery {
+	if id == "" {
+		return c
+	}
 
-	//todo:挨个扫描替换
-	return nil
+	oldTomb := c.tombMap[id]
+	replaceTomb := NewTomb(goner).SetId(id)
+	c.tombMap[id] = replaceTomb
+
+	buried := oldTomb != nil
+	var oldGoner Goner
+	if buried {
+		oldGoner = oldTomb.GetGoner()
+		for i := 0; i < len(c.tombs); i++ {
+			itemGoner := c.tombs[i].GetGoner()
+			if itemGoner == oldGoner {
+				c.tombs = append(c.tombs[:i], c.tombs[i+1:]...)
+			}
+		}
+	}
+
+	c.tombs = append(c.tombs, replaceTomb)
+	err := c.reviveOne(replaceTomb)
+
+	c.replaceTombsGonerField(id, goner, oldGoner, buried)
+
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, buried bool) {
+	for _, tomb := range c.tombs {
+		goner := tomb.GetGoner()
+
+		gonerType := reflect.TypeOf(goner).Elem()
+		gonerValue := reflect.ValueOf(goner).Elem()
+
+		for i := 0; i < gonerValue.NumField(); i++ {
+			field := gonerType.Field(i)
+			tag := field.Tag.Get(goneTag)
+			if tag == "" {
+				continue
+			}
+
+			v := gonerValue.Field(i)
+			if !field.IsExported() {
+				//黑魔法：让非导出字段可以访问
+				v = reflect.NewAt(field.Type, unsafe.Pointer(v.UnsafeAddr())).Elem()
+			}
+
+			if buried && v.Interface() == oldGoner {
+				v.Set(reflect.ValueOf(newGoner))
+				continue
+			}
+			oldId, _ := parseGoneTagId(tag)
+			if oldId == id {
+				_, err := c.reviveFieldById(tag, field, v)
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+	}
 }
 
 const goneTag = "gone"

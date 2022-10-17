@@ -1,12 +1,14 @@
 package gone
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 type XPoint interface {
 	GetX() int
 	GetY() int
+	GetIndex() int
 }
 type Point struct {
 	GonerFlag
@@ -21,6 +23,10 @@ func (p *Point) GetX() int {
 }
 func (p *Point) GetY() int {
 	return p.y
+}
+
+func (p *Point) GetIndex() int {
+	return p.Index
 }
 
 func Test_cemetery_revive(t *testing.T) {
@@ -215,4 +221,73 @@ func Test_cemetery_revive(t *testing.T) {
 			}
 		})
 	}
+}
+
+type TestLogger struct {
+	GonerFlag
+	defaultLogger
+	X int
+}
+
+type ZeroPoint struct {
+	GonerFlag
+}
+
+func (p *ZeroPoint) GetX() int {
+	return 0
+}
+func (p *ZeroPoint) GetY() int {
+	return 0
+}
+
+func (p *ZeroPoint) GetIndex() int {
+	return 0
+}
+
+func Test_cemetery_ReplaceBury(t *testing.T) {
+	t.Run("replace has default value field", func(t *testing.T) {
+		c := &cemetery{
+			Logger:  &defaultLogger{},
+			tombMap: make(map[GonerId]Tomb),
+		}
+		c.Bury(c, IdGoneCemetery)
+
+		err := c.revive()
+		assert.Nil(t, err)
+
+		logger := TestLogger{X: 100}
+
+		c.ReplaceBury(&logger, IdGoneLogger)
+
+		assert.Equal(t, c.Logger, &logger)
+	})
+
+	t.Run("replace revived field", func(t *testing.T) {
+		c := &cemetery{
+			Logger:  &defaultLogger{},
+			tombMap: make(map[GonerId]Tomb),
+		}
+		const line = "the-line"
+		type Line struct {
+			GonerFlag
+			A XPoint `gone:"point-a"`
+			B XPoint `gone:"point-b"`
+		}
+
+		c.Bury(c, IdGoneCemetery).
+			Bury(&Line{}, line).
+			Bury(&Point{x: -1, y: -2}, "point-a").
+			Bury(&Point{x: 1, y: 2}, "point-b")
+
+		err := c.revive()
+		assert.Nil(t, err)
+
+		c.ReplaceBury(&ZeroPoint{}, "point-a")
+
+		tomb := c.GetTomById(line)
+		goner := tomb.GetGoner().(*Line)
+		assert.Equal(t, goner.A.GetIndex(), 0)
+		assert.Equal(t, goner.A.GetX(), 0)
+		assert.Equal(t, goner.A.GetY(), 0)
+	})
 }
