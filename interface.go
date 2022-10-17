@@ -4,7 +4,7 @@ import "reflect"
 
 // Goner 逝者
 type Goner interface {
-	gone()
+	goneFlag()
 }
 
 // GonerId 逝者ID
@@ -19,8 +19,8 @@ type Tomb interface {
 
 // Cemetery 墓园
 type Cemetery interface {
-	Bury(Goner, GonerId) Tomb        // 埋葬，将逝者埋葬到墓园
-	ReplaceBury(Goner, GonerId) Tomb // 替换
+	Bury(Goner, ...GonerId) Cemetery     // 埋葬，将逝者埋葬到墓园
+	ReplaceBury(Goner, GonerId) Cemetery // 替换
 
 	revive() error // 复活，对逝者进行复活，让他们升入天堂
 
@@ -40,17 +40,17 @@ type ReviveAfter interface {
 
 //  Goner Example
 //	type jim struct {
-//		DeadFlag
+//		GonerFlag
 //
 //		XMan XMan `revive:"x-man"`
 //	}
 //
 //	type XMan struct {
-//		DeadFlag
+//		GonerFlag
 //	}
 
 // Digger 掘墓
-type Digger func(Cemetery Cemetery) error
+type Digger func(cemetery Cemetery) error
 
 type Process func(Cemetery) error
 type Heaven interface {

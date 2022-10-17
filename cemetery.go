@@ -2,6 +2,7 @@ package gone
 
 import (
 	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -19,8 +20,13 @@ type cemetery struct {
 	tombs   []Tomb
 }
 
-func (c *cemetery) Bury(goner Goner, id GonerId) Tomb {
+func (c *cemetery) Bury(goner Goner, ids ...GonerId) Cemetery {
 	t := NewTomb(goner)
+	var id GonerId
+	if len(ids) > 0 {
+		id = ids[0]
+	}
+
 	if id != "" {
 		_, ok := c.tombMap[id]
 		if ok {
@@ -30,19 +36,140 @@ func (c *cemetery) Bury(goner Goner, id GonerId) Tomb {
 		c.tombMap[id] = t.SetId(id)
 	}
 	c.tombs = append(c.tombs, t)
-	return t
+	return c
 }
 
-func (c *cemetery) ReplaceBury(Goner, GonerId) Tomb {
-	//todo
+func (c *cemetery) ReplaceBury(Goner, GonerId) Cemetery {
+
+	//todo:挨个扫描替换
 	return nil
 }
 
 const goneTag = "gone"
-const matchAll = "*"
+const anonymous = "*"
 
 func parseGoneTagId(tag string) (id GonerId, extend string) {
-	//todo
+	list := strings.SplitN(tag, ",", 2)
+	switch len(list) {
+	case 0:
+		return
+	case 1:
+		id = GonerId(list[0])
+	default:
+		id, extend = GonerId(list[0]), list[2]
+	}
+	return
+}
+
+// 兼容：t类型可以装下goner
+func isCompatible(t reflect.Type, goner Goner) bool {
+	gonerType := reflect.TypeOf(goner)
+
+	switch t.Kind() {
+	case reflect.Interface:
+		return gonerType.Implements(t)
+	case reflect.Struct:
+		return gonerType.Elem() == t
+	default:
+		return gonerType == t
+	}
+}
+
+func (c *cemetery) setFieldValue(v reflect.Value, ref interface{}) error {
+	t := v.Type()
+
+	switch t.Kind() {
+	case reflect.Interface, reflect.Pointer, reflect.Slice, reflect.Map:
+		v.Set(reflect.ValueOf(ref))
+	default:
+		v.Set(reflect.ValueOf(ref).Elem())
+	}
+	return nil
+}
+
+func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v reflect.Value) (suc bool, err error) {
+	id, extConfig := parseGoneTagId(tag)
+	if id != anonymous {
+		tomb := c.GetTomById(id)
+		if tomb == nil {
+			err = newCannotFoundGonerById(id)
+			return
+		}
+
+		goner := tomb.GetGoner()
+		builder, ok := goner.(Builder)
+		if ok {
+			err = builder.Build(extConfig, v)
+			if err != nil {
+				return
+			}
+		}
+
+		if !isCompatible(field.Type, goner) {
+			err = newNotCompatibleGonerError(id)
+			return
+		}
+
+		err = c.setFieldValue(v, goner)
+		if err != nil {
+			return
+		}
+		suc = true
+	}
+	return
+}
+
+func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value) (suc bool, err error) {
+	tombs := c.GetTomByType(field.Type)
+	if len(tombs) > 0 {
+		if len(tombs) > 1 {
+			c.Warnf("more than one goner was found, use first one!")
+		}
+
+		err = c.setFieldValue(v, tombs[0].GetGoner())
+		if err != nil {
+			return
+		}
+		suc = true
+	}
+	return
+}
+
+func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.Value) (suc bool, err error) {
+	t := field.Type
+	switch t.Kind() {
+
+	case reflect.Slice: //允许注入接口切片
+		tombs := c.GetTomByType(t.Elem())
+		for _, tomb := range tombs {
+			if t.Elem().Kind() == reflect.Struct {
+				v.Set(reflect.Append(v, reflect.ValueOf(tomb.GetGoner()).Elem()))
+			} else {
+				v.Set(reflect.Append(v, reflect.ValueOf(tomb.GetGoner())))
+			}
+		}
+		suc = true
+
+	case reflect.Map: //允许注入接口Map
+		if t.Key().Kind() == reflect.String { //Map的key是string类型
+			tombs := c.GetTomByType(t.Elem())
+
+			m := reflect.MakeMap(t)
+			for _, tomb := range tombs {
+				id := tomb.GetId()
+				if id != "" {
+					if t.Elem().Kind() == reflect.Struct {
+						m.SetMapIndex(reflect.ValueOf(id).Convert(t.Key()), reflect.ValueOf(tomb.GetGoner()).Elem())
+					} else {
+						m.SetMapIndex(reflect.ValueOf(id).Convert(t.Key()), reflect.ValueOf(tomb.GetGoner()))
+					}
+				}
+			}
+			v.Set(m)
+			suc = true
+		}
+	default:
+	}
 	return
 }
 
@@ -59,48 +186,40 @@ func (c *cemetery) reviveOne(tomb Tomb) (err error) {
 			continue
 		}
 
-		id, extConfig := parseGoneTagId(tag)
-		t := field.Type
 		v := gonerValue.Field(i)
-
 		if !field.IsExported() {
 			//黑魔法：让非导出字段可以访问
-			v = reflect.NewAt(t, unsafe.Pointer(v.UnsafeAddr())).Elem()
+			v = reflect.NewAt(field.Type, unsafe.Pointer(v.UnsafeAddr())).Elem()
 		}
 
-		//gone标记的是slice
-		if t.Kind() == reflect.Slice {
-			if id == matchAll {
-				tombs := c.GetTomByType(t)
-				print(tombs)
-				//todo：设置数组
-			} else {
-				tomb := c.GetTomById(id)
-				if tomb == nil {
-					err = newCannotFoundGonerById(id)
-					return
-				}
-
-				goner := tomb.GetGoner()
-				builder, ok := goner.(Builder)
-				if ok {
-					err = builder.Build(extConfig, v)
-					if err != nil {
-						return
-					}
-				} else if IsCompatible(goner, t) {
-					//todo: 设置数组
-					v.Set(reflect.ValueOf(goner))
-				} else {
-					err = newNotCompatibleGonerError(id)
-					return
-				}
-			}
+		//如果已经存在值，不再注入
+		if !v.IsZero() {
+			continue
 		}
 
-		//todo 结构体指针 或者 接口
+		var suc bool
 
-		c.Infof("field field:%v, type:%v", field, v)
+		// 根据Id匹配
+		if suc, err = c.reviveFieldById(tag, field, v); err != nil {
+			return
+		} else if suc {
+			continue
+		}
+
+		// 根据类型匹配
+		if suc, err = c.reviveFieldByType(field, v); err != nil {
+			return
+		} else if suc {
+			continue
+		}
+
+		// 特殊类型处理
+		if suc, err = c.reviveSpecialTypeFields(field, v); err != nil {
+			return
+		} else if suc {
+			continue
+		}
+		return newNotCompatibleGonerErrorByType(field.Type)
 	}
 
 	after, ok := goner.(ReviveAfter)
@@ -126,21 +245,9 @@ func (c *cemetery) GetTomById(id GonerId) Tomb {
 
 func (c *cemetery) GetTomByType(t reflect.Type) (tombs []Tomb) {
 	for _, tomb := range c.tombs {
-		if IsCompatible(tomb.GetGoner(), t) {
+		if isCompatible(t, tomb.GetGoner()) {
 			tombs = append(tombs, tomb)
 		}
 	}
 	return
-}
-
-func IsCompatible(goner Goner, t reflect.Type) bool {
-	gonerType := reflect.TypeOf(goner)
-	if isInterface(gonerType) {
-		return gonerType.Implements(t)
-	}
-	return gonerType == t
-}
-
-func isInterface(t reflect.Type) bool {
-	return t.Kind() == reflect.Interface
 }
