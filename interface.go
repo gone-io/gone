@@ -24,6 +24,7 @@ type Cemetery interface {
 	ReplaceBury(Goner, GonerId) Cemetery // 替换
 
 	revive() error // 复活，对逝者进行复活，让他们升入天堂
+	reviveOne(tomb Tomb) (err error)
 
 	GetTomById(GonerId) Tomb
 	GetTomByType(reflect.Type) []Tomb
@@ -31,7 +32,7 @@ type Cemetery interface {
 
 type BuildError error
 type Builder interface {
-	Build(conf string, pointer interface{}) BuildError
+	Build(conf string, v reflect.Value) BuildError
 }
 
 type ReviveAfterError error
@@ -43,7 +44,7 @@ type ReviveAfter interface {
 //	type jim struct {
 //		GonerFlag
 //
-//		XMan XMan `revive:"x-man"`
+//		XMan XMan `gone:"x-man"`
 //	}
 //
 //	type XMan struct {

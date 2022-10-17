@@ -6,9 +6,6 @@ import (
 	"unsafe"
 )
 
-const IdGoneCemetery = "gone-cemetery"
-const IdGoneLogger = "gone-logger"
-
 func NewCemetery() Cemetery {
 	return &cemetery{
 		Logger:  &defaultLogger{},
@@ -122,7 +119,7 @@ func parseGoneTagId(tag string) (id GonerId, extend string) {
 	case 1:
 		id = GonerId(list[0])
 	default:
-		id, extend = GonerId(list[0]), list[2]
+		id, extend = GonerId(list[0]), list[1]
 	}
 	return
 }

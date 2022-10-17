@@ -1,15 +1,17 @@
-package gone
+package logrus
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/gone-io/gone"
+)
 
-type Logger interface {
-	Tracef(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
+func NewLogger() (gone.Goner, gone.GonerId) {
+	return &defaultLogger{}, gone.IdGoneLogger
 }
 
-type defaultLogger struct{}
+type defaultLogger struct {
+	gone.GonerFlag
+}
 
 func (*defaultLogger) Tracef(format string, args ...interface{}) {
 	fmt.Printf(format, args...)

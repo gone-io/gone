@@ -58,13 +58,17 @@ func getAngelType() reflect.Type {
 	return reflect.TypeOf(angelPtr).Elem()
 }
 
-func (h *heaven) Start() {
+func (h *heaven) dig() {
 	for _, digGrave := range h.digGraves {
 		err := digGrave(h.cemetery)
 		if err != nil {
 			panic(err)
 		}
 	}
+}
+
+func (h *heaven) Start() {
+	h.dig()
 
 	err := h.cemetery.revive()
 	if err != nil {
