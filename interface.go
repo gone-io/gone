@@ -48,8 +48,8 @@ type ReviveAfter interface {
 	After(Cemetery, Tomb) ReviveAfterError
 }
 
-// Digger 掘墓
-type Digger func(cemetery Cemetery) error
+// Priest 神父，负责给Goner下葬
+type Priest func(cemetery Cemetery) error
 
 type Process func(cemetery Cemetery) error
 type Heaven interface {

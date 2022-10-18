@@ -1,7 +1,8 @@
 # gone
 
 > 这是一个上天堂的故事  
-> 逝者被埋葬后，在天堂永生，直到天崩地裂
+> 逝者被埋葬后，在天堂永生，直到天崩地裂。  
+> 天国管理着一片神圣的墓园，安葬在这片墓园的逝者会被升入天国。只有神圣的牧师才知道天国墓园的所在地，...
 
 这是gone框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
 
@@ -14,8 +15,8 @@
 - Vampire.Suck: 吸血鬼吸血
 - Tomb: 坟墓 ⚰️
 - Cemetery: 墓园 🪦
-- Cemetery.Bury:  下葬
-- Digger: 掘墓人 ⛏️
+- Cemetery.Bury:  安葬
+- Priest: 神父✝️，负责给Goner下葬
 - Cemetery.revive: 复活，升入天国
 - Heaven: 天国 🕊☁️
 - Heaven.Start: 天国开始运行；天国不崩塌前，Goner 永生
@@ -90,14 +91,14 @@ type Demo struct {
 	a int `gone:"x-config,abc.dex,xxx|xxx"` //普通Goner会忽略GonerId(x-config)后面的字符串`abc.dex,xxx|xxx`; 而吸血鬼会用来进行"吸血"
 }
 
-func Digger(cemetery gone.Cemetery) error {
+func Priest(cemetery gone.Cemetery) error {
 	cemetery.Bury(&ConfigVampire{}, ConfigVampireId)
 	cemetery.Bury(&Demo{})
 	return nil
 }
 
 func run() {
-	gone.Run(Digger)
+	gone.Run(Priest)
 }
 ```
 

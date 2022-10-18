@@ -9,8 +9,8 @@ type TestHeaven[T Goner] interface {
 type GonerTestKit func(testGoner Goner)
 
 // TestKit 新建TestHeaven
-func TestKit[T Goner](goner T, digGraves ...Digger) TestHeaven[T] {
-	h := New(digGraves...)
+func TestKit[T Goner](goner T, priests ...Priest) TestHeaven[T] {
+	h := New(priests...)
 	return &testHeaven[T]{
 		heaven: h.(*heaven),
 		goner:  goner,
@@ -44,12 +44,12 @@ func (h *testHeaven[T]) run(tomb Tomb, fn func(T)) {
 }
 
 func (h *testHeaven[T]) Run(fn func(T)) {
-	h.dig()
+	h.burial()
 	h.run(h.cemetery.bury(h.goner), fn)
 }
 
 func (h *testHeaven[T]) RunAtId(id GonerId, fn func(T)) {
-	h.dig()
+	h.burial()
 	tomb := h.cemetery.GetTomById(id)
 	if tomb == nil {
 		panic(CannotFoundGonerByIdError(id))

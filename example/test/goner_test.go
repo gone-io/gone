@@ -11,7 +11,7 @@ func Test_Line(t *testing.T) {
 	t.Run("config default", func(t *testing.T) {
 		gone.
 			TestKit(&Point{}, func(cemetery gone.Cemetery) error {
-				return config.Digger(cemetery)
+				return config.Priest(cemetery)
 			}).
 			Run(func(point *Point) {
 				assert.Equal(t, point.X, 0)
@@ -21,7 +21,7 @@ func Test_Line(t *testing.T) {
 
 	t.Run("config default", func(t *testing.T) {
 		gone.
-			TestKit(&Line{}, Digger).
+			TestKit(&Line{}, Priest).
 			Run(func(line *Line) {
 				assert.Equal(t, line.A.Y, 200)
 			})
@@ -29,7 +29,7 @@ func Test_Line(t *testing.T) {
 
 	t.Run("ReplaceBury", func(t *testing.T) {
 		gone.
-			TestKit(&Line{}, Digger, func(cemetery gone.Cemetery) error {
+			TestKit(&Line{}, Priest, func(cemetery gone.Cemetery) error {
 				Mock := func() gone.Goner {
 					return &Point{X: 20}
 				}

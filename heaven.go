@@ -26,18 +26,18 @@ import (
 // gone.Run(LoadServer, LoadComponent)
 //
 // ```
-func Run(digGraves ...Digger) {
-	New(digGraves...).Start()
+func Run(priests ...Priest) {
+	New(priests...).Start()
 }
 
 // New 新建Heaven
-func New(digGraves ...Digger) Heaven {
-	cemetery := NewCemetery()
+func New(priests ...Priest) Heaven {
+	cemetery := newCemetery()
 	h := heaven{
-		Logger:    &defaultLogger{},
-		cemetery:  cemetery,
-		digGraves: digGraves,
-		signal:    make(chan os.Signal),
+		Logger:   &defaultLogger{},
+		cemetery: cemetery,
+		priests:  priests,
+		signal:   make(chan os.Signal),
 	}
 
 	h.
@@ -53,7 +53,7 @@ type heaven struct {
 	Logger   `gone:"gone-logger"`
 	cemetery Cemetery
 
-	digGraves []Digger
+	priests []Priest
 
 	beforeStartHandlers []Process
 	afterStartHandlers  []Process
@@ -68,9 +68,9 @@ func getAngelType() reflect.Type {
 	return reflect.TypeOf(angelPtr).Elem()
 }
 
-func (h *heaven) dig() {
-	for _, digGrave := range h.digGraves {
-		err := digGrave(h.cemetery)
+func (h *heaven) burial() {
+	for _, priest := range h.priests {
+		err := priest(h.cemetery)
 		if err != nil {
 			panic(err)
 		}
@@ -78,7 +78,7 @@ func (h *heaven) dig() {
 }
 
 func (h *heaven) install() {
-	h.dig()
+	h.burial()
 
 	err := h.cemetery.revive()
 	if err != nil {

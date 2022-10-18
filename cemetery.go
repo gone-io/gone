@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-func NewCemetery() Cemetery {
+func newCemetery() Cemetery {
 	return &cemetery{
 		Logger:  &defaultLogger{},
 		tombMap: make(map[GonerId]Tomb),

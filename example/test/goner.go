@@ -32,8 +32,8 @@ func (*Line) Say() string {
 	return ""
 }
 
-func Digger(cemetery gone.Cemetery) error {
+func Priest(cemetery gone.Cemetery) error {
 	cemetery.Bury(NewPointA())
 	cemetery.Bury(NewPointB())
-	return config.Digger(cemetery)
+	return config.Priest(cemetery)
 }
