@@ -11,19 +11,21 @@
 > gone的意思是 `走了，去了，没了，死了`，那么gone框架管理都就是goner(逝者)
 
 - Goner: 逝者 💀
-- Vampire: 吸血鬼 🧛🏻‍
-- Vampire.Suck: 吸血鬼吸血
 - Tomb: 坟墓 ⚰️
 - Cemetery: 墓园 🪦
 - Cemetery.Bury:  安葬
 - Priest: 神父✝️，负责给Goner下葬
-- Cemetery.revive: 复活，升入天国
+- Cemetery.revive: 复活Goner，将其升入天国
 - Heaven: 天国 🕊☁️
-- Heaven.Start: 天国开始运行；天国不崩塌前，Goner 永生
+- Heaven.Start: 天国开始运行；Goner永生，直到天崩地裂
 - Heaven.Stop:  天国崩塌，停止运行
-- Angel: 天使 𓆩♡𓆪
+- Angel: 天使 𓆩♡𓆪 ，实现了`Start(gone.Cemetery) error` 和 `Stop(gone.Cemetery) error`方法的Goner，升入天国后被变成天使
 - Angel.Start: 天使开始工作；能力越大责任越大，天使是要工作的
 - Angel.Stop: 天使停止工作；
+- Vampire: 吸血鬼 🧛🏻‍，实现了`Suck(conf string, v reflect.Value) gone.SuckError`
+  方法的是吸血鬼；吸血鬼是一个邪恶的存在，他可能毁掉整个天国。理论上吸血行为可以制造Goner，但是这可能会导致循环依赖，从而破坏系统。
+- Vampire.Suck: 吸血鬼"吸血行为"
+- Lucifer: 如果某个Goner既有Angel和Vampire的特征，那么他就是堕落天使。（这个概念在系统中没有定义，只是一种推导）
 
 ### 三种Goner
 
