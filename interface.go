@@ -7,6 +7,10 @@ type Goner interface {
 	goneFlag()
 }
 
+type identity interface {
+	GetId() GonerId
+}
+
 // GonerId 逝者ID
 type GonerId string
 
@@ -23,8 +27,8 @@ type Cemetery interface {
 	Goner
 
 	bury(goner Goner, ids ...GonerId) Tomb
-	Bury(Goner, ...GonerId) Cemetery     // 埋葬，将逝者埋葬到墓园
-	ReplaceBury(Goner, GonerId) Cemetery // 替换
+	Bury(Goner, ...GonerId) Cemetery  // 埋葬，将逝者埋葬到墓园
+	ReplaceBury(Goner, GonerId) error // 替换性埋葬
 
 	revive() error // 复活，对逝者进行复活，让他们升入天堂
 	reviveOne(tomb Tomb) (deps []Tomb, err error)

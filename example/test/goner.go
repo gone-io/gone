@@ -8,7 +8,7 @@ import (
 const pointNameA = "example-test-point-a"
 const pointNameB = "example-test-point-b"
 
-func NewPoint() (gone.Goner, gone.GonerId) {
+func NewPointA() (gone.Goner, gone.GonerId) {
 	return &Point{}, pointNameA
 }
 
@@ -18,14 +18,14 @@ func NewPointB() (gone.Goner, gone.GonerId) {
 
 type Point struct {
 	gone.GonerFlag
-	X float64 `gone:"config,example.test.point.a-x"`
-	Y float64 `gone:"config,example.test.point.a-y,default=200"`
+	X int `gone:"config,example.test.point.a-x"`
+	Y int `gone:"config,example.test.point.a-y,default=200"`
 }
 
 type Line struct {
 	gone.GonerFlag
-	A Point `gone:"example-test-point-a"`
-	B Point `gone:"example-test-point-b"`
+	A *Point `gone:"example-test-point-a"`
+	B *Point `gone:"example-test-point-b"`
 }
 
 func (*Line) Say() string {
@@ -33,8 +33,7 @@ func (*Line) Say() string {
 }
 
 func Digger(cemetery gone.Cemetery) error {
-	cemetery.Bury(NewPoint())
+	cemetery.Bury(NewPointA())
 	cemetery.Bury(NewPointB())
-	cemetery.Bury(&Line{})
 	return config.Digger(cemetery)
 }

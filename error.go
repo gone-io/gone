@@ -28,6 +28,7 @@ const (
 	CannotFoundGonerById
 	CannotFoundGonerByType
 	NotCompatible
+	ReplaceBuryIdParamEmpty
 )
 
 func GonerIdIsExistedError(id GonerId) *Error {
@@ -44,4 +45,8 @@ func CannotFoundGonerByTypeError(t reflect.Type) *Error {
 
 func NotCompatibleError(a reflect.Type, b reflect.Type) *Error {
 	return NewError(NotCompatible, fmt.Sprintf("Not compatible: %s vs %s", a.Name(), b.Name()))
+}
+
+func ReplaceBuryIdParamEmptyError() *Error {
+	return NewError(ReplaceBuryIdParamEmpty, "ReplaceBury id cannot be empty")
 }

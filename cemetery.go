@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"unsafe"
@@ -22,11 +23,24 @@ type cemetery struct {
 	tombs   []Tomb
 }
 
+func GetGoneDefaultId(goner Goner) GonerId {
+	elem := reflect.TypeOf(goner).Elem()
+	pkgName := fmt.Sprintf("%s/%s", elem.PkgPath(), elem.Name())
+	i, ok := goner.(identity)
+	if ok {
+		return GonerId(fmt.Sprintf("%s#%s", pkgName, i.GetId()))
+	}
+	return GonerId(fmt.Sprintf("%s#%d", pkgName, reflect.ValueOf(goner).Elem().UnsafeAddr()))
+}
+
 func (c *cemetery) bury(goner Goner, ids ...GonerId) Tomb {
 	t := NewTomb(goner)
 	var id GonerId
 	if len(ids) > 0 {
 		id = ids[0]
+	}
+	if id == "" {
+		id = GetGoneDefaultId(goner)
 	}
 
 	if id != "" {
@@ -46,9 +60,10 @@ func (c *cemetery) Bury(goner Goner, ids ...GonerId) Cemetery {
 	return c
 }
 
-func (c *cemetery) ReplaceBury(goner Goner, id GonerId) Cemetery {
+func (c *cemetery) ReplaceBury(goner Goner, id GonerId) (err error) {
 	if id == "" {
-		return c
+		err = ReplaceBuryIdParamEmptyError()
+		return
 	}
 
 	oldTomb := c.tombMap[id]
@@ -68,14 +83,9 @@ func (c *cemetery) ReplaceBury(goner Goner, id GonerId) Cemetery {
 	}
 
 	c.tombs = append(c.tombs, replaceTomb)
-	_, err := c.reviveOne(replaceTomb)
-
+	_, err = c.reviveOne(replaceTomb)
 	c.replaceTombsGonerField(id, goner, oldGoner, buried)
-
-	if err != nil {
-		panic(err)
-	}
-	return c
+	return
 }
 
 func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, buried bool) {
@@ -167,6 +177,12 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 		goner := tomb.GetGoner()
 		builder, ok := goner.(Vampire)
 		if ok {
+			if !tomb.GonerIsRevive() {
+				_, err = c.reviveOneDep(tomb)
+				if err != nil {
+					return
+				}
+			}
 			err = builder.Suck(extConfig, v)
 			if err != nil {
 				return
@@ -266,7 +282,6 @@ func (c *cemetery) reviveOneDep(tomb Tomb) (deps []Tomb, err error) {
 			for _, dep := range tmpDeps {
 				m[dep] = true
 			}
-
 		}
 	}
 	deps = make([]Tomb, 0, len(m))

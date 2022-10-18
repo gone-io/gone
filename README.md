@@ -49,8 +49,8 @@ type XGoner struct {
 
 type Demo struct {
 	gone.GonerFlag
-	a  XGoner      `gone:"x-goner"` // x-goner 是 GonerId; 支持使用非导出属性
-	A  XGoner      `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体
+	a  *XGoner     `gone:"x-goner"` // x-goner 是 GonerId; 支持使用非导出属性
+	A  XGoner      `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体；⚠️尽量不要这样使用，由于结构体是值拷贝，会导致不能深度复制的问题
 	A1 *XGoner     `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体的指针
 	A2 interface{} `gone:"x-goner"` // x-goner 是 GonerId; 支持接口
 
@@ -118,3 +118,7 @@ func main() {
 }
 
 ```
+
+## 📢注意
+
+- 尽量不用使用 struct（结构体）作为 gone 标记的字段，由于struct在golang中是值拷贝，可能导致相关依赖注入失败的情况
