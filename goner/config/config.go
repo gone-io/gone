@@ -33,9 +33,16 @@ func parseConfAnnotation(tag string) (key string, defaultVal string) {
 	return key, defaultVal
 }
 
-func (f *config) Build(conf string, v reflect.Value) gone.BuildError {
+func (f *config) Suck(conf string, v reflect.Value) gone.SuckError {
 	key, defaultVal := parseConfAnnotation(conf)
-	return f.configure.Get(key, v, defaultVal)
+
+	if reflect.Ptr == v.Kind() {
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		v = v.Elem()
+	}
+	return f.configure.Get(key, v.Addr().Interface(), defaultVal)
 }
 
 // Configure 配置接口

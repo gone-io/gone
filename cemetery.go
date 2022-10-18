@@ -22,7 +22,7 @@ type cemetery struct {
 	tombs   []Tomb
 }
 
-func (c *cemetery) Bury(goner Goner, ids ...GonerId) Cemetery {
+func (c *cemetery) bury(goner Goner, ids ...GonerId) Tomb {
 	t := NewTomb(goner)
 	var id GonerId
 	if len(ids) > 0 {
@@ -32,12 +32,17 @@ func (c *cemetery) Bury(goner Goner, ids ...GonerId) Cemetery {
 	if id != "" {
 		_, ok := c.tombMap[id]
 		if ok {
-			panic(GonerIdIsExistedError)
+			panic(GonerIdIsExistedError(id))
 		}
 
 		c.tombMap[id] = t.SetId(id)
 	}
 	c.tombs = append(c.tombs, t)
+	return t
+}
+
+func (c *cemetery) Bury(goner Goner, ids ...GonerId) Cemetery {
+	c.bury(goner, ids...)
 	return c
 }
 
@@ -63,7 +68,7 @@ func (c *cemetery) ReplaceBury(goner Goner, id GonerId) Cemetery {
 	}
 
 	c.tombs = append(c.tombs, replaceTomb)
-	err := c.reviveOne(replaceTomb)
+	_, err := c.reviveOne(replaceTomb)
 
 	c.replaceTombsGonerField(id, goner, oldGoner, buried)
 
@@ -99,7 +104,7 @@ func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, 
 			}
 			oldId, _ := parseGoneTagId(tag)
 			if oldId == id {
-				_, err := c.reviveFieldById(tag, field, v)
+				_, _, err := c.reviveFieldById(tag, field, v)
 				if err != nil {
 					panic(err)
 				}
@@ -150,55 +155,57 @@ func (c *cemetery) setFieldValue(v reflect.Value, ref interface{}) error {
 	return nil
 }
 
-func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v reflect.Value) (suc bool, err error) {
+func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
 	id, extConfig := parseGoneTagId(tag)
 	if id != anonymous {
 		tomb := c.GetTomById(id)
 		if tomb == nil {
-			err = newCannotFoundGonerById(id)
+			err = CannotFoundGonerByIdError(id)
 			return
 		}
 
 		goner := tomb.GetGoner()
-		builder, ok := goner.(Builder)
+		builder, ok := goner.(Vampire)
 		if ok {
-			err = builder.Build(extConfig, v)
+			err = builder.Suck(extConfig, v)
+			if err != nil {
+				return
+			}
+		} else {
+			if !isCompatible(field.Type, goner) {
+				err = NotCompatibleError(field.Type, reflect.TypeOf(goner).Elem())
+				return
+			}
+
+			err = c.setFieldValue(v, goner)
 			if err != nil {
 				return
 			}
 		}
-
-		if !isCompatible(field.Type, goner) {
-			err = newNotCompatibleGonerError(id)
-			return
-		}
-
-		err = c.setFieldValue(v, goner)
-		if err != nil {
-			return
-		}
 		suc = true
+		deps = append(deps, tomb)
 	}
 	return
 }
 
-func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value) (suc bool, err error) {
+func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
 	tombs := c.GetTomByType(field.Type)
 	if len(tombs) > 0 {
 		if len(tombs) > 1 {
 			c.Warnf("more than one goner was found, use first one!")
 		}
-
-		err = c.setFieldValue(v, tombs[0].GetGoner())
+		tomb := tombs[0]
+		err = c.setFieldValue(v, tomb.GetGoner())
 		if err != nil {
 			return
 		}
 		suc = true
+		deps = append(deps, tomb)
 	}
 	return
 }
 
-func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.Value) (suc bool, err error) {
+func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
 	t := field.Type
 	switch t.Kind() {
 
@@ -210,6 +217,7 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 			} else {
 				v.Set(reflect.Append(v, reflect.ValueOf(tomb.GetGoner())))
 			}
+			deps = append(deps, tomb)
 		}
 		suc = true
 
@@ -226,6 +234,7 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 					} else {
 						m.SetMapIndex(reflect.ValueOf(id).Convert(t.Key()), reflect.ValueOf(tomb.GetGoner()))
 					}
+					deps = append(deps, tomb)
 				}
 			}
 			v.Set(m)
@@ -236,7 +245,38 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 	return
 }
 
-func (c *cemetery) reviveOne(tomb Tomb) (err error) {
+func (c *cemetery) reviveOneDep(tomb Tomb) (deps []Tomb, err error) {
+	deps, err = c.reviveOne(tomb)
+	if err != nil {
+		return
+	}
+
+	m := make(map[Tomb]bool)
+	for _, dep := range deps {
+		m[dep] = true
+	}
+
+	for _, tomb := range deps {
+		if !tomb.GonerIsRevive() {
+			var tmpDeps []Tomb
+			tmpDeps, err = c.reviveOneDep(tomb)
+			if err != nil {
+				return
+			}
+			for _, dep := range tmpDeps {
+				m[dep] = true
+			}
+
+		}
+	}
+	deps = make([]Tomb, 0, len(m))
+	for dep := range m {
+		deps = append(deps, dep)
+	}
+	return
+}
+
+func (c *cemetery) reviveOne(tomb Tomb) (deps []Tomb, err error) {
 	goner := tomb.GetGoner()
 
 	gonerType := reflect.TypeOf(goner).Elem()
@@ -261,29 +301,36 @@ func (c *cemetery) reviveOne(tomb Tomb) (err error) {
 		}
 
 		var suc bool
+		var tmpDeps []Tomb
 
 		// 根据Id匹配
-		if suc, err = c.reviveFieldById(tag, field, v); err != nil {
+		if tmpDeps, suc, err = c.reviveFieldById(tag, field, v); err != nil {
 			return
 		} else if suc {
+			deps = append(deps, tmpDeps...)
 			continue
 		}
 
 		// 根据类型匹配
-		if suc, err = c.reviveFieldByType(field, v); err != nil {
+		if tmpDeps, suc, err = c.reviveFieldByType(field, v); err != nil {
 			return
 		} else if suc {
+			deps = append(deps, tmpDeps...)
 			continue
 		}
 
 		// 特殊类型处理
-		if suc, err = c.reviveSpecialTypeFields(field, v); err != nil {
+		if tmpDeps, suc, err = c.reviveSpecialTypeFields(field, v); err != nil {
 			return
 		} else if suc {
+			deps = append(deps, tmpDeps...)
 			continue
 		}
-		return newNotCompatibleGonerErrorByType(field.Type)
+
+		return deps, CannotFoundGonerByTypeError(field.Type)
 	}
+
+	tomb.GonerIsRevive(true)
 
 	after, ok := goner.(ReviveAfter)
 	if ok {
@@ -294,7 +341,7 @@ func (c *cemetery) reviveOne(tomb Tomb) (err error) {
 
 func (c *cemetery) revive() error {
 	for _, tomb := range c.tombs {
-		err := c.reviveOne(tomb)
+		_, err := c.reviveOne(tomb)
 		if err != nil {
 			return err
 		}
@@ -307,10 +354,5 @@ func (c *cemetery) GetTomById(id GonerId) Tomb {
 }
 
 func (c *cemetery) GetTomByType(t reflect.Type) (tombs []Tomb) {
-	for _, tomb := range c.tombs {
-		if isCompatible(t, tomb.GetGoner()) {
-			tombs = append(tombs, tomb)
-		}
-	}
-	return
+	return Tombs(c.tombs).GetTomByType(t)
 }

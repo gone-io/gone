@@ -1,42 +1,47 @@
 package gone
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
 
-var GonerIdIsExistedError = errors.New("goner id is existed")
-
-type CannotFoundGonerByIdError struct {
-	Id    GonerId
+type Error struct {
+	Code  int
+	Msg   string
 	trace []byte
 }
 
-func (e *CannotFoundGonerByIdError) Error() string {
-	return fmt.Sprintf("cannot found the Goner by Id(%s)\n%s", e.Id, e.trace)
-}
-func newCannotFoundGonerById(id GonerId) *CannotFoundGonerByIdError {
-	return &CannotFoundGonerByIdError{Id: id, trace: PanicTrace(2)}
-}
-
-type NotCompatibleGonerError struct {
-	Id    GonerId
-	Type  reflect.Type
-	trace []byte
-}
-
-func (e *NotCompatibleGonerError) Error() string {
-	if e.Id != "" {
-		return fmt.Sprintf("Id(%s) goner is not compatible\n%s", e.Id, e.trace)
+func (e *Error) Error() string {
+	msg := fmt.Sprintf("GoneError(code=%v):%s", e.Code, e.Msg)
+	if e.trace == nil {
+		return msg
 	}
-	return fmt.Sprintf("Type(%s) goner is not compatible\n%s", e.Type.Name(), e.trace)
+	return fmt.Sprintf("%s\n%s", msg, e.trace)
 }
 
-func newNotCompatibleGonerError(id GonerId) *NotCompatibleGonerError {
-	return &NotCompatibleGonerError{Id: id, trace: PanicTrace(2)}
+func NewError(code int, msg string) *Error {
+	return &Error{Code: code, Msg: msg, trace: PanicTrace(2)}
 }
 
-func newNotCompatibleGonerErrorByType(t reflect.Type) *NotCompatibleGonerError {
-	return &NotCompatibleGonerError{Type: t, trace: PanicTrace(2)}
+const (
+	GonerIdIsExisted = 1001 + iota
+	CannotFoundGonerById
+	CannotFoundGonerByType
+	NotCompatible
+)
+
+func GonerIdIsExistedError(id GonerId) *Error {
+	return NewError(GonerIdIsExisted, fmt.Sprintf("Goner Id(%s) is existed", id))
+}
+
+func CannotFoundGonerByIdError(id GonerId) *Error {
+	return NewError(CannotFoundGonerById, fmt.Sprintf("Cannot found the Goner by Id(%s)", id))
+}
+
+func CannotFoundGonerByTypeError(t reflect.Type) *Error {
+	return NewError(CannotFoundGonerByType, fmt.Sprintf("Cannot found the Goner by Type(%s)", t.Name()))
+}
+
+func NotCompatibleError(a reflect.Type, b reflect.Type) *Error {
+	return NewError(NotCompatible, fmt.Sprintf("Not compatible: %s vs %s", a.Name(), b.Name()))
 }

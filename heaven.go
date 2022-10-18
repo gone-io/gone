@@ -33,14 +33,24 @@ func Run(digGraves ...Digger) {
 // New 新建Heaven
 func New(digGraves ...Digger) Heaven {
 	cemetery := NewCemetery()
-	return &heaven{
-		cemetery:  cemetery.Bury(cemetery, IdGoneCemetery),
+	h := heaven{
+		Logger:    &defaultLogger{},
+		cemetery:  cemetery,
 		digGraves: digGraves,
 		signal:    make(chan os.Signal),
 	}
+
+	h.
+		cemetery.
+		Bury(&h, IdGoneHeaven).
+		Bury(cemetery, IdGoneCemetery)
+	return &h
 }
 
 type heaven struct {
+	GonerFlag
+
+	Logger   `gone:"gone-logger"`
 	cemetery Cemetery
 
 	digGraves []Digger
@@ -67,21 +77,25 @@ func (h *heaven) dig() {
 	}
 }
 
-func (h *heaven) Start() {
+func (h *heaven) install() {
 	h.dig()
 
 	err := h.cemetery.revive()
 	if err != nil {
 		panic(err)
 	}
+}
 
+func (h *heaven) installAngelHook() {
 	angleTombs := h.cemetery.GetTomByType(getAngelType())
 	for _, tomb := range angleTombs {
 		angel := tomb.GetGoner().(Angel)
 		h.BeforeStart(angel.Start)
 		h.BeforeStop(angel.Stop)
 	}
+}
 
+func (h *heaven) startFlow() {
 	// start Handlers 顺序调用：先注册的先调用
 	for _, before := range h.beforeStartHandlers {
 		err := before(h.cemetery)
@@ -96,10 +110,9 @@ func (h *heaven) Start() {
 			panic(err)
 		}
 	}
+}
 
-	signal.Notify(h.signal, syscall.SIGINT, syscall.SIGTERM)
-	<-h.signal
-
+func (h *heaven) stopFlow() {
 	// stop Handlers 逆序调用：先注册的后调用
 	for i := len(h.beforeStopHandlers) - 1; i >= 0; i-- {
 		before := h.beforeStopHandlers[i]
@@ -116,6 +129,18 @@ func (h *heaven) Start() {
 			panic(err)
 		}
 	}
+}
+
+func (h *heaven) Start() {
+	h.install()
+	h.installAngelHook()
+
+	signal.Notify(h.signal, syscall.SIGINT, syscall.SIGTERM)
+
+	h.startFlow()
+	s := <-h.signal
+	h.Infof("gone system will quit for receive signal(%s)", s.String())
+	h.stopFlow()
 }
 
 func (h *heaven) Stop() {
