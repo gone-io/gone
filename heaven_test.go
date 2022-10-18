@@ -20,7 +20,7 @@ func TestRun(t *testing.T) {
 	go func() {
 		time.Sleep(1 * time.Second)
 		process, _ := os.FindProcess(os.Getpid())
-		_ = process.Signal(syscall.SIGINT)
+		_ = process.Signal(syscall.SIGQUIT)
 	}()
 	gone.Run(func(cemetery gone.Cemetery) error {
 		cemetery.

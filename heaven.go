@@ -135,7 +135,7 @@ func (h *heaven) Start() {
 	h.install()
 	h.installAngelHook()
 
-	signal.Notify(h.signal, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(h.signal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	h.startFlow()
 	s := <-h.signal

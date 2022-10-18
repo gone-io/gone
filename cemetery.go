@@ -169,12 +169,20 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 	id, extConfig := parseGoneTagId(tag)
 	if id != anonymous {
 		tomb := c.GetTomById(id)
+		deps = append(deps, tomb)
 		if tomb == nil {
 			err = CannotFoundGonerByIdError(id)
 			return
 		}
 
 		goner := tomb.GetGoner()
+		if isCompatible(field.Type, goner) {
+			err = c.setFieldValue(v, goner)
+			suc = err == nil
+			return
+		}
+
+		//如果不兼容，检查Goner是否为Vampire；对Vampire启动吸血行为
 		builder, ok := goner.(Vampire)
 		if ok {
 			if !tomb.GonerIsRevive() {
@@ -184,22 +192,10 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 				}
 			}
 			err = builder.Suck(extConfig, v)
-			if err != nil {
-				return
-			}
-		} else {
-			if !isCompatible(field.Type, goner) {
-				err = NotCompatibleError(field.Type, reflect.TypeOf(goner).Elem())
-				return
-			}
-
-			err = c.setFieldValue(v, goner)
-			if err != nil {
-				return
-			}
+			suc = err == nil
+			return
 		}
-		suc = true
-		deps = append(deps, tomb)
+		err = NotCompatibleError(field.Type, reflect.TypeOf(goner).Elem())
 	}
 	return
 }
