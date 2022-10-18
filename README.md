@@ -1,16 +1,19 @@
 # gone
 
+> 这是一个上天堂的故事  
+> 逝者被埋葬后，在天堂永生，直到天崩地裂
+
+这是gone框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
+
 ## 概念
 
-> 这是一个上天堂的故事  
-> 逝者被埋葬后，在天堂永生
+> gone的意思是 `走了，去了，没了，死了`，那么gone框架管理都就是goner(逝者)
 
-- Gone: 走了，去了，没了，死了
-- Goner: 死人💀
-- Vampire: 吸血鬼🧛🏻‍♀️
+- Goner: 逝者 💀
+- Vampire: 吸血鬼 🧛🏻‍
 - Vampire.Suck: 吸血鬼吸血
-- Tomb: 坟墓⚰️
-- Cemetery: 墓园🪦
+- Tomb: 坟墓 ⚰️
+- Cemetery: 墓园 🪦
 - Cemetery.Bury:  下葬
 - Digger: 掘墓人 ⛏️
 - Cemetery.revive: 复活，升入天国
@@ -18,7 +21,7 @@
 - Heaven.Start: 天国开始运行；天国不崩塌前，Goner 永生
 - Heaven.Stop:  天国崩塌，停止运行
 - Angel: 天使 𓆩♡𓆪
-- Angel.Start: 天使开始工作；
+- Angel.Start: 天使开始工作；能力越大责任越大，天使是要工作的
 - Angel.Stop: 天使停止工作；
 
 ### 三种Goner
