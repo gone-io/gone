@@ -7,4 +7,4 @@ gone:
 	gone -s internal -p internal -f Priest -o internal/priest.go
 
 install-gone:
-	go install github.com/gone-io/gone/tools/gone@v0.0.3
+	go install github.com/gone-io/gone/tools/gone@v0.0.4
