@@ -57,7 +57,7 @@ func GetProperties(envParams ...string) (*properties.Properties, error) {
 		return nil, errors.New("cannot read config path")
 	}
 
-	props, err := properties.LoadFiles(filenames, properties.UTF8, false)
+	props, err := properties.LoadFiles(filenames, properties.UTF8, true)
 	if err != nil {
 		return nil, err
 	}

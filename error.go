@@ -44,7 +44,7 @@ func CannotFoundGonerByTypeError(t reflect.Type) *Error {
 }
 
 func NotCompatibleError(a reflect.Type, b reflect.Type) *Error {
-	return NewError(NotCompatible, fmt.Sprintf("Not compatible: %s vs %s", a.Name(), b.Name()))
+	return NewError(NotCompatible, fmt.Sprintf("Not compatible: %s/%s vs %s/%s", a.PkgPath(), a.Name(), b.PkgPath(), b.Name()))
 }
 
 func ReplaceBuryIdParamEmptyError() *Error {

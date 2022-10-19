@@ -43,7 +43,7 @@ func (h *testHeaven[T]) run(tomb Tomb, fn func(T)) {
 		panic(err)
 	}
 	h.startFlow()
-	fn(h.goner)
+	fn(tomb.GetGoner().(T))
 	h.stopFlow()
 }
 
