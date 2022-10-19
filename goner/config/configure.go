@@ -18,6 +18,7 @@ type propertiesConfigure struct {
 	gone.GonerFlag
 	gone.Logger `gone:"gone-logger"`
 	props       *properties.Properties
+	cemetery    gone.Cemetery `gone:"gone-cemetery"`
 }
 
 func (c *propertiesConfigure) Get(key string, v interface{}, defaultVal string) error {
@@ -93,12 +94,22 @@ func (c *propertiesConfigure) ParseKeyFromProperties(key string, value interface
 	return nil
 }
 
-func isDuration(t reflect.Type) bool { return t == reflect.TypeOf(time.Second) }
+func (c *propertiesConfigure) isInTestKit() bool {
+	return c.cemetery.GetTomById(gone.IdGoneTestKit) != nil
+}
 
-func (c *propertiesConfigure) MustGet(envParams ...string) *properties.Properties {
-	props, err := Get(envParams...)
+func (c *propertiesConfigure) MustGet() *properties.Properties {
+	var props *properties.Properties
+	var err error
+	if c.isInTestKit() {
+		props, err = TestGet()
+	} else {
+		props, err = Get("")
+	}
 	if err != nil {
 		panic(err)
 	}
 	return props
 }
+
+func isDuration(t reflect.Type) bool { return t == reflect.TypeOf(time.Second) }

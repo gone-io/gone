@@ -10,11 +10,15 @@ type GonerTestKit func(testGoner Goner)
 
 // TestKit 新建TestHeaven
 func TestKit[T Goner](goner T, priests ...Priest) TestHeaven[T] {
-	h := New(priests...)
-	return &testHeaven[T]{
-		heaven: h.(*heaven),
+	h := New(priests...).(*heaven)
+	testKit := &testHeaven[T]{
+		heaven: h,
 		goner:  goner,
 	}
+
+	//将自己安葬了，便于其他组件引用 和 感知自己在TestKit
+	h.cemetery.bury(testKit, IdGoneTestKit)
+	return testKit
 }
 
 type testHeaven[T Goner] struct {

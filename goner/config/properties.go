@@ -10,6 +10,12 @@ import (
 	"path/filepath"
 )
 
+const configPath = "config"
+const ext = ".properties"
+const defaultConf = "default"
+const defaultEnv = "local"
+const defaultConfigFile = defaultConf + ext
+
 // Get 读取环境变量ENV，读取参数 --env
 // 读取配置的目录：程序所在目录，程序运行目录
 // 配置文件读取顺序：config/default.properties，config/${env}.properties，后面的覆盖前面的
@@ -27,7 +33,7 @@ func Get(envParams ...string) (*properties.Properties, error) {
 	if err == nil {
 		filenames = append(filenames,
 			path.Join(executableDir, configPath, defaultConfigFile),
-			path.Join(executableDir, configPath, fmt.Sprintf("%s%s", env, fileType)),
+			path.Join(executableDir, configPath, fmt.Sprintf("%s%s", env, ext)),
 		)
 	}
 
@@ -35,7 +41,7 @@ func Get(envParams ...string) (*properties.Properties, error) {
 	if err == nil {
 		filenames = append(filenames,
 			path.Join(wordDir, configPath, defaultConfigFile),
-			path.Join(wordDir, configPath, fmt.Sprintf("%s%s", env, fileType)),
+			path.Join(wordDir, configPath, fmt.Sprintf("%s%s", env, ext)),
 		)
 	}
 
@@ -43,7 +49,7 @@ func Get(envParams ...string) (*properties.Properties, error) {
 	if confDir != "" {
 		filenames = append(filenames,
 			path.Join(confDir, defaultConfigFile),
-			path.Join(confDir, fmt.Sprintf("%s%s", env, fileType)),
+			path.Join(confDir, fmt.Sprintf("%s%s", env, ext)),
 		)
 	}
 
@@ -56,11 +62,7 @@ func Get(envParams ...string) (*properties.Properties, error) {
 		return nil, err
 	}
 
-	err = fixVariableConfig(props)
-	if err != nil {
-		return nil, err
-	}
-	return props, nil
+	return props, fixVariableConfig(props)
 }
 
 func fixVariableConfig(props *properties.Properties) error {
@@ -76,12 +78,6 @@ func fixVariableConfig(props *properties.Properties) error {
 	}
 	return nil
 }
-
-const configPath = "config"
-const fileType = ".properties"
-const defaultConfigFile = "default.properties"
-
-const defaultEnv = "local"
 
 var envFlag = flag.String("env", "", "环境变量，默认为local")
 var confFlag = flag.String("conf", "", "配置目录")
