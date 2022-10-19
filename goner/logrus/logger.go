@@ -14,16 +14,16 @@ type defaultLogger struct {
 }
 
 func (*defaultLogger) Tracef(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
+	fmt.Printf("x:"+format+"\n", args...)
 }
 
 func (*defaultLogger) Errorf(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
+	fmt.Printf("x:"+format+"\n", args...)
 }
 
 func (*defaultLogger) Warnf(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
+	fmt.Printf("x:"+format+"\n", args...)
 }
 func (*defaultLogger) Infof(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
+	fmt.Printf("x:"+format+"\n", args...)
 }

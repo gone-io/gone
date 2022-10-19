@@ -16,10 +16,10 @@ const defaultConf = "default"
 const defaultEnv = "local"
 const defaultConfigFile = defaultConf + ext
 
-// Get 读取环境变量ENV，读取参数 --env
+// GetProperties 读取环境变量ENV，读取参数 --env
 // 读取配置的目录：程序所在目录，程序运行目录
 // 配置文件读取顺序：config/default.properties，config/${env}.properties，后面的覆盖前面的
-func Get(envParams ...string) (*properties.Properties, error) {
+func GetProperties(envParams ...string) (*properties.Properties, error) {
 	var env = ""
 	if len(envParams) > 0 {
 		env = envParams[0]
@@ -57,7 +57,7 @@ func Get(envParams ...string) (*properties.Properties, error) {
 		return nil, errors.New("cannot read config path")
 	}
 
-	props, err := properties.LoadFiles(filenames, properties.UTF8, true)
+	props, err := properties.LoadFiles(filenames, properties.UTF8, false)
 	if err != nil {
 		return nil, err
 	}
@@ -77,27 +77,6 @@ func fixVariableConfig(props *properties.Properties) error {
 		}
 	}
 	return nil
-}
-
-var envFlag = flag.String("env", "", "环境变量，默认为local")
-var confFlag = flag.String("conf", "", "配置目录")
-
-// GetEnv 获取环境变量
-func GetEnv(env string) string {
-	if env != "" {
-		return env
-	}
-
-	flag.Parse()
-	if *envFlag != "" {
-		return *envFlag
-	}
-
-	env = os.Getenv("ENV")
-	if env != "" {
-		return env
-	}
-	return defaultEnv
 }
 
 func getConfDir() string {

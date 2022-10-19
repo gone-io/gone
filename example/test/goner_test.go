@@ -14,7 +14,7 @@ func Test_Line(t *testing.T) {
 				return config.Priest(cemetery)
 			}).
 			Run(func(point *Point) {
-				assert.Equal(t, point.X, 0)
+				assert.Equal(t, point.X, 1000)
 				assert.Equal(t, point.Y, 200)
 			})
 	})

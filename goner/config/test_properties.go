@@ -13,7 +13,7 @@ const test = "_test"
 const testExt = test + ext
 const defaultTestConfigFile = defaultConf + testExt
 
-func TestGet() (props *properties.Properties, err error) {
+func GetTestProperties() (props *properties.Properties, err error) {
 	var configDir string
 	configDir, err = lookupConfigDir("")
 	props, err = buildTestProps(configDir)

@@ -24,13 +24,13 @@ type propertiesConfigure struct {
 func (c *propertiesConfigure) Get(key string, v interface{}, defaultVal string) error {
 	if c.props == nil {
 		env := GetEnv("")
-		c.Infof("Use Env: %s", env)
-		c.props = c.MustGet()
+		c.Infof("Use Env: %s\n", env)
+		c.props = c.mustGetProperties()
 	}
-	return c.ParseKeyFromProperties(key, v, defaultVal, c.props)
+	return c.parseKeyFromProperties(key, v, defaultVal, c.props)
 }
 
-func (c *propertiesConfigure) ParseKeyFromProperties(key string, value interface{}, defaultVale string, props *properties.Properties) error {
+func (c *propertiesConfigure) parseKeyFromProperties(key string, value interface{}, defaultVale string, props *properties.Properties) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		return errors.New("type of value must be ptr")
@@ -98,13 +98,16 @@ func (c *propertiesConfigure) isInTestKit() bool {
 	return c.cemetery.GetTomById(gone.IdGoneTestKit) != nil
 }
 
-func (c *propertiesConfigure) MustGet() *properties.Properties {
+func (c *propertiesConfigure) mustGetProperties() *properties.Properties {
 	var props *properties.Properties
 	var err error
+
+	properties.LogPrintf = c.Warnf
+
 	if c.isInTestKit() {
-		props, err = TestGet()
+		props, err = GetTestProperties()
 	} else {
-		props, err = Get("")
+		props, err = GetProperties("")
 	}
 	if err != nil {
 		panic(err)

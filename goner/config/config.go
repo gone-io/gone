@@ -47,6 +47,6 @@ func (f *config) Suck(conf string, v reflect.Value) gone.SuckError {
 
 // Configure 配置接口
 type Configure interface {
-	//Get 将获取`key`所对应的值，值将写入到参数`v`中；参数`v`，只接受指针类型；如果`key`对应的值不存在，将使用defaultVal
+	//GetProperties 将获取`key`所对应的值，值将写入到参数`v`中；参数`v`，只接受指针类型；如果`key`对应的值不存在，将使用defaultVal
 	Get(key string, v interface{}, defaultVal string) error
 }
