@@ -9,9 +9,16 @@ import (
 
 const IdTimerWorker = "worker-timer"
 
-//go:gone
 func NewTimerWorker() (gone.Goner, gone.GonerId) {
 	return &TimerWorker{}, IdTimerWorker
+}
+
+//go:gone
+func Priest(cemetery gone.Cemetery) error {
+	if nil == cemetery.GetTomById(IdTimerWorker) {
+		cemetery.Bury(NewTimerWorker())
+	}
+	return nil
 }
 
 type TimerWorker struct {

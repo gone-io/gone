@@ -2,13 +2,13 @@ package app
 
 import (
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/example/app/worker"
+	worker2 "github.com/gone-io/gone/example/app/internal/worker"
 	"github.com/gone-io/gone/goner"
 )
 
 func Priest(cemetery gone.Cemetery) error {
 	_ = goner.BasePriest(cemetery)
-	cemetery.Bury(worker.NewPrintWorker())
-	cemetery.Bury(worker.NewTimerWorker())
+	cemetery.Bury(worker2.NewPrintWorker())
+	cemetery.Bury(worker2.NewTimerWorker())
 	return nil
 }
