@@ -8,8 +8,12 @@ import (
 // RouterGroupName 路由分组名称
 type RouterGroupName string
 
+type Context struct {
+	*gin.Context
+}
+
 // HandlerFunc `gone`框架的路由处理函数
-type HandlerFunc func(*gin.Context) (interface{}, error)
+type HandlerFunc func(*Context) (interface{}, error)
 
 // IRoutes `gone`框架基于`gin`封装的路由，用于定义处理特定请求的函数
 // 注入默认的路由使用Id: gone-gin-router (`gone.IdGoneGinRouter`)

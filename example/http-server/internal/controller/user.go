@@ -1,7 +1,6 @@
 package controller
 
 import (
-	gin2 "github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/gin"
 )
@@ -26,7 +25,7 @@ type User struct {
 	Name string `json:"name"`
 }
 
-func (ctr *user) getUserById(context *gin2.Context) (interface{}, error) {
+func (ctr *user) getUserById(context *gin.Context) (interface{}, error) {
 	id := context.Param("id")
 	return &User{
 		Id:   id,

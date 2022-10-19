@@ -24,7 +24,7 @@ func (p *proxy) Proxy(handler ...HandlerFunc) (arr []gin.HandlerFunc) {
 
 func (p *proxy) proxyOne(handle HandlerFunc) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		i, err := handle(context)
+		i, err := handle(&Context{Context: context})
 		if err != nil {
 			p.handler.Failed(context, err)
 		}
