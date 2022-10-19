@@ -2,7 +2,7 @@
 
 > 这是一个上天堂的故事  
 > 逝者被埋葬后，在天堂永生，直到天崩地裂。  
-> 天国管理着一片神圣的墓园，安葬在这片墓园的逝者会被升入天国。只有神圣的牧师才知道天国墓园的所在地，...
+> 存在着一片神圣的墓园，安葬在这片墓园的逝者（我们写的组件）的灵魂会被升入天国。只有神圣的牧师才知道这片墓园的所在地，...
 
 这是gone框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
 
@@ -14,8 +14,8 @@
 - Tomb: 坟墓 ⚰️
 - Cemetery: 墓园 🪦
 - Cemetery.Bury:  安葬
-- Priest: 神父✝️，负责给Goner下葬
 - Cemetery.revive: 复活Goner，将其升入天国
+- Priest: 神父✝️，负责给Goner下葬
 - Heaven: 天国 🕊☁️
 - Heaven.Start: 天国开始运行；Goner永生，直到天崩地裂
 - Heaven.Stop:  天国崩塌，停止运行

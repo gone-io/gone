@@ -6,6 +6,5 @@ import (
 )
 
 func main() {
-	gone.
-		Run(app.Priest)
+	gone.Run(app.Priest)
 }
