@@ -84,7 +84,7 @@ func goFileParse(goFilepath string) (*parseResult, error) {
 				match := funcReg.FindSubmatch(line)
 				if len(match) == 3 {
 					paramStr := strings.TrimSpace(string(match[2]))
-					fmt.Printf("paramStr:%s\n", paramStr)
+					//fmt.Printf("paramStr:%s\n", paramStr)
 
 					if paramStr == "" {
 						InjectFns = append(InjectFns, Fn{
