@@ -48,7 +48,7 @@ func New(priests ...Priest) Heaven {
 }
 
 type heaven struct {
-	GonerFlag
+	Flag
 
 	Logger   `gone:"gone-logger"`
 	cemetery Cemetery

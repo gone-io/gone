@@ -10,12 +10,8 @@ import (
 	"time"
 )
 
-func NewConfigure() (gone.Goner, gone.GonerId) {
-	return &propertiesConfigure{}, gone.IdGoneConfigure
-}
-
 type propertiesConfigure struct {
-	gone.GonerFlag
+	gone.Flag
 	gone.Logger `gone:"gone-logger"`
 	props       *properties.Properties
 	cemetery    gone.Cemetery `gone:"gone-cemetery"`

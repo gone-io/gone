@@ -45,7 +45,7 @@ type Vampire interface {
 
 type ReviveAfterError error
 type ReviveAfter interface {
-	After(Cemetery, Tomb) ReviveAfterError
+	AfterRevive(Cemetery, Tomb) ReviveAfterError
 }
 
 // Priest 神父，负责给Goner下葬

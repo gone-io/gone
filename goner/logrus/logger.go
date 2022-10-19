@@ -1,29 +1,58 @@
 package logrus
 
 import (
-	"fmt"
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/tracer"
+	"github.com/sirupsen/logrus"
+	"io"
+	"os"
 )
 
-func NewLogger() (gone.Goner, gone.GonerId) {
-	return &defaultLogger{}, gone.IdGoneLogger
+type logger struct {
+	gone.Flag
+
+	*logrus.Logger
+	Tracer           tracer.Tracer `gone:"gone-tracer"`
+	ConfLevel        string        `gone:"config,log.level,default=info"`
+	ConfReportCaller bool          `gone:"config,log.report-caller,default=true"`
+	ConfOutput       string        `gone:"config,log.output,default=stdout"`
 }
 
-type defaultLogger struct {
-	gone.GonerFlag
+func (log *logger) AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError {
+	log.Formatter = &DefaultFormatter{
+		GetTraceId: func() string {
+			return log.Tracer.GetTraceId()
+		},
+	}
+	log.ReportCaller = log.ConfReportCaller
+	log.Level = parseLogLevel(log.ConfLevel)
+	log.Out = parseOutput(log.ConfOutput)
+	return nil
 }
 
-func (*defaultLogger) Tracef(format string, args ...interface{}) {
-	fmt.Printf("x:"+format+"\n", args...)
+func parseLogLevel(level string) logrus.Level {
+	if level == "" {
+		level = "info"
+	}
+	var l logrus.Level
+	err := l.UnmarshalText([]byte(level))
+	if err != nil {
+		panic("cannot parse logger level")
+	}
+	return l
 }
 
-func (*defaultLogger) Errorf(format string, args ...interface{}) {
-	fmt.Printf("x:"+format+"\n", args...)
-}
-
-func (*defaultLogger) Warnf(format string, args ...interface{}) {
-	fmt.Printf("x:"+format+"\n", args...)
-}
-func (*defaultLogger) Infof(format string, args ...interface{}) {
-	fmt.Printf("x:"+format+"\n", args...)
+func parseOutput(output string) io.Writer {
+	switch output {
+	case "stdout", "":
+		return os.Stdout
+	case "stderr":
+		return os.Stderr
+	default:
+		f, err := os.Open(output)
+		if err != nil {
+			panic(err)
+		}
+		return f
+	}
 }

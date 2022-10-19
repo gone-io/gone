@@ -17,13 +17,13 @@ func NewPointB() (gone.Goner, gone.GonerId) {
 }
 
 type Point struct {
-	gone.GonerFlag
+	gone.Flag
 	X int `gone:"config,example.test.point.a-x"`
 	Y int `gone:"config,example.test.point.a-y,default=200"`
 }
 
 type Line struct {
-	gone.GonerFlag
+	gone.Flag
 	A *Point `gone:"example-test-point-a"`
 	B *Point `gone:"example-test-point-b"`
 }

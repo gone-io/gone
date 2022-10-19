@@ -6,12 +6,8 @@ import (
 	"strings"
 )
 
-func NewConfig() (gone.Goner, gone.GonerId) {
-	return &config{}, gone.IdConfig
-}
-
 type config struct {
-	gone.GonerFlag
+	gone.Flag
 	configure Configure `gone:"gone-configure"`
 }
 

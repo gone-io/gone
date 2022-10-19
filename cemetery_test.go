@@ -11,7 +11,7 @@ type XPoint interface {
 	GetIndex() int
 }
 type Point struct {
-	GonerFlag
+	Flag
 	x int
 	y int
 
@@ -43,7 +43,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						a Point `gone:"point-a"`
 						b Point `gone:"point-b"`
 					}{}).SetId("line"),
@@ -58,7 +58,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						a *Point `gone:"point-a"`
 						b *Point `gone:"point-b"`
 					}{}).SetId("line"),
@@ -74,7 +74,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						a XPoint `gone:"point-a"`
 						b XPoint `gone:"point-b"`
 					}{}).SetId("line"),
@@ -90,7 +90,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						c []XPoint `gone:"point-a"`
 					}{}).SetId("line"),
 					NewTomb(&Point{x: 1, y: 2}).SetId("point-a"),
@@ -105,7 +105,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						c []XPoint `gone:"*"`
 					}{}).SetId("line"),
 					NewTomb(&Point{x: 1, y: 2}).SetId("point-a"),
@@ -120,7 +120,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						c []*Point `gone:"*"`
 					}{}).SetId("line"),
 					NewTomb(&Point{x: 1, y: 2}).SetId("point-a"),
@@ -135,7 +135,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						c []Point `gone:"*"`
 					}{}).SetId("line"),
 					NewTomb(&Point{x: 1, y: 2}).SetId("point-a"),
@@ -149,7 +149,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						c map[string]XPoint `gone:"*"`
 					}{}).SetId("line"),
 					NewTomb(&Point{x: 1, y: 2}).SetId("point-a"),
@@ -164,7 +164,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						c map[GonerId]XPoint `gone:"*"`
 					}{}).SetId("line"),
 					NewTomb(&Point{x: 1, y: 2}).SetId("point-a"),
@@ -179,7 +179,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						c map[GonerId]*Point `gone:"*"`
 					}{}).SetId("line"),
 					NewTomb(&Point{x: 1, y: 2}).SetId("point-a"),
@@ -194,7 +194,7 @@ func Test_cemetery_revive(t *testing.T) {
 			fields: fields{
 				goneList: []Tomb{
 					NewTomb(&struct {
-						GonerFlag
+						Flag
 						c map[GonerId]Point `gone:"*"`
 					}{}).SetId("line"),
 					NewTomb(&Point{x: 1, y: 2}).SetId("point-a"),
@@ -224,13 +224,13 @@ func Test_cemetery_revive(t *testing.T) {
 }
 
 type TestLogger struct {
-	GonerFlag
+	Flag
 	defaultLogger
 	X int
 }
 
 type ZeroPoint struct {
-	GonerFlag
+	Flag
 }
 
 func (p *ZeroPoint) GetX() int {
@@ -269,7 +269,7 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 		}
 		const line = "the-line"
 		type Line struct {
-			GonerFlag
+			Flag
 			A XPoint `gone:"point-a"`
 			B XPoint `gone:"point-b"`
 		}

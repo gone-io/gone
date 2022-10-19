@@ -10,7 +10,7 @@ import (
 )
 
 type Triangle struct {
-	gone.GonerFlag
+	gone.Flag
 	a gone.XPoint `gone:"point-a"`
 	b gone.Point  `gone:"point-b"`
 	c *gone.Point `gone:"point-c"`

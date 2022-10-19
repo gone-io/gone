@@ -1,5 +1,5 @@
 package gone
 
-type GonerFlag struct{}
+type Flag struct{}
 
-func (g *GonerFlag) goneFlag() {}
+func (g *Flag) goneFlag() {}

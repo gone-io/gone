@@ -15,7 +15,7 @@ func newCemetery() Cemetery {
 }
 
 type cemetery struct {
-	GonerFlag
+	Flag
 
 	Logger `gone:"gone-logger"`
 
@@ -345,7 +345,7 @@ func (c *cemetery) reviveOne(tomb Tomb) (deps []Tomb, err error) {
 
 	after, ok := goner.(ReviveAfter)
 	if ok {
-		err = after.After(c, tomb)
+		err = after.AfterRevive(c, tomb)
 	}
 	return
 }
