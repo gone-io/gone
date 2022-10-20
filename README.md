@@ -4,7 +4,7 @@
 
 ## 概念
 
-> gone的意思是 `走了，去了，没了，死了`，那么Gone管理都是Goner(逝者)
+> gone的意思是 `走了，去了，没了，死了`，那么Gone管理都是Goner(逝者)  
 > 存在一片神秘墓园，安葬在这里的逝者，灵魂会升入天国。天国指定的牧师可以将Goner葬入这片墓园...
 
 - Goner: 逝者 💀；是对可注入对象的抽象：可以注入其他Goner，可以被注入其他Goner；
@@ -27,9 +27,8 @@
 ### 三种Goner
 
 - 普通Goner
-  >
-  普通Goner，可以用于抽象App中的Service、Controller、Client等常见的组件。如果Goner提供了方法 **`AfterRevive(Cemetery, Tomb) ReviveAfterError`**
-  ，在升入天国后会被调用。
+  > 普通Goner，可以用于抽象App中的Service、Controller、Client等常见的组件。
+  > 如果Goner提供了方法 **`AfterRevive(Cemetery, Tomb) ReviveAfterError`**，在升入天国后会被调用。
 - 天使Angel
   > 天使会在天国承担一定的职责：启动阶段，天使的`Start`方法会被调用；停止阶段，天使的`Stop`方法会被调用；所以天使适合抽象"
   需要启停控制"的组件。
