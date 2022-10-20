@@ -1,27 +1,24 @@
 # gone
 
-> 这是一个上天堂的故事  
-> 逝者被埋葬后，在天堂永生，直到天崩地裂。  
-> 存在着一片神圣的墓园，安葬在这片墓园的逝者（我们写的组件）的灵魂会被升入天国。只有神圣的牧师才知道这片墓园的所在地，...
-
 这是gone框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
 
 ## 概念
 
-> gone的意思是 `走了，去了，没了，死了`，那么gone框架管理都就是goner(逝者)
+> gone的意思是 `走了，去了，没了，死了`，那么Gone管理都是Goner(逝者)
+> 存在一片神秘墓园，安葬在这里的逝者，灵魂会升入天国。天国指定的牧师可以将Goner葬入这片墓园...
 
-- Goner: 逝者 💀
+- Goner: 逝者 💀；是对可注入对象的抽象：可以注入其他Goner，可以被注入其他Goner；
 - Tomb: 坟墓 ⚰️
 - Cemetery: 墓园 🪦
 - Cemetery.Bury:  安葬
-- Cemetery.revive: 复活Goner，将其升入天国
+- Cemetery.revive: 复活Goner，将其升入天国；对于Goner则是完成了属性的的注入（或者装配）
 - Priest: 神父✝️，负责给Goner下葬
 - Heaven: 天国 🕊☁️
 - Heaven.Start: 天国开始运行；Goner永生，直到天崩地裂
 - Heaven.Stop:  天国崩塌，停止运行
 - Angel: 天使 𓆩♡𓆪 ，实现了`Start(gone.Cemetery) error` 和 `Stop(gone.Cemetery) error`方法的Goner，升入天国后被变成天使
-- Angel.Start: 天使开始工作；能力越大责任越大，天使是要工作的
-- Angel.Stop: 天使停止工作；
+- Angel.Start: 天使左翼，开始工作；能力越大责任越大，天使是要工作的
+- Angel.Stop: 天使右翼，停止工作；
 - Vampire: 吸血鬼 🧛🏻‍，实现了`Suck(conf string, v reflect.Value) gone.SuckError`
   方法的是吸血鬼；吸血鬼是一个邪恶的存在，他可能毁掉整个天国。理论上吸血行为可以制造Goner，但是这可能会导致循环依赖，从而破坏系统。
 - Vampire.Suck: 吸血鬼"吸血行为"
@@ -30,7 +27,9 @@
 ### 三种Goner
 
 - 普通Goner
-  > 普通Goner，可以用于抽象App中的Service、Controller、Client等常见的组件。
+  >
+  普通Goner，可以用于抽象App中的Service、Controller、Client等常见的组件。如果Goner提供了方法 **`AfterRevive(Cemetery, Tomb) ReviveAfterError`**
+  ，在升入天国后会被调用。
 - 天使Angel
   > 天使会在天国承担一定的职责：启动阶段，天使的`Start`方法会被调用；停止阶段，天使的`Stop`方法会被调用；所以天使适合抽象"
   需要启停控制"的组件。
@@ -172,4 +171,9 @@ func main() {
 
 ## 📢注意
 
-- 尽量不用使用 struct（结构体）作为 gone 标记的字段，由于struct在golang中是值拷贝，可能导致相关依赖注入失败的情况
+- 尽量不用使用 struct（结构体）作为 `gone` 标记的字段，由于struct在golang中是值拷贝，可能导致相关依赖注入失败的情况
+- 下面这些Goner上的方法都不应该是阻塞的
+    - `AfterRevive(Cemetery, Tomb) ReviveAfterError`
+    - `Start(Cemetery) error`
+    - `Stop(Cemetery) error`
+    - `Suck(conf string, v reflect.Value) SuckError`
