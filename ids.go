@@ -20,4 +20,8 @@ const (
 	IdGoneGinResponser = "gone-gin-responser"
 
 	IdGoneXorm = "gone-xorm"
+
+	IdGoneRedisPool   = "gone-redis-pool"
+	IdGoneRedisCache  = "gone-redis-cache"
+	IdGoneRedisLocker = "gone-redis-locker"
 )

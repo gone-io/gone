@@ -5,6 +5,7 @@ import (
 	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/goner/gin"
 	"github.com/gone-io/gone/goner/logrus"
+	"github.com/gone-io/gone/goner/redis"
 	"github.com/gone-io/gone/goner/tracer"
 	"github.com/gone-io/gone/goner/xorm"
 )
@@ -23,5 +24,10 @@ func GinPriest(cemetery gone.Cemetery) error {
 
 func XormPriest(cemetery gone.Cemetery) error {
 	_ = xorm.Priest(cemetery)
+	return nil
+}
+
+func RedisPriest(cemetery gone.Cemetery) error {
+	_ = redis.Priest(cemetery)
 	return nil
 }
