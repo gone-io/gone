@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-func NewRedisPool() (gone.Goner, gone.GonerId) {
+func NewRedisPool() (gone.Angel, gone.GonerId) {
 	return &pool{}, gone.IdGoneRedisPool
 }
 
@@ -22,7 +22,7 @@ type pool struct {
 	once sync.Once
 }
 
-func (f *pool) AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError {
+func (f *pool) Start(gone.Cemetery) error {
 	f.once.Do(func() {
 		f.Pool = &redis.Pool{
 			MaxIdle:   f.maxIdle,   /*最大的空闲连接数*/
@@ -47,4 +47,8 @@ func (f *pool) AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError {
 		}
 	})
 	return nil
+}
+
+func (f *pool) Stop(gone.Cemetery) error {
+	return f.Pool.Close()
 }

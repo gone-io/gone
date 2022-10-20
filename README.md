@@ -174,11 +174,14 @@ func main() {
   提供日志追踪，可以用于给同一条请求链路提供统一的tracerId
 - `github.com/gone-io/gone/goner/xorm`  
   封装`xorm.io/xorm`，用于数据库的访问；使用时，按需引用数据库驱动；
+- `github.com/gone-io/gone/goner/redis`
+  封装`github.com/gomodule/redigo`，用于操作redis
+- `github.com/gone-io/gone/goner/schedule`
+  封装 `github.com/robfig/cron/v3`，用于设置定时器
 
 ## TODO LIST
 
 - emitter，封装事件处理
-- redigo，封装 github.com/gomodule/redigo
 - grpc，封装 github.com/grpc/grpc
 
 ## 📢注意

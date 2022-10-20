@@ -24,4 +24,6 @@ const (
 	IdGoneRedisPool   = "gone-redis-pool"
 	IdGoneRedisCache  = "gone-redis-cache"
 	IdGoneRedisLocker = "gone-redis-locker"
+
+	IdGoneSchedule = "gone-schedule"
 )
