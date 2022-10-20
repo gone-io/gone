@@ -160,11 +160,24 @@ func main() {
     }
     ```
 
+## 组件库
+
+- `github.com/gone-io/gone/goner/cumx`  
+  对 `github.com/soheilhy/cmux` 进行封装，用于复用同一个端口实现多种协议；
+- `github.com/gone-io/gone/goner/config`  
+  完成 gone-app 的配置
+- `github.com/gone-io/gone/goner/gin`  
+  对`github.com/gin-gonic/gin`封装，提供web服务
+- `github.com/gone-io/gone/goner/logrus`  
+  对`github.com/sirupsen/logrus`封装，提供日志服务
+- `github.com/gone-io/gone/goner/tracer`  
+  提供日志追踪，可以用于给同一条请求链路提供统一的tracerId
+- `github.com/gone-io/gone/goner/xorm`  
+  封装`xorm.io/xorm`，用于数据库的访问；使用时，按需引用数据库驱动；
+
 ## TODO LIST
 
-- cmux，封装 github.com/soheilhy/cmux
-- gin， 封装 github.com/gin-gonic/gin
-- xorm，封装 xorm.io/xorm
+- emitter，封装事件处理
 - redigo，封装 github.com/gomodule/redigo
 - grpc，封装 github.com/grpc/grpc
 
