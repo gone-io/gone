@@ -8,7 +8,7 @@ import (
 	"xorm.io/xorm"
 )
 
-func NewXormEngine() (gone.Goner, gone.GonerId) {
+func NewXormEngine() (gone.Angel, gone.GonerId) {
 	return &engine{}, gone.IdGoneXorm
 }
 
@@ -29,7 +29,7 @@ func (e *engine) GetOriginEngine() *xorm.Engine {
 	return e.Engine
 }
 
-func (e *engine) Start() {
+func (e *engine) Start(gone.Cemetery) error {
 	if e.Engine != nil {
 		panic("duplicate call Start()")
 	}
@@ -45,10 +45,11 @@ func (e *engine) Start() {
 	e.SetMaxIdleConns(e.maxIdleCount)
 	e.SetLogger(&dbLogger{Logger: e.Logger, showSql: e.showSql})
 
-	err = e.Ping()
-	if err != nil {
-		panic(err)
-	}
+	return e.Ping()
+}
+
+func (e *engine) Stop(gone.Cemetery) error {
+	return e.Close()
 }
 
 type NameMap map[string]interface{}
