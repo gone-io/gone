@@ -36,12 +36,12 @@ func (h *testHeaven[T]) installAngelHook(deps []Tomb) {
 }
 
 func (h *testHeaven[T]) run(tomb Tomb, fn func(T)) {
-	deps, err := h.cemetery.reviveOneDep(tomb)
-	h.installAngelHook(deps)
-
+	deps, err := h.cemetery.reviveDependence(tomb)
 	if err != nil {
 		panic(err)
 	}
+	deps = append(deps, tomb)
+	h.installAngelHook(deps)
 	h.startFlow()
 	fn(tomb.GetGoner().(T))
 	h.stopFlow()

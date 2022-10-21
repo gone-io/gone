@@ -32,20 +32,10 @@ type Cemetery interface {
 
 	revive() error // 复活，对逝者进行复活，让他们升入天堂
 	reviveOne(tomb Tomb) (deps []Tomb, err error)
-	reviveOneDep(tomb Tomb) (deps []Tomb, err error)
+	reviveDependence(tomb Tomb) (deps []Tomb, err error)
 
 	GetTomById(GonerId) Tomb
 	GetTomByType(reflect.Type) []Tomb
-}
-
-type SuckError error
-type Vampire interface {
-	Suck(conf string, v reflect.Value) SuckError
-}
-
-type ReviveAfterError error
-type ReviveAfter interface {
-	AfterRevive(Cemetery, Tomb) ReviveAfterError
 }
 
 // Priest 神父，负责给Goner下葬
@@ -63,8 +53,23 @@ type Heaven interface {
 	AfterStop(Process) Heaven
 }
 
+type AfterReviveError error
+
+// OCD Obsessive-Compulsive Disorder 强迫症患者
+type OCD interface {
+	Goner
+	//AfterRevive 在Goner复活后会被执行
+	AfterRevive() AfterReviveError
+}
+
 type Angel interface {
 	Goner
 	Start(Cemetery) error
 	Stop(Cemetery) error
+}
+
+type SuckError error
+type Vampire interface {
+	Goner
+	Suck(conf string, v reflect.Value) SuckError
 }

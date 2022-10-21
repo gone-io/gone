@@ -257,6 +257,15 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 	return
 }
 
+func (c *cemetery) reviveDependence(tomb Tomb) (deps []Tomb, err error) {
+	deps, err = c.reviveOneDep(tomb)
+	if err != nil {
+		return
+	}
+	err = c.obsession()
+	return
+}
+
 func (c *cemetery) reviveOneDep(tomb Tomb) (deps []Tomb, err error) {
 	deps, err = c.reviveOne(tomb)
 	if err != nil {
@@ -342,17 +351,27 @@ func (c *cemetery) reviveOne(tomb Tomb) (deps []Tomb, err error) {
 	}
 
 	tomb.GonerIsRevive(true)
-
-	after, ok := goner.(ReviveAfter)
-	if ok {
-		err = after.AfterRevive(c, tomb)
-	}
 	return
 }
 
 func (c *cemetery) revive() error {
 	for _, tomb := range c.tombs {
 		_, err := c.reviveOne(tomb)
+		if err != nil {
+			return err
+		}
+	}
+	return c.obsession()
+}
+
+var obsessionPtr *OCD
+var obsessionType = reflect.TypeOf(obsessionPtr).Elem()
+
+func (c *cemetery) obsession() error {
+	tombs := c.GetTomByType(obsessionType)
+	for _, tomb := range tombs {
+		obsession := tomb.GetGoner().(OCD)
+		err := obsession.AfterRevive()
 		if err != nil {
 			return err
 		}

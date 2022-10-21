@@ -139,7 +139,7 @@ func (h *heaven) Start() {
 
 	h.startFlow()
 	s := <-h.signal
-	h.Infof("gone system will quit for receive signal(%s)", s.String())
+	h.Infof("gone system will quit for receive signal(%s)\n", s.String())
 	h.stopFlow()
 }
 

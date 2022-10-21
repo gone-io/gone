@@ -7,15 +7,18 @@
 > gone的意思是 `走了，去了，没了，死了`，那么Gone管理都是Goner(逝者)  
 > 存在一片神秘墓园，安葬在这里的逝者，灵魂会升入天国。天国指定的牧师可以将Goner葬入这片墓园...
 
-- Goner: 逝者 💀；是对可注入对象的抽象：可以注入其他Goner，可以被注入其他Goner；
-- Tomb: 坟墓 ⚰️
-- Cemetery: 墓园 🪦
-- Cemetery.Bury:  安葬
-- Cemetery.revive: 复活Goner，将其升入天国；对于Goner则是完成了属性的的注入（或者装配）
-- Priest: 神父✝️，负责给Goner下葬
 - Heaven: 天国 🕊☁️
 - Heaven.Start: 天国开始运行；Goner永生，直到天崩地裂
 - Heaven.Stop:  天国崩塌，停止运行
+- Cemetery: 墓园 🪦
+- Cemetery.Bury:  安葬
+- Cemetery.revive: 复活Goner，将其升入天国；对于Goner则是完成了属性的的注入（或者装配）
+- Tomb: 坟墓 ⚰️
+- Priest: 神父✝️，负责给Goner下葬
+- Goner: 逝者 💀；是对可注入对象的抽象：可以注入其他Goner，可以被注入其他Goner；
+- OCD: Obsessive-Compulsive Disorder
+  强迫症患者；如果一个Goner是强迫症患者，他被复活后会去执行`AfterRevive() AfterReviveError`方法
+- OCD.AfterRevive: 复活后执行的方法
 - Angel: 天使 𓆩♡𓆪 ，实现了`Start(gone.Cemetery) error` 和 `Stop(gone.Cemetery) error`方法的Goner，升入天国后被变成天使
 - Angel.Start: 天使左翼，开始工作；能力越大责任越大，天使是要工作的
 - Angel.Stop: 天使右翼，停止工作；
@@ -24,11 +27,13 @@
 - Vampire.Suck: 吸血鬼"吸血行为"
 - Lucifer: 如果某个Goner既有Angel和Vampire的特征，那么他就是堕落天使。（这个概念在系统中没有定义，只是一种推导）
 
-### 三种Goner
+### 四种Goner
 
 - 普通Goner
   > 普通Goner，可以用于抽象App中的Service、Controller、Client等常见的组件。
   > 如果Goner提供了方法 **`AfterRevive(Cemetery, Tomb) ReviveAfterError`**，在升入天国后会被调用。
+- OCD
+  > 强迫症患者，复活后会去执行`AfterRevive() AfterReviveError`方法
 - 天使Angel
   > 天使会在天国承担一定的职责：启动阶段，天使的`Start`方法会被调用；停止阶段，天使的`Stop`方法会被调用；所以天使适合抽象"
   需要启停控制"的组件。
