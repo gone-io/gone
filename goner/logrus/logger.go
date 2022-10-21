@@ -18,7 +18,7 @@ type logger struct {
 	ConfOutput       string        `gone:"config,log.output,default=stdout"`
 }
 
-func (log *logger) AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError {
+func (log *logger) AfterRevive() gone.AfterReviveError {
 	log.Formatter = &DefaultFormatter{
 		GetTraceId: func() string {
 			return log.Tracer.GetTraceId()

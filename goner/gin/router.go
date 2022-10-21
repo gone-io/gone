@@ -23,7 +23,7 @@ type router struct {
 	HandleProxyToGin `gone:"gone-gin-proxy"`
 }
 
-func (r *router) AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError {
+func (r *router) AfterRevive() gone.AfterReviveError {
 	r.Engine = gin.New()
 	return nil
 }

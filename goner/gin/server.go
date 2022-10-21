@@ -6,6 +6,7 @@ import (
 	"github.com/gone-io/gone/goner/cmux"
 	"github.com/gone-io/gone/goner/logrus"
 	Cmux "github.com/soheilhy/cmux"
+	"net"
 	"net/http"
 )
 
@@ -22,6 +23,8 @@ type server struct {
 	net         cmux.Server  `gone:"gone-cumx"`
 	mode        string       `gone:"config,server.mode,default=release"`
 	controllers []Controller `gone:"*"`
+
+	l net.Listener
 }
 
 func (s *server) Start(gone.Cemetery) error {
@@ -30,7 +33,7 @@ func (s *server) Start(gone.Cemetery) error {
 
 	s.mount()
 
-	l := s.net.Match(Cmux.HTTP1Fast())
+	s.l = s.net.Match(Cmux.HTTP1Fast())
 
 	s.httpServer = &http.Server{
 		Handler: s,
@@ -38,7 +41,7 @@ func (s *server) Start(gone.Cemetery) error {
 
 	s.Infof("Server Listen At %s", s.net.GetAddress())
 	go func() {
-		if err := s.httpServer.Serve(l); err != nil && err != http.ErrServerClosed {
+		if err := s.httpServer.Serve(s.l); err != nil && err != http.ErrServerClosed {
 			s.Errorf("http server error: %v", err)
 			panic(err)
 		}
@@ -46,11 +49,17 @@ func (s *server) Start(gone.Cemetery) error {
 	return nil
 }
 
-func (s *server) Stop(gone.Cemetery) error {
+func (s *server) Stop(gone.Cemetery) (err error) {
 	if nil == s.httpServer {
 		return nil
 	}
-	return s.httpServer.Close()
+
+	err = s.l.Close()
+	if err != nil {
+		s.Errorf("err:%v", err)
+	}
+	//err = s.httpServer.Close()
+	return err
 }
 
 func (s *server) Serve() Close {
