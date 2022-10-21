@@ -54,5 +54,15 @@ func buildTestProps(configDir string) (*properties.Properties, error) {
 		path.Join(configDir, fmt.Sprintf("%s%s", env, ext)),
 		path.Join(configDir, fmt.Sprintf("%s%s", env, testExt)),
 	}
+
+	configDir, _ = os.Getwd()
+	configDir = path.Join(configDir, "testdata", configPath)
+	files = append(files,
+		path.Join(configDir, defaultConfigFile),
+		path.Join(configDir, defaultTestConfigFile),
+		path.Join(configDir, fmt.Sprintf("%s%s", env, ext)),
+		path.Join(configDir, fmt.Sprintf("%s%s", env, testExt)),
+	)
+
 	return properties.LoadFiles(files, properties.UTF8, true)
 }

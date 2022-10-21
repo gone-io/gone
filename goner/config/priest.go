@@ -5,7 +5,7 @@ import (
 	"github.com/gone-io/gone/goner/logrus"
 )
 
-func NewConfig() (gone.Goner, gone.GonerId) {
+func NewConfig() (gone.Vampire, gone.GonerId) {
 	return &config{}, gone.IdConfig
 }
 
