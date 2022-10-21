@@ -31,7 +31,7 @@ type TimerWorker struct {
 	Ttl int `gone:"config,example.app.print.ttl"`
 }
 
-func (w *TimerWorker) AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError {
+func (w *TimerWorker) AfterRevive() gone.AfterReviveError {
 	w.tracer.SetTraceId("", func() {
 		w.tracer.Go(func() {
 			w.Printf("I will print a log every %d second", w.Ttl)

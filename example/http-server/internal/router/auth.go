@@ -18,7 +18,7 @@ type authRouter struct {
 	origin gin.IRouter `gone:"gone-gin-router"`
 }
 
-func (r *authRouter) AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError {
+func (r *authRouter) AfterRevive() gone.AfterReviveError {
 	r.IRouter = r.origin.Group("/api")
 	return nil
 }

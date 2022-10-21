@@ -1,6 +1,6 @@
 run:
 	make gone
-	go run main/main.go
+	go run cmd/main/main.go
 
 gone:
 	make install-gone
