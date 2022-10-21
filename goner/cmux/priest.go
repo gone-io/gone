@@ -6,7 +6,7 @@ import (
 	"github.com/gone-io/gone/goner/logrus"
 )
 
-func NewServer() (gone.Goner, gone.GonerId) {
+func NewServer() (gone.Angel, gone.GonerId) {
 	return &server{}, gone.IdGoneCumx
 }
 

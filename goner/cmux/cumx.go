@@ -21,7 +21,7 @@ type server struct {
 	Port    int    `gone:"config,server.port,default=8080"`
 }
 
-func (l *server) AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError {
+func (l *server) AfterRevive() gone.AfterReviveError {
 	if l.c == nil {
 		l.once.Do(func() {
 			if l.Address == "" {
@@ -49,7 +49,7 @@ func (l *server) Start(gone.Cemetery) error {
 	go func() {
 		err := l.c.Serve()
 		if err != nil {
-			panic(err)
+			l.Errorf("cumx Serve() err:%v", err)
 		}
 	}()
 	return nil
