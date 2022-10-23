@@ -16,24 +16,22 @@
 - Tomb: 坟墓 ⚰️
 - Priest: 神父✝️，负责给Goner下葬
 - Goner: 逝者 💀；是对可注入对象的抽象：可以注入其他Goner，可以被注入其他Goner；
-- OCD: Obsessive-Compulsive Disorder
-  强迫症患者；如果一个Goner是强迫症患者，他被复活后会去执行`AfterRevive() AfterReviveError`方法
-- OCD.AfterRevive: 复活后执行的方法
+- Prophet: 先知；如果一个Goner是先知，他被复活后会去执行`AfterRevive() AfterReviveError`方法，去窥视神的旨意
+- Prophet.AfterRevive: 复活后执行的方法
 - Angel: 天使 𓆩♡𓆪 ，实现了`Start(gone.Cemetery) error` 和 `Stop(gone.Cemetery) error`方法的Goner，升入天国后被变成天使
 - Angel.Start: 天使左翼，开始工作；能力越大责任越大，天使是要工作的
 - Angel.Stop: 天使右翼，停止工作；
 - Vampire: 吸血鬼 🧛🏻‍，实现了`Suck(conf string, v reflect.Value) gone.SuckError`
   方法的是吸血鬼；吸血鬼是一个邪恶的存在，他可能毁掉整个天国。理论上吸血行为可以制造Goner，但是这可能会导致循环依赖，从而破坏系统。
 - Vampire.Suck: 吸血鬼"吸血行为"
-- Lucifer: 如果某个Goner既有Angel和Vampire的特征，那么他就是堕落天使。（这个概念在系统中没有定义，只是一种推导）
 
 ### 四种Goner
 
 - 普通Goner
   > 普通Goner，可以用于抽象App中的Service、Controller、Client等常见的组件。
   > 如果Goner提供了方法 **`AfterRevive(Cemetery, Tomb) ReviveAfterError`**，在升入天国后会被调用。
-- OCD
-  > 强迫症患者，复活后会去执行`AfterRevive() AfterReviveError`方法
+- 先知Prophet
+  > 先知，复活后会去执行`AfterRevive() AfterReviveError`方法
 - 天使Angel
   > 天使会在天国承担一定的职责：启动阶段，天使的`Start`方法会被调用；停止阶段，天使的`Stop`方法会被调用；所以天使适合抽象"
   需要启停控制"的组件。

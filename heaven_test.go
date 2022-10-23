@@ -3,8 +3,6 @@ package gone_test
 import (
 	"github.com/gone-io/gone"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"syscall"
 	"testing"
 	"time"
 )
@@ -17,11 +15,6 @@ type Triangle struct {
 }
 
 func TestRun(t *testing.T) {
-	go func() {
-		time.Sleep(1 * time.Second)
-		process, _ := os.FindProcess(os.Getpid())
-		_ = process.Signal(syscall.SIGQUIT)
-	}()
 	gone.Run(func(cemetery gone.Cemetery) error {
 		cemetery.
 			Bury(&Triangle{}).

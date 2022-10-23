@@ -364,13 +364,13 @@ func (c *cemetery) revive() error {
 	return c.obsession()
 }
 
-var obsessionPtr *OCD
+var obsessionPtr *Prophet
 var obsessionType = reflect.TypeOf(obsessionPtr).Elem()
 
 func (c *cemetery) obsession() error {
 	tombs := c.GetTomByType(obsessionType)
 	for _, tomb := range tombs {
-		obsession := tomb.GetGoner().(OCD)
+		obsession := tomb.GetGoner().(Prophet)
 		err := obsession.AfterRevive()
 		if err != nil {
 			return err

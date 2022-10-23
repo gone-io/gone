@@ -43,8 +43,12 @@ type Priest func(cemetery Cemetery) error
 
 type Process func(cemetery Cemetery) error
 type Heaven interface {
-	Start()
-	Stop()
+	Install() Heaven
+	WaitEnd() Heaven
+	End() Heaven
+
+	Start() Heaven
+	Stop() Heaven
 
 	BeforeStart(Process) Heaven
 	AfterStart(Process) Heaven
@@ -55,8 +59,8 @@ type Heaven interface {
 
 type AfterReviveError error
 
-// OCD Obsessive-Compulsive Disorder 强迫症患者
-type OCD interface {
+// Prophet  先知
+type Prophet interface {
 	Goner
 	//AfterRevive 在Goner复活后会被执行
 	AfterRevive() AfterReviveError

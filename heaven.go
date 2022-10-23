@@ -27,7 +27,18 @@ import (
 //
 // ```
 func Run(priests ...Priest) {
-	New(priests...).Start()
+	New(priests...).
+		Install().
+		Start().
+		Stop()
+}
+
+func Serve(priests ...Priest) {
+	New(priests...).
+		Install().
+		Start().
+		WaitEnd().
+		Stop()
 }
 
 // New 新建Heaven
@@ -131,20 +142,32 @@ func (h *heaven) stopFlow() {
 	}
 }
 
-func (h *heaven) Start() {
+func (h *heaven) Install() Heaven {
 	h.install()
 	h.installAngelHook()
-
-	signal.Notify(h.signal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	h.startFlow()
-	s := <-h.signal
-	h.Infof("gone system will quit for receive signal(%s)\n", s.String())
-	h.stopFlow()
+	return h
 }
 
-func (h *heaven) Stop() {
+func (h *heaven) Start() Heaven {
+	h.startFlow()
+	return h
+}
+
+func (h *heaven) WaitEnd() Heaven {
+	signal.Notify(h.signal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	s := <-h.signal
+	h.Infof("gone system will quit for receive signal(%s)\n", s.String())
+	return h
+}
+
+func (h *heaven) End() Heaven {
 	h.signal <- syscall.SIGINT
+	return h
+}
+
+func (h *heaven) Stop() Heaven {
+	h.stopFlow()
+	return h
 }
 
 func (h *heaven) BeforeStart(p Process) Heaven {

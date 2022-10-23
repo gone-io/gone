@@ -18,7 +18,7 @@ import (
 // `recovery`，负责恢复请求内发生panic
 // `statRequestTime`，用于在日志中打印统计的请求耗时，可以通过设置配置项(`server.log.show-request-time=false`)来关闭
 // `accessLog`，用于在日志中打印请求、响应信息
-func NewGinProcessor() (gone.OCD, gone.GonerId) {
+func NewGinProcessor() (gone.Prophet, gone.GonerId) {
 	return &sysProcessor{}, gone.IdGoneGinProcessor
 }
 
