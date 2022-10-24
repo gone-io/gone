@@ -11,9 +11,8 @@ import (
 func Test_printWorker(t *testing.T) {
 	t.Run("content", func(t *testing.T) {
 		gone.
-			TestKit(worker.NewPrintWorker(), app.Priest).
-			Run(func(printWorker worker.PrintWorker) {
+			Test(func(printWorker worker.PrintWorker) {
 				assert.Equal(t, printWorker.GetContent(), "ok")
-			})
+			}, app.Priest)
 	})
 }

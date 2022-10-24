@@ -4,7 +4,6 @@ import (
 	"github.com/gone-io/gone"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 type Triangle struct {
@@ -67,11 +66,9 @@ func TestNew(t *testing.T) {
 			return nil
 		})
 
-	go func() {
-		time.Sleep(1 * time.Second)
-		heaven.Stop()
-	}()
+	heaven.Install()
 	heaven.Start()
+	heaven.Stop()
 
 	for i := range sort {
 		assert.Equal(t, i, sort[i])

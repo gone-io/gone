@@ -9,34 +9,26 @@ import (
 
 func Test_Line(t *testing.T) {
 	t.Run("config default", func(t *testing.T) {
-		gone.
-			TestKit(&Point{}, func(cemetery gone.Cemetery) error {
-				return config.Priest(cemetery)
-			}).
-			Run(func(point *Point) {
-				assert.Equal(t, point.X, 1000)
-				assert.Equal(t, point.Y, 200)
-			})
+		gone.TestAt(pointNameA, func(point *Point) {
+			assert.Equal(t, point.X, 1000)
+			assert.Equal(t, point.Y, 200)
+		}, config.Priest, Priest)
 	})
 
 	t.Run("config default", func(t *testing.T) {
-		gone.
-			TestKit(&Line{}, Priest).
-			Run(func(line *Line) {
-				assert.Equal(t, line.A.Y, 200)
-			})
+		gone.Test(func(line *Line) {
+			assert.Equal(t, line.A.Y, 200)
+		}, Priest)
 	})
 
 	t.Run("ReplaceBury", func(t *testing.T) {
-		gone.
-			TestKit(&Line{}, Priest, func(cemetery gone.Cemetery) error {
-				Mock := func() gone.Goner {
-					return &Point{X: 20}
-				}
-				return cemetery.ReplaceBury(Mock(), pointNameA)
-			}).
-			Run(func(line *Line) {
-				assert.Equal(t, line.A.X, 20)
-			})
+		gone.Test(func(line *Line) {
+			assert.Equal(t, line.A.X, 20)
+		}, Priest, func(cemetery gone.Cemetery) error {
+			Mock := func() gone.Goner {
+				return &Point{X: 20}
+			}
+			return cemetery.ReplaceBury(Mock(), pointNameA)
+		})
 	})
 }

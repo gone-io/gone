@@ -262,7 +262,8 @@ func (c *cemetery) reviveDependence(tomb Tomb) (deps []Tomb, err error) {
 	if err != nil {
 		return
 	}
-	err = c.obsession()
+
+	err = c.prophesy(append(deps, tomb)...)
 	return
 }
 
@@ -361,14 +362,20 @@ func (c *cemetery) revive() error {
 			return err
 		}
 	}
-	return c.obsession()
+	return c.prophesy()
 }
 
 var obsessionPtr *Prophet
 var obsessionType = reflect.TypeOf(obsessionPtr).Elem()
 
-func (c *cemetery) obsession() error {
-	tombs := c.GetTomByType(obsessionType)
+func (c *cemetery) prophesy(deps ...Tomb) error {
+	var tombs []Tomb
+	if len(deps) > 0 {
+		tombs = Tombs(deps).GetTomByType(obsessionType)
+	} else {
+		tombs = c.GetTomByType(obsessionType)
+	}
+
 	for _, tomb := range tombs {
 		obsession := tomb.GetGoner().(Prophet)
 		err := obsession.AfterRevive()

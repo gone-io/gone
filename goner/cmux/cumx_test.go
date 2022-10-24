@@ -21,8 +21,7 @@ func (h *testSr) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func Test_cumx(t *testing.T) {
 	gone.
-		TestKit(&server{}, Priest).
-		RunAtId(gone.IdGoneCumx, func(s *server) {
+		TestAt(gone.IdGoneCumx, func(s *server) {
 			httpL := s.Match(cmux.HTTP1Fast())
 
 			httpS := &http.Server{
@@ -34,5 +33,5 @@ func Test_cumx(t *testing.T) {
 			time.Sleep(1 * time.Second)
 			err := httpS.Close()
 			assert.Nil(t, err)
-		})
+		}, Priest)
 }

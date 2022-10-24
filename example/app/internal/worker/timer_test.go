@@ -10,8 +10,7 @@ import (
 
 func Test_timerWorker(t *testing.T) {
 	gone.
-		TestKit(&worker.TimerWorker{}, app.Priest).
-		RunAtId(worker.IdTimerWorker, func(worker *worker.TimerWorker) {
+		TestAt(worker.IdTimerWorker, func(worker *worker.TimerWorker) {
 			assert.Equal(t, worker.Ttl, 100)
-		})
+		}, app.Priest)
 }
