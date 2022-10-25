@@ -2,6 +2,11 @@
 
 这是gone框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
 
+## 这是个啥？
+
+这是一个依赖注入框架，应该是"最类似spring"的一个golang的依赖注入框架。可以将`Goner`理解为`Spring Bean`
+，代码中只需要编写各种功能的`Goner`即可完成业务开发。在[example](example)目录可以找到详细的例子，后续会补充完成的帮忙手册。
+
 ## 概念
 
 > gone的意思是 `走了，去了，没了，死了`，那么Gone管理都是Goner(逝者)  
