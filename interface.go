@@ -77,3 +77,16 @@ type Vampire interface {
 	Goner
 	Suck(conf string, v reflect.Value) SuckError
 }
+
+// Error 普通错误
+type Error interface {
+	error
+	Msg() string
+	Code() int
+}
+
+// InnerError 内部错误
+type InnerError interface {
+	Error
+	Stack() []byte
+}

@@ -82,25 +82,6 @@ type MountError error
 // ## 错误处理
 // 我们定义两种错误接口，3种具体的错误
 
-// Error
-// 1. Error，普通错误；包括
-// - 1.1 内部错误，代表服务内生性的错误，是由于http服务的软硬件设施不能满足要求导致的错误
-// - 1.2 参数错误，代表输入性错误，错误是有http客户端不正确的参数输入导致
-type Error interface {
-	error
-	Msg() string
-	Code() int
-}
-
-// BusinessError
-// 2. BusinessError，业务错误
-// 业务错误是业务上的特殊情况，需要在不同的业务场景返回不同的数据类型；本质上不算错误，是为了便于业务编写做的一种抽象，
-// 让同一个接口拥有在特殊情况返回不同业务代码和业务数据的能力
-type BusinessError interface {
-	Error
-	Data() interface{}
-}
-
 // HandleProxyToGin 代理器，提供一个proxy函数将`gin.HandlerFunc`转成`gin.HandlerFunc`
 // 注入`gin.HandleProxyToGin`使用Id：sys-gone-proxy (`gin.SystemGoneProxy`)
 type HandleProxyToGin interface {
@@ -123,4 +104,13 @@ type Server interface {
 
 	// Serve 启动http服务，返回的函数可以用于"服务优雅停机"
 	Serve() (close Close)
+}
+
+// BusinessError
+// 2. BusinessError，业务错误
+// 业务错误是业务上的特殊情况，需要在不同的业务场景返回不同的数据类型；本质上不算错误，是为了便于业务编写做的一种抽象，
+// 让同一个接口拥有在特殊情况返回不同业务代码和业务数据的能力
+type BusinessError interface {
+	gone.Error
+	Data() interface{}
 }

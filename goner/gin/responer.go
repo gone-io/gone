@@ -14,7 +14,15 @@ func NewGinResponser() (gone.Goner, gone.GonerId) {
 	return &responser{}, gone.IdGoneGinResponser
 }
 
-type res map[string]interface{}
+type res[T any] struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg,omitempty"`
+	Data T      `json:"data,omitempty"`
+}
+
+func newRes[T any](code int, msg string, data T) *res[T] {
+	return &res[T]{Code: code, Msg: msg, Data: data}
+}
 
 type responser struct {
 	gone.Flag
@@ -25,46 +33,29 @@ type responser struct {
 func (r *responser) Success(ctx *gin.Context, data interface{}) {
 	bErr, ok := data.(BusinessError)
 	if ok {
-		ctx.JSON(http.StatusOK, res{
-			"code": bErr.Code(),
-			"msg":  bErr.Msg(),
-			"data": bErr.Data(),
-		})
+		ctx.JSON(http.StatusOK, newRes(bErr.Code(), bErr.Msg(), bErr.Data()))
 		return
 	}
-	ctx.JSON(http.StatusOK, res{
-		"code": 0,
-		"data": data,
-	})
+	ctx.JSON(http.StatusOK, newRes(0, "", bErr.Data()))
 }
 
 func (r *responser) Failed(ctx *gin.Context, oErr error) {
 	err := ToError(oErr)
-	businessError, ok := err.(BusinessError)
+	bErr, ok := err.(BusinessError)
 	if ok {
-		ctx.JSON(http.StatusOK, res{
-			"code": businessError.Code(),
-			"msg":  businessError.Msg(),
-			"data": businessError.Data(),
-		})
+		ctx.JSON(http.StatusOK, newRes(bErr.Code(), bErr.Msg(), bErr.Data()))
 		return
 	}
 
-	iErr, ok := err.(*iError)
+	iErr, ok := err.(gone.InnerError)
 	if ok {
-		ctx.JSON(http.StatusInternalServerError, res{
-			"code": iErr.Code(),
-			"msg":  iErr.Msg(),
-		})
+		ctx.JSON(http.StatusInternalServerError, newRes(iErr.Code(), iErr.Error(), nil))
 		r.tracer.Go(func() {
 			if ok {
-				r.Errorf("inner Error: %s(code=%d)\n%s", iErr.msg, iErr.code, iErr.stack)
+				r.Errorf("inner Error: %s(code=%d)\n%s", iErr.Msg(), iErr.Code(), iErr.Stack())
 			}
 		})
 		return
 	}
-	ctx.JSON(http.StatusBadRequest, res{
-		"code": err.Code(),
-		"msg":  err.Msg(),
-	})
+	ctx.JSON(http.StatusBadRequest, newRes(err.Code(), err.Msg(), nil))
 }
