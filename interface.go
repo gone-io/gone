@@ -50,6 +50,8 @@ type Heaven interface {
 	Start() Heaven
 	Stop() Heaven
 
+	GetHeavenStopSignal() <-chan struct{}
+
 	BeforeStart(Process) Heaven
 	AfterStart(Process) Heaven
 

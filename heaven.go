@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"reflect"
 	"syscall"
+	"time"
 )
 
 // Run
@@ -45,10 +46,11 @@ func Serve(priests ...Priest) {
 func New(priests ...Priest) Heaven {
 	cemetery := newCemetery()
 	h := heaven{
-		Logger:   &defaultLogger{},
-		cemetery: cemetery,
-		priests:  priests,
-		signal:   make(chan os.Signal),
+		Logger:     &defaultLogger{},
+		cemetery:   cemetery,
+		priests:    priests,
+		signal:     make(chan os.Signal),
+		stopSignal: make(chan struct{}),
 	}
 
 	h.
@@ -71,12 +73,17 @@ type heaven struct {
 	beforeStopHandlers  []Process
 	afterStopHandlers   []Process
 
-	signal chan os.Signal
+	signal     chan os.Signal
+	stopSignal chan struct{}
 }
 
 func getAngelType() reflect.Type {
 	var angelPtr *Angel = nil
 	return reflect.TypeOf(angelPtr).Elem()
+}
+
+func (h *heaven) GetHeavenStopSignal() <-chan struct{} {
+	return h.stopSignal
 }
 
 func (h *heaven) burial() {
@@ -165,8 +172,12 @@ func (h *heaven) End() Heaven {
 	return h
 }
 
+const afterStopSignalWaitSecond = 3
+
 func (h *heaven) Stop() Heaven {
 	h.stopFlow()
+	close(h.stopSignal)
+	<-time.After(afterStopSignalWaitSecond * time.Second)
 	return h
 }
 
