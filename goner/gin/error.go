@@ -10,7 +10,7 @@ import (
 //参数错误，输入性错误，错误是由于输入信息导致的问题，需要调整输入
 //业务错误，由于内部或外部信息导向的不同业务结果
 
-func NewInnerError(code int, msg string) gone.Error {
+func NewInnerError(msg string, code int) gone.Error {
 	return gone.NewInnerError(code, msg)
 }
 
@@ -46,7 +46,7 @@ func ToError(err error) gone.Error {
 	if ok {
 		return iErr
 	}
-	return NewInnerError(http.StatusInternalServerError, err.Error())
+	return NewInnerError(err.Error(), http.StatusInternalServerError)
 }
 
 // 业务错误

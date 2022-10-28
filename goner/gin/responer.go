@@ -1,7 +1,6 @@
 package gin
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/logrus"
 	"github.com/gone-io/gone/goner/tracer"
@@ -30,16 +29,16 @@ type responser struct {
 	tracer        tracer.Tracer `gone:"gone-tracer"`
 }
 
-func (r *responser) Success(ctx *gin.Context, data interface{}) {
+func (r *responser) Success(ctx jsonWriter, data interface{}) {
 	bErr, ok := data.(BusinessError)
 	if ok {
 		ctx.JSON(http.StatusOK, newRes(bErr.Code(), bErr.Msg(), bErr.Data()))
 		return
 	}
-	ctx.JSON(http.StatusOK, newRes(0, "", bErr.Data()))
+	ctx.JSON(http.StatusOK, newRes(0, "", data))
 }
 
-func (r *responser) Failed(ctx *gin.Context, oErr error) {
+func (r *responser) Failed(ctx jsonWriter, oErr error) {
 	err := ToError(oErr)
 	bErr, ok := err.(BusinessError)
 	if ok {
@@ -49,7 +48,7 @@ func (r *responser) Failed(ctx *gin.Context, oErr error) {
 
 	iErr, ok := err.(gone.InnerError)
 	if ok {
-		ctx.JSON(http.StatusInternalServerError, newRes(iErr.Code(), iErr.Error(), nil))
+		ctx.JSON(http.StatusInternalServerError, newRes(iErr.Code(), iErr.Error(), error(nil)))
 		r.tracer.Go(func() {
 			if ok {
 				r.Errorf("inner Error: %s(code=%d)\n%s", iErr.Msg(), iErr.Code(), iErr.Stack())
@@ -57,5 +56,5 @@ func (r *responser) Failed(ctx *gin.Context, oErr error) {
 		})
 		return
 	}
-	ctx.JSON(http.StatusBadRequest, newRes(err.Code(), err.Msg(), nil))
+	ctx.JSON(http.StatusBadRequest, newRes(err.Code(), err.Msg(), error(nil)))
 }

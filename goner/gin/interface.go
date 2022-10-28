@@ -88,11 +88,16 @@ type HandleProxyToGin interface {
 	Proxy(handler ...HandlerFunc) []gin.HandlerFunc
 }
 
+type jsonWriter interface {
+	JSON(code int, obj any)
+}
+
 // Responser 响应处理器
 // 注入默认的响应处理器使用Id: gone-gin-responser (`gone.IdGoneGinResponser`)
 type Responser interface {
-	Success(ctx *gin.Context, data interface{})
-	Failed(ctx *gin.Context, err error)
+	gone.Goner
+	Success(ctx jsonWriter, data interface{})
+	Failed(ctx jsonWriter, err error)
 }
 
 type Close func()
