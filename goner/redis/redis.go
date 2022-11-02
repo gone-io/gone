@@ -16,8 +16,8 @@ func NewInner() (gone.Goner, gone.GonerId) {
 type inner struct {
 	gone.Flag
 	logrus.Logger `gone:"gone-logger"`
-	pool          *redis.Pool `gone:"gone-redis-pool"`
-	cachePrefix   string      `gone:"config,redis.cache.prefix"`
+	pool          Pool   `gone:"gone-redis-pool"`
+	cachePrefix   string `gone:"config,redis.cache.prefix"`
 }
 
 func (r *inner) getConn() redis.Conn {

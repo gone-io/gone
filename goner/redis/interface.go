@@ -1,6 +1,9 @@
 package redis
 
-import "time"
+import (
+	"github.com/gomodule/redigo/redis"
+	"time"
+)
 
 type Cache interface {
 	Put(key string, value interface{}, ttl ...time.Duration) error
@@ -12,4 +15,8 @@ type Cache interface {
 type Locker interface {
 	TryLock(key string, ttl time.Duration) (unlock Unlock, err error)
 	LockAndDo(key string, fn func(), lockTime, checkPeriod time.Duration) (err error)
+}
+
+type Pool interface {
+	Get() redis.Conn
 }
