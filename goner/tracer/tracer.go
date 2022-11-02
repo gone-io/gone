@@ -4,38 +4,55 @@ import (
 	"github.com/gone-io/gone"
 	"github.com/google/uuid"
 	"github.com/jtolds/gls"
+	"sync"
 )
+
+func NewTracer() (gone.Goner, gone.GonerId) {
+	return &tracer{}, gone.IdGoneTracer
+}
 
 type tracer struct {
 	gone.Flag
-	mgr         *gls.ContextManager
-	traceIdKey  gls.ContextKey
 	gone.Logger `gone:"gone-logger"`
 }
 
-func (t *tracer) SetTraceId(traceId string, fn func()) {
-	if traceId == "" {
-		traceId = uuid.New().String()
-	}
-	t.mgr.SetValues(gls.Values{t.traceIdKey: traceId}, fn)
-}
-func (t *tracer) GetTraceId() string {
-	if traceId, ok := t.mgr.GetValue(t.traceIdKey); ok {
-		return traceId.(string)
-	} else {
-		return ""
-	}
-}
+var xMap sync.Map
 
-func (t *tracer) Go(fn func()) {
-	gls.Go(func() {
-		defer t.Recover()
-		if "" == t.GetTraceId() {
-			t.SetTraceId("", fn)
-		} else {
-			fn()
+func (t *tracer) SetTraceId(traceId string, cb func()) {
+	id := t.GetTraceId()
+	if "" != id {
+		t.Warnf("SetTraceId not success for Having been set")
+		cb()
+		return
+	} else {
+		if traceId == "" {
+			traceId = uuid.New().String()
+		}
+		gls.EnsureGoroutineId(func(gid uint) {
+			xMap.Store(gid, traceId)
+			defer xMap.Delete(gid)
+			cb()
+		})
+	}
+}
+func (t *tracer) GetTraceId() (traceId string) {
+	gls.EnsureGoroutineId(func(gid uint) {
+		if v, ok := xMap.Load(gid); ok {
+			traceId = v.(string)
 		}
 	})
+	return
+}
+
+func (t *tracer) Go(cb func()) {
+	traceId := t.GetTraceId()
+	if traceId == "" {
+		go cb()
+	} else {
+		go func() {
+			t.SetTraceId(traceId, cb)
+		}()
+	}
 }
 
 func (t *tracer) Recover() {
@@ -50,3 +67,18 @@ func (t *tracer) RecoverSetTraceId(traceId string, fn func()) {
 		fn()
 	})
 }
+
+//func GetGoroutineId() (gid uint64) {
+//	var (
+//		buf [64]byte
+//		n   = runtime.Stack(buf[:], false)
+//		stk = strings.TrimPrefix(string(buf[:n]), "goroutine ")
+//	)
+//	idField := strings.Fields(stk)[0]
+//	var err error
+//	gid, err = strconv.ParseUint(idField, 10, 64)
+//	if err != nil {
+//		panic(fmt.Errorf("can not get goroutine id: %v", err))
+//	}
+//	return
+//}
