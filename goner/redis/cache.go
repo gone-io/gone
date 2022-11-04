@@ -18,7 +18,7 @@ type cache struct {
 	inner `gone:"gone-redis-inner"`
 }
 
-func (r *cache) Put(key string, value interface{}, ttl ...time.Duration) error {
+func (r *cache) Put(key string, value any, ttl ...time.Duration) error {
 	conn := r.getConn()
 	defer r.close(conn)
 
@@ -29,7 +29,7 @@ func (r *cache) Put(key string, value interface{}, ttl ...time.Duration) error {
 		return err
 	}
 
-	args := []interface{}{
+	args := []any{
 		key,
 		bt,
 	}
@@ -48,7 +48,7 @@ func (r *cache) Put(key string, value interface{}, ttl ...time.Duration) error {
 	return nil
 }
 
-func (r *cache) Get(key string, value interface{}) error {
+func (r *cache) Get(key string, value any) error {
 	conn := r.getConn()
 	defer r.close(conn)
 

@@ -61,10 +61,10 @@ type Demo struct {
 	a  *XGoner     `gone:"x-goner"` // x-goner 是 GonerId; 支持使用非导出属性
 	A  XGoner      `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体；⚠️尽量不要这样使用，由于结构体是值拷贝，会导致不能深度复制的问题
 	A1 *XGoner     `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体的指针
-	A2 interface{} `gone:"x-goner"` // x-goner 是 GonerId; 支持接口
+	A2 any `gone:"x-goner"` // x-goner 是 GonerId; 支持接口
 
 	B  *XGoner       `gone:"*"` //  支持匿名注入
-	B1 []interface{} `gone:"*"` // 支持匿名注入数组
+	B1 []any `gone:"*"` // 支持匿名注入数组
 }
 ```
 

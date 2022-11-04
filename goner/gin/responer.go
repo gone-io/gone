@@ -29,7 +29,7 @@ type responser struct {
 	tracer        tracer.Tracer `gone:"gone-tracer"`
 }
 
-func (r *responser) Success(ctx jsonWriter, data interface{}) {
+func (r *responser) Success(ctx jsonWriter, data any) {
 	bErr, ok := data.(BusinessError)
 	if ok {
 		ctx.JSON(http.StatusOK, newRes(bErr.Code(), bErr.Msg(), bErr.Data()))

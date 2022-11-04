@@ -17,7 +17,7 @@ type propertiesConfigure struct {
 	cemetery    gone.Cemetery `gone:"gone-cemetery"`
 }
 
-func (c *propertiesConfigure) Get(key string, v interface{}, defaultVal string) error {
+func (c *propertiesConfigure) Get(key string, v any, defaultVal string) error {
 	if c.props == nil {
 		env := GetEnv("")
 		c.Infof("Use Env: %s\n", env)
@@ -26,7 +26,7 @@ func (c *propertiesConfigure) Get(key string, v interface{}, defaultVal string) 
 	return c.parseKeyFromProperties(key, v, defaultVal, c.props)
 }
 
-func (c *propertiesConfigure) parseKeyFromProperties(key string, value interface{}, defaultVale string, props *properties.Properties) error {
+func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defaultVale string, props *properties.Properties) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		return errors.New("type of value must be ptr")

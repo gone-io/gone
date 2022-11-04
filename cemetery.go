@@ -153,7 +153,7 @@ func isCompatible(t reflect.Type, goner Goner) bool {
 	}
 }
 
-func (c *cemetery) setFieldValue(v reflect.Value, ref interface{}) error {
+func (c *cemetery) setFieldValue(v reflect.Value, ref any) error {
 	t := v.Type()
 
 	switch t.Kind() {

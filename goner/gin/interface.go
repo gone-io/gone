@@ -13,7 +13,7 @@ type Context struct {
 }
 
 // HandlerFunc `gone`框架的路由处理函数
-type HandlerFunc func(*Context) (interface{}, error)
+type HandlerFunc func(ctx *Context) (any, error)
 
 // IRoutes `gone`框架基于`gin`封装的路由，用于定义处理特定请求的函数
 // 注入默认的路由使用Id: gone-gin-router (`gone.IdGoneGinRouter`)
@@ -97,7 +97,7 @@ type jsonWriter interface {
 // 注入默认的响应处理器使用Id: gone-gin-responser (`gone.IdGoneGinResponser`)
 type Responser interface {
 	gone.Goner
-	Success(ctx jsonWriter, data interface{})
+	Success(ctx jsonWriter, data any)
 	Failed(ctx jsonWriter, err error)
 }
 
@@ -118,5 +118,5 @@ type Server interface {
 // 让同一个接口拥有在特殊情况返回不同业务代码和业务数据的能力
 type BusinessError interface {
 	gone.Error
-	Data() interface{}
+	Data() any
 }

@@ -13,7 +13,7 @@ import (
 
 type jsonSender struct {
 	Code int
-	Obj  map[string]interface{}
+	Obj  map[string]any
 }
 
 func (j *jsonSender) JSON(code int, obj any) {
@@ -26,9 +26,9 @@ func Test_responserFailed(t *testing.T) {
 	gone.Test(func(responser gin.Responser) {
 		ctx := jsonSender{}
 
-		responser.Success(&ctx, map[string]interface{}{"ok": 1})
+		responser.Success(&ctx, map[string]any{"ok": 1})
 		assert.Equal(t, ctx.Code, http.StatusOK)
-		m, ok := ctx.Obj["data"].(map[string]interface{})
+		m, ok := ctx.Obj["data"].(map[string]any)
 		assert.True(t, ok)
 		assert.Equal(t, m["ok"], float64(1))
 
@@ -45,11 +45,11 @@ func Test_responserFailed(t *testing.T) {
 		assert.Equal(t, ctx.Code, http.StatusInternalServerError)
 		assert.Equal(t, ctx.Obj["code"], float64(100))
 
-		responser.Failed(&ctx, gin.NewBusinessError("depends", 200, map[string]interface{}{"depends": 10}))
+		responser.Failed(&ctx, gin.NewBusinessError("depends", 200, map[string]any{"depends": 10}))
 		assert.Equal(t, ctx.Code, http.StatusOK)
 		assert.Equal(t, ctx.Obj["msg"], "depends")
 		assert.Equal(t, ctx.Obj["code"], float64(200))
-		m, ok = ctx.Obj["data"].(map[string]interface{})
+		m, ok = ctx.Obj["data"].(map[string]any)
 		assert.True(t, ok)
 		assert.Equal(t, m["depends"], float64(10))
 

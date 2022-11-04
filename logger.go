@@ -3,10 +3,10 @@ package gone
 import "fmt"
 
 type Logger interface {
-	Tracef(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
+	Tracef(format string, args ...any)
+	Errorf(format string, args ...any)
+	Warnf(format string, args ...any)
+	Infof(format string, args ...any)
 }
 
 func NewSimpleLogger() (Goner, GonerId) {
@@ -17,21 +17,21 @@ type defaultLogger struct {
 	Flag
 }
 
-func (*defaultLogger) Tracef(format string, args ...interface{}) {
+func (*defaultLogger) Tracef(format string, args ...any) {
 	format = format + "\n"
 	fmt.Printf(format, args...)
 }
 
-func (*defaultLogger) Errorf(format string, args ...interface{}) {
+func (*defaultLogger) Errorf(format string, args ...any) {
 	format = format + "\n"
 	fmt.Printf(format, args...)
 }
 
-func (*defaultLogger) Warnf(format string, args ...interface{}) {
+func (*defaultLogger) Warnf(format string, args ...any) {
 	format = format + "\n"
 	fmt.Printf(format, args...)
 }
-func (*defaultLogger) Infof(format string, args ...interface{}) {
+func (*defaultLogger) Infof(format string, args ...any) {
 	format = format + "\n"
 	fmt.Printf(format, args...)
 }

@@ -24,9 +24,9 @@ func NewParameterError(msg string, ext ...int) gone.Error {
 }
 
 // NewBusinessError 新建`业务错误`
-func NewBusinessError(msg string, ext ...interface{}) BusinessError {
+func NewBusinessError(msg string, ext ...any) BusinessError {
 	var code = 0
-	var data interface{} = nil
+	var data any = nil
 	if len(ext) > 0 {
 		i, ok := ext[0].(int)
 		if ok {
@@ -52,7 +52,7 @@ func ToError(err error) gone.Error {
 // 业务错误
 type bError struct {
 	err  gone.Error
-	data interface{}
+	data any
 }
 
 func (e *bError) Msg() string {
@@ -65,6 +65,6 @@ func (e *bError) Error() string {
 	return e.err.Error()
 }
 
-func (e *bError) Data() interface{} {
+func (e *bError) Data() any {
 	return e.data
 }

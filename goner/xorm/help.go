@@ -2,7 +2,7 @@ package xorm
 
 import "github.com/jmoiron/sqlx"
 
-func MustNamed(inputSql string, arg interface{}) (sql string, args []interface{}) {
+func MustNamed(inputSql string, arg any) (sql string, args []any) {
 	var err error
 	sql, args, err = sqlx.Named(inputSql, arg)
 	if err != nil {
@@ -11,7 +11,7 @@ func MustNamed(inputSql string, arg interface{}) (sql string, args []interface{}
 	return MustIn(sql, args...)
 }
 
-func MustIn(sql string, args ...interface{}) (string, []interface{}) {
+func MustIn(sql string, args ...any) (string, []any) {
 	sql, args, err := sqlx.In(sql, args...)
 	if err != nil {
 		panic(err.Error())

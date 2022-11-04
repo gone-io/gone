@@ -52,11 +52,11 @@ func (e *engine) Stop(gone.Cemetery) error {
 	return e.Close()
 }
 
-type NameMap map[string]interface{}
+type NameMap map[string]any
 
 var NameMapType = reflect.TypeOf(&NameMap{}).Elem()
 
-func (e *engine) Sqlx(sql string, args ...interface{}) *xorm.Session {
+func (e *engine) Sqlx(sql string, args ...any) *xorm.Session {
 	if len(args) == 1 && reflect.TypeOf(args[0]) == NameMapType {
 		sql, args = MustNamed(sql, args[0])
 	} else {

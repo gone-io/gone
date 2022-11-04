@@ -6,8 +6,8 @@ import (
 )
 
 type Cache interface {
-	Put(key string, value interface{}, ttl ...time.Duration) error
-	Get(key string, value interface{}) error
+	Put(key string, value any, ttl ...time.Duration) error
+	Get(key string, value any) error
 	Remove(key string) (err error)
 	Keys(key string) ([]string, error)
 }
