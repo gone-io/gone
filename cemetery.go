@@ -303,6 +303,8 @@ func (c *cemetery) reviveOne(tomb Tomb) (deps []Tomb, err error) {
 	gonerType := reflect.TypeOf(goner).Elem()
 	gonerValue := reflect.ValueOf(goner).Elem()
 
+	c.Infof("Revive %s/%s", gonerType.PkgPath(), gonerType.Name())
+
 	for i := 0; i < gonerValue.NumField(); i++ {
 		field := gonerType.Field(i)
 		tag := field.Tag.Get(goneTag)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 func PanicTrace(kb int) []byte {
@@ -35,5 +36,5 @@ func PanicTrace(kb int) []byte {
 }
 
 func FuncName(f any) string {
-	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+	return strings.Trim(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
 }

@@ -19,7 +19,7 @@ type proxy struct {
 
 func (p *proxy) Proxy(handlers ...HandlerFunc) (arr []gin.HandlerFunc) {
 	count := len(handlers)
-	for i := 0; i < count-2; i++ {
+	for i := 0; i < count-1; i++ {
 		arr = append(arr, p.proxyOne(handlers[i], false))
 	}
 	arr = append(arr, p.proxyOne(handlers[count-1], true))
@@ -28,7 +28,7 @@ func (p *proxy) Proxy(handlers ...HandlerFunc) (arr []gin.HandlerFunc) {
 
 func (p *proxy) ProxyForMiddleware(handlers ...HandlerFunc) (arr []gin.HandlerFunc) {
 	count := len(handlers)
-	for i := 0; i < count-1; i++ {
+	for i := 0; i < count; i++ {
 		arr = append(arr, p.proxyOne(handlers[i], false))
 	}
 	return arr

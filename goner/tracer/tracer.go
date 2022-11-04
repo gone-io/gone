@@ -19,29 +19,11 @@ type tracer struct {
 var xMap sync.Map
 
 func (t *tracer) SetTraceId(traceId string, cb func()) {
-	id := t.GetTraceId()
-	if "" != id {
-		t.Warnf("SetTraceId not success for Having been set")
-		cb()
-		return
-	} else {
-		if traceId == "" {
-			traceId = uuid.New().String()
-		}
-		gls.EnsureGoroutineId(func(gid uint) {
-			xMap.Store(gid, traceId)
-			defer xMap.Delete(gid)
-			cb()
-		})
-	}
+	SetTraceId(traceId, cb, t.Warnf)
 }
+
 func (t *tracer) GetTraceId() (traceId string) {
-	gls.EnsureGoroutineId(func(gid uint) {
-		if v, ok := xMap.Load(gid); ok {
-			traceId = v.(string)
-		}
-	})
-	return
+	return GetTraceId()
 }
 
 func (t *tracer) Go(cb func()) {
@@ -66,6 +48,35 @@ func (t *tracer) RecoverSetTraceId(traceId string, fn func()) {
 		t.Recover()
 		fn()
 	})
+}
+
+func GetTraceId() (traceId string) {
+	gls.EnsureGoroutineId(func(gid uint) {
+		if v, ok := xMap.Load(gid); ok {
+			traceId = v.(string)
+		}
+	})
+	return
+}
+
+func SetTraceId(traceId string, cb func(), log ...func(format string, args ...any)) {
+	id := GetTraceId()
+	if "" != id {
+		if len(log) > 0 {
+			log[0]("SetTraceId not success for Having been set")
+		}
+		cb()
+		return
+	} else {
+		if traceId == "" {
+			traceId = uuid.New().String()
+		}
+		gls.EnsureGoroutineId(func(gid uint) {
+			xMap.Store(gid, traceId)
+			defer xMap.Delete(gid)
+			cb()
+		})
+	}
 }
 
 //func GetGoroutineId() (gid uint64) {
