@@ -37,7 +37,7 @@ func (e *engine) delTransaction(id uint, session *xorm.Session) {
 }
 
 // Transaction 事物处理 不允许在事物中新开协程，否则事物会失效
-func (e *engine) Transaction(fn func(session *xorm.Session) error) error {
+func (e *engine) Transaction(fn func(session Interface) error) error {
 	var err error
 	gls.EnsureGoroutineId(func(gid uint) {
 		session, isNew := e.getTransaction(gid)
