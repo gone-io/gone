@@ -8,6 +8,14 @@ import (
 	"os"
 )
 
+func NewLogger() (gone.Goner, gone.GonerId) {
+	log := &logger{
+		Logger: logrus.StandardLogger(),
+	}
+	log.ResetLog()
+	return log, gone.IdGoneLogger
+}
+
 type logger struct {
 	gone.Flag
 
@@ -18,15 +26,27 @@ type logger struct {
 	ConfOutput       string        `gone:"config,log.output,default=stdout"`
 }
 
-func (log *logger) AfterRevive() gone.AfterReviveError {
-	log.Formatter = &DefaultFormatter{
-		GetTraceId: func() string {
-			return log.Tracer.GetTraceId()
-		},
+func (log *logger) ResetLog() {
+	if log.Tracer != nil {
+		log.Formatter = &DefaultFormatter{
+			GetTraceId: func() string {
+				return log.Tracer.GetTraceId()
+			},
+		}
+	} else {
+		log.Formatter = &DefaultFormatter{
+			GetTraceId: func() string {
+				return "Init"
+			},
+		}
 	}
 	log.ReportCaller = log.ConfReportCaller
 	log.Level = parseLogLevel(log.ConfLevel)
 	log.Out = parseOutput(log.ConfOutput)
+
+}
+func (log *logger) AfterRevive() gone.AfterReviveError {
+	log.ResetLog()
 	return nil
 }
 

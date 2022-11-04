@@ -14,6 +14,8 @@ type server struct {
 	once          sync.Once
 	c             cmux.CMux
 	logrus.Logger `gone:"gone-logger"`
+	stopFlag      bool
+	lock          sync.Mutex
 
 	Network string `gone:"config,server.network,default=tcp"`
 	Address string `gone:"config,server.address"`
@@ -46,16 +48,27 @@ func (l *server) GetAddress() string {
 }
 
 func (l *server) Start(gone.Cemetery) error {
+	l.stopFlag = false
 	go func() {
 		err := l.c.Serve()
 		if err != nil {
-			l.Errorf("cumx Serve() err:%v", err)
+			l.lock.Lock()
+			if l.stopFlag {
+				l.Errorf("cumx Serve() err:%v", err)
+			} else {
+				l.Warnf("cumx Serve() err:%v", err)
+			}
+			l.lock.Unlock()
 		}
 	}()
 	return nil
 }
 
 func (l *server) Stop(gone.Cemetery) error {
+	l.Warnf("cumx server stopping!!")
+	l.lock.Lock()
+	l.stopFlag = true
+	l.lock.Unlock()
 	l.c.Close()
 	return nil
 }

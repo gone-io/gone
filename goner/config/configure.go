@@ -20,7 +20,7 @@ type propertiesConfigure struct {
 func (c *propertiesConfigure) Get(key string, v any, defaultVal string) error {
 	if c.props == nil {
 		env := GetEnv("")
-		c.Infof("Use Env: %s\n", env)
+		c.Infof("==>Use Env: %s", env)
 		c.props = c.mustGetProperties()
 	}
 	return c.parseKeyFromProperties(key, v, defaultVal, c.props)

@@ -29,7 +29,7 @@ func ginPriest(cemetery gone.Cemetery) error {
 }
 
 func Priest(cemetery gone.Cemetery) error {
-	_ = ginPriest(cemetery)
 	_ = cmux.Priest(cemetery)
+	_ = ginPriest(cemetery)
 	return nil
 }

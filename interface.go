@@ -21,9 +21,14 @@ type Tomb interface {
 	GetGoner() Goner
 	GonerIsRevive(flags ...bool) bool
 }
+type SetLoggerError error
+type DefaultLoggerUser interface {
+	SetLogger(logger Logger) SetLoggerError
+}
 
 // Cemetery 墓园
 type Cemetery interface {
+	DefaultLoggerUser
 	Goner
 
 	bury(goner Goner, ids ...GonerId) Tomb
@@ -57,6 +62,7 @@ type Heaven interface {
 
 	BeforeStop(Process) Heaven
 	AfterStop(Process) Heaven
+	DefaultLoggerUser
 }
 
 type AfterReviveError error

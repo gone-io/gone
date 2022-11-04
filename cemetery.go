@@ -16,11 +16,14 @@ func newCemetery() Cemetery {
 
 type cemetery struct {
 	Flag
-
-	Logger `gone:"gone-logger"`
-
+	Logger  `gone:"gone-logger"`
 	tombMap map[GonerId]Tomb
 	tombs   []Tomb
+}
+
+func (c *cemetery) SetLogger(logger Logger) SetLoggerError {
+	c.Logger = logger
+	return nil
 }
 
 func GetGoneDefaultId(goner Goner) GonerId {

@@ -38,3 +38,7 @@ func PanicTrace(kb int) []byte {
 func FuncName(f any) string {
 	return strings.Trim(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
 }
+
+func GetInterfaceType[T any](t *T) reflect.Type {
+	return reflect.TypeOf(t).Elem()
+}

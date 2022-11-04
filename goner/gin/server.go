@@ -8,6 +8,7 @@ import (
 	Cmux "github.com/soheilhy/cmux"
 	"net"
 	"net/http"
+	"sync"
 )
 
 func NewGinServer() (gone.Angel, gone.GonerId) {
@@ -24,10 +25,13 @@ type server struct {
 	mode        string       `gone:"config,server.mode,default=release"`
 	controllers []Controller `gone:"*"`
 
-	l net.Listener
+	l        net.Listener
+	stopFlag bool
+	lock     sync.Mutex
 }
 
 func (s *server) Start(gone.Cemetery) error {
+	s.stopFlag = false
 	//设置模式
 	gin.SetMode(s.mode)
 
@@ -42,23 +46,33 @@ func (s *server) Start(gone.Cemetery) error {
 	s.Infof("Server Listen At %s", s.net.GetAddress())
 	go func() {
 		if err := s.httpServer.Serve(s.l); err != nil && err != http.ErrServerClosed {
-			s.Errorf("http server error: %v", err)
-			panic(err)
+			s.lock.Lock()
+			if !s.stopFlag {
+				s.Errorf("http server error: %v", err)
+				panic(err)
+			} else {
+				s.Warnf("http server error: %v", err)
+			}
+			s.lock.Unlock()
 		}
 	}()
 	return nil
 }
 
 func (s *server) Stop(gone.Cemetery) (err error) {
+	s.Warnf("gin server stopping!!")
 	if nil == s.httpServer {
 		return nil
 	}
+	s.lock.Lock()
+	s.stopFlag = true
+	s.lock.Unlock()
 
 	err = s.l.Close()
 	if err != nil {
 		s.Errorf("err:%v", err)
 	}
-	//err = s.httpServer.Close()
+
 	return err
 }
 

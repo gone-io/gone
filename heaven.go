@@ -82,6 +82,11 @@ func getAngelType() reflect.Type {
 	return reflect.TypeOf(angelPtr).Elem()
 }
 
+func (h *heaven) SetLogger(logger Logger) SetLoggerError {
+	h.Logger = logger
+	return nil
+}
+
 func (h *heaven) GetHeavenStopSignal() <-chan struct{} {
 	return h.stopSignal
 }
@@ -172,12 +177,17 @@ func (h *heaven) End() Heaven {
 	return h
 }
 
-const afterStopSignalWaitSecond = 3
+var AfterStopSignalWaitSecond = 10
 
 func (h *heaven) Stop() Heaven {
 	h.stopFlow()
 	close(h.stopSignal)
-	<-time.After(afterStopSignalWaitSecond * time.Second)
+
+	h.Infof("WAIT %d SECOND TO STOP!!", AfterStopSignalWaitSecond)
+	for i := 0; i < AfterStopSignalWaitSecond; i++ {
+		h.Infof("Stop in %d seconds.", AfterStopSignalWaitSecond-i)
+		<-time.After(time.Second)
+	}
 	return h
 }
 
