@@ -37,5 +37,3 @@ func (r *inner) close(conn redis.Conn) {
 		r.Errorf("redis connection.Close() err:", err)
 	}
 }
-
-var ErrNil = redis.ErrNil
