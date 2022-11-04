@@ -11,7 +11,7 @@ type defaultErr struct {
 }
 
 func (e *defaultErr) Error() string {
-	return fmt.Sprintf("GoneError(code=%v):%s", e.Code, e.Msg)
+	return fmt.Sprintf("GoneError(code=%v):%s", e.Code(), e.Msg())
 }
 
 func (e *defaultErr) Msg() string {

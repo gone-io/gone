@@ -44,11 +44,11 @@ func (r *router) Use(middleware ...gin.HandlerFunc) IRoutes {
 	return r
 }
 
-func (r *router) Group(relativePath string, handlers ...gin.HandlerFunc) RouteGroup {
+func (r *router) Group(relativePath string, handlers ...HandlerFunc) RouteGroup {
 	incr++
 	return &router{
 		id:               incr,
-		r:                r.getR().Group(relativePath, handlers...),
+		r:                r.getR().Group(relativePath, r.ProxyForMiddleware(handlers...)...),
 		HandleProxyToGin: r.HandleProxyToGin,
 	}
 }

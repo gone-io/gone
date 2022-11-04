@@ -16,7 +16,9 @@ type user struct {
 }
 
 func (ctr *user) Mount() gin.MountError {
-	ctr.authRouter.GET("/users/:id", ctr.getUserById)
+	ctr.authRouter.
+		GET("/users/:id", ctr.getUserById).
+		GET("/empty-test", ctr.getEmpty)
 	return nil
 }
 
@@ -31,4 +33,8 @@ func (ctr *user) getUserById(context *gin.Context) (interface{}, error) {
 		Id:   id,
 		Name: "test",
 	}, nil
+}
+
+func (ctr *user) getEmpty(*gin.Context) (interface{}, error) {
+	return nil, nil
 }

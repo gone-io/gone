@@ -60,7 +60,7 @@ type IRouter interface {
 	GetGinRouter() gin.IRouter
 
 	// Group 3.定义路由分组
-	Group(string, ...gin.HandlerFunc) RouteGroup
+	Group(string, ...HandlerFunc) RouteGroup
 }
 
 // RouteGroup 路由分组
@@ -86,6 +86,7 @@ type MountError error
 // 注入`gin.HandleProxyToGin`使用Id：sys-gone-proxy (`gin.SystemGoneProxy`)
 type HandleProxyToGin interface {
 	Proxy(handler ...HandlerFunc) []gin.HandlerFunc
+	ProxyForMiddleware(handlers ...HandlerFunc) (arr []gin.HandlerFunc)
 }
 
 type jsonWriter interface {

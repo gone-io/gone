@@ -3,6 +3,7 @@ package gone
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"runtime"
 )
 
@@ -31,4 +32,8 @@ func PanicTrace(kb int) []byte {
 	}
 	stack = bytes.TrimRight(stack, "\n")
 	return stack
+}
+
+func FuncName(f interface{}) string {
+	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
