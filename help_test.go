@@ -7,14 +7,14 @@ import (
 )
 
 func Test_FuncName(t *testing.T) {
-	name := FuncName(Test_FuncName)
+	name := GetFuncName(Test_FuncName)
 	println(name)
 	assert.Equal(t, name, "github.com/gone-io/gone.Test_FuncName")
 	fn := func() {}
 
-	println(FuncName(fn))
+	println(GetFuncName(fn))
 
-	assert.Equal(t, FuncName(fn), "github.com/gone-io/gone.Test_FuncName.func1")
+	assert.Equal(t, GetFuncName(fn), "github.com/gone-io/gone.Test_FuncName.func1")
 }
 
 type XX interface {

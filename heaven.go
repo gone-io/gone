@@ -8,25 +8,25 @@ import (
 	"time"
 )
 
-// Run
-// ```go
+// Run 开始运行一个Gone程序；`gone.Run` 和 `gone.Serve` 的区别是：
+// 1. gone.Serve启动的程序，主协程会调用 Heaven.WaitEnd 挂起等待停机信号，可以用于服务程序的开发
+// 2. gone.Run启动的程序，主协程则不会挂起，运行完就结束，适合开发一致性运行的代码
 //
-//	    // 加载服务
+//	    // 定义加载服务的Priest函数
 //		func LoadServer(c Cemetery) error {
 //			c.Bury(goneXorm.New())
 //			c.Bury(goneGin.New())
 //			return nil
 //		}
 //
-//	    // 加载组件
+//	    // 加载组件的Priest函数
 //		func LoadComponent(c Cemetery) error {
 //			c.Bury(componentA.New())
 //			c.Bury(componentB.New())
 //		}
 //
+// //开始运行
 // gone.Run(LoadServer, LoadComponent)
-//
-// ```
 func Run(priests ...Priest) {
 	New(priests...).
 		Install().
@@ -34,6 +34,7 @@ func Run(priests ...Priest) {
 		Stop()
 }
 
+// Serve 开始服务，参考[Run](#Run)
 func Serve(priests ...Priest) {
 	New(priests...).
 		Install().
@@ -42,7 +43,7 @@ func Serve(priests ...Priest) {
 		Stop()
 }
 
-// New 新建Heaven
+// New 新建Heaven; Heaven 代表了一个应用程序；
 func New(priests ...Priest) Heaven {
 	cemetery := newCemetery()
 	h := heaven{
@@ -177,6 +178,7 @@ func (h *heaven) End() Heaven {
 	return h
 }
 
+// AfterStopSignalWaitSecond 收到停机信号后，退出程序等待的时间
 var AfterStopSignalWaitSecond = 10
 
 func (h *heaven) Stop() Heaven {

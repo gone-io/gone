@@ -46,13 +46,22 @@ func NewInnerError(code int, msg string) Error {
 	return &iError{defaultErr: &defaultErr{code: code, msg: msg}, trace: PanicTrace(2)}
 }
 
+// 错误代码：gone框架内部错误代码编码空间:1001~1999
 const (
+	// GonerIdIsExisted GonerId 不存在
 	GonerIdIsExisted = 1001 + iota
+
+	// CannotFoundGonerById 通过GonerId查找Goner失败
 	CannotFoundGonerById
+
+	// CannotFoundGonerByType 通过类型查找Goner失败
 	CannotFoundGonerByType
+
+	//NotCompatible 类型不兼容
 	NotCompatible
+
+	//ReplaceBuryIdParamEmpty 替换性下葬，GonerId不能为空
 	ReplaceBuryIdParamEmpty
-	GonerDoNotInitCompletely
 )
 
 func GonerIdIsExistedError(id GonerId) Error {
@@ -73,8 +82,4 @@ func NotCompatibleError(a reflect.Type, b reflect.Type) Error {
 
 func ReplaceBuryIdParamEmptyError() Error {
 	return NewInnerError(ReplaceBuryIdParamEmpty, "ReplaceBury id cannot be empty")
-}
-
-func GonerDoNotInitCompletelyError(id GonerId) Error {
-	return NewInnerError(GonerDoNotInitCompletely, fmt.Sprintf("gone(%s) do not init completely", id))
 }

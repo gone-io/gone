@@ -1,5 +1,5 @@
 # gone
-
+[![license](https://img.shields.io/badge/license-AGPL%20V3-blue)](LICENSE)  
 这是gone框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
 
 ## 这是个啥？
@@ -19,7 +19,7 @@
 - Cemetery.Bury:  安葬
 - Cemetery.revive: 复活Goner，将其升入天国；对于Goner则是完成了属性的的注入（或者装配）
 - Tomb: 坟墓 ⚰️
-- Priest: 神父✝️，负责给Goner下葬
+- Priest: 神父✝️，负责给Goner安葬
 - Goner: 逝者 💀；是对可注入对象的抽象：可以注入其他Goner，可以被注入其他Goner；
 - Prophet: 先知；如果一个Goner是先知，他被复活后会去执行`AfterRevive() AfterReviveError`方法，去窥视神的旨意
 - Prophet.AfterRevive: 复活后执行的方法
@@ -45,7 +45,7 @@
 
 ## 注入配置
 
-## 普通Goner下葬
+## 普通Goner安葬
 
 ```go
 package goner_demo
@@ -68,7 +68,7 @@ type Demo struct {
 }
 ```
 
-## 对吸血鬼下葬，被下葬的是Goner是一个Vampire
+## 对吸血鬼安葬，被安葬的是Goner是一个Vampire
 
 > 吸血鬼是一种邪恶的生物，他可以读取/吸入被注入的Goner的属性
 
@@ -121,7 +121,7 @@ import "github.com/gone-io/gone"
 
 func main() {
 	gone.Run(func(cemetery gone.Cemetery) error {
-		//下葬Goner
+		//安葬Goner
 		return nil
 	})
 }

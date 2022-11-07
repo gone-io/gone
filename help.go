@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// PanicTrace 用于获取调用者的堆栈信息
 func PanicTrace(kb int) []byte {
 	e := []byte("\ngoroutine ")
 	line := []byte("\n")
@@ -35,10 +36,12 @@ func PanicTrace(kb int) []byte {
 	return stack
 }
 
-func FuncName(f any) string {
+// GetFuncName 获取某个函数的名字
+func GetFuncName(f any) string {
 	return strings.Trim(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
 }
 
+// GetInterfaceType 获取接口的类型
 func GetInterfaceType[T any](t *T) reflect.Type {
 	return reflect.TypeOf(t).Elem()
 }

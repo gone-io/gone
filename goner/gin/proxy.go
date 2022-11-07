@@ -47,7 +47,7 @@ func (p *proxy) proxyOne(handle HandlerFunc, last bool) gin.HandlerFunc {
 			}
 		} else {
 			if context.Writer.Written() {
-				p.Warnf("content had been written，check fn(%s)，maybe shouldn't return data", gone.FuncName(handle))
+				p.Warnf("content had been written，check fn(%s)，maybe shouldn't return data", gone.GetFuncName(handle))
 				return
 			}
 			p.handler.Success(context, data)

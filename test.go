@@ -88,10 +88,12 @@ func TestKit[T Goner](fn func(T)) TestHeaven[T] {
 	return &testHeaven[T]{testFn: fn}
 }
 
+// Test 用于编写测试用例，参考[示例](https://github.com/gone-io/gone/blob/main/example/test/goner_test.go)
 func Test[T Goner](fn func(T), priests ...Priest) {
 	TestKit(fn).WithPriest(priests...).Run()
 }
 
+// TestAt 用于编写测试用例，测试某个特定ID的Goner
 func TestAt[T Goner](id GonerId, fn func(T), priests ...Priest) {
 	TestKit(fn).WithId(id).WithPriest(priests...).Run()
 }
