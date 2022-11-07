@@ -3,6 +3,7 @@ package redis
 import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/logrus"
 	"sync"
 )
 
@@ -13,16 +14,17 @@ func NewRedisPool() (gone.Angel, gone.GonerId) {
 type pool struct {
 	gone.Flag
 	*redis.Pool
-	server    string `gone:"config,redis.server"`
-	password  string `gone:"config,redis.password"`
-	maxIdle   int    `gone:"config,redis.max-idle,default=2"`
-	maxActive int    `gone:"config,redis.max-active,default=10"`
-	dbIndex   int    `gone:"config,redis.db,default=0"`
+	logrus.Logger `gone:"gone-logger"`
+	server        string `gone:"config,redis.server"`
+	password      string `gone:"config,redis.password"`
+	maxIdle       int    `gone:"config,redis.max-idle,default=2"`
+	maxActive     int    `gone:"config,redis.max-active,default=10"`
+	dbIndex       int    `gone:"config,redis.db,default=0"`
 
 	once sync.Once
 }
 
-func (f *pool) Start(gone.Cemetery) error {
+func (f *pool) connect() {
 	f.once.Do(func() {
 		f.Pool = &redis.Pool{
 			MaxIdle:   f.maxIdle,   /*最大的空闲连接数*/
@@ -41,12 +43,28 @@ func (f *pool) Start(gone.Cemetery) error {
 			},
 		}
 
-		_, err := f.Get().Do("ping")
+		_, err := f.Pool.Get().Do("ping")
 		if err != nil {
 			panic(err)
 		}
 	})
+}
+
+func (f *pool) Start(gone.Cemetery) error {
+	f.connect()
 	return nil
+}
+
+func (f *pool) Get() Conn {
+	f.connect()
+	return f.Pool.Get()
+}
+
+func (f *pool) Close(conn redis.Conn) {
+	err := conn.Close()
+	if err != nil {
+		f.Errorf("redis conn.Close() err:%v", err)
+	}
 }
 
 func (f *pool) Stop(gone.Cemetery) error {

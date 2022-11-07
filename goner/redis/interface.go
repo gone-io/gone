@@ -21,6 +21,7 @@ type Conn = redis.Conn
 
 type Pool interface {
 	Get() Conn
+	Close(conn redis.Conn)
 }
 
 var (
