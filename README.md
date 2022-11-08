@@ -1,5 +1,7 @@
 # gone
-[![license](https://img.shields.io/badge/license-AGPL%20V3-blue)](LICENSE)  
+[![license](https://img.shields.io/badge/license-AGPL%20V3-blue)](LICENSE) 
+[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)    
+
 这是gone框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
 
 ## 这是个啥？
