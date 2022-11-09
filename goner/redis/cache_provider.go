@@ -31,7 +31,7 @@ func (p *cacheProvider) Suck(conf string, v reflect.Value) (err gone.SuckError) 
 
 	//get config from config files
 	if strings.HasPrefix(conf, "config=") {
-		left := strings.TrimLeft(conf, "config=")
+		left := strings.TrimPrefix(conf, "config=")
 		key, defaultVal := config.ParseConfAnnotation(left)
 
 		err = p.configure.Get(key, &conf, defaultVal)
