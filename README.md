@@ -1,204 +1,184 @@
 # gone
-[![license](https://img.shields.io/badge/license-AGPL%20V3-blue)](LICENSE) 
-[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)    
 
-这是gone框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
+[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)
+[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
 
-## 这是个啥？
+## 1. 这是什么？
 
-这是一个依赖注入框架，应该是"最类似spring"的一个golang的依赖注入框架。可以将`Goner`理解为`Spring Bean`
-，代码中只需要编写各种功能的`Goner`即可完成业务开发。在[example](example)目录可以找到详细的例子，后续会补充完成的帮忙手册。
+- 一个类似 **Java Spring** 的 **Golang** **依赖注入** 框架
+- 一个不断完善的 **微服务解决方案**
+- 更多信息，参考 [Gone Story](docs/gone-story.md)
 
-## 概念
+## 2. 怎么使用？
 
-> gone的意思是 `走了，去了，没了，死了`，那么Gone管理都是Goner(逝者)  
-> 存在一片神秘墓园，安葬在这里的逝者，灵魂会升入天国。天国指定的牧师可以将Goner葬入这片墓园...
+### 所有的代码都应该封装到一个个叫 **Goner** 容器中，**Goner** 的概念可以类比 **Spring** 中的 **Spring Bean**
 
-- Heaven: 天国 🕊☁️
-- Heaven.Start: 天国开始运行；Goner永生，直到天崩地裂
-- Heaven.Stop:  天国崩塌，停止运行
-- Cemetery: 墓园 🪦
-- Cemetery.Bury:  安葬
-- Cemetery.revive: 复活Goner，将其升入天国；对于Goner则是完成了属性的的注入（或者装配）
-- Tomb: 坟墓 ⚰️
-- Priest: 神父✝️，负责给Goner安葬
-- Goner: 逝者 💀；是对可注入对象的抽象：可以注入其他Goner，可以被注入其他Goner；
-- Prophet: 先知；如果一个Goner是先知，他被复活后会去执行`AfterRevive() AfterReviveError`方法，去窥视神的旨意
-- Prophet.AfterRevive: 复活后执行的方法
-- Angel: 天使 𓆩♡𓆪 ，实现了`Start(gone.Cemetery) error` 和 `Stop(gone.Cemetery) error`方法的Goner，升入天国后被变成天使
-- Angel.Start: 天使左翼，开始工作；能力越大责任越大，天使是要工作的
-- Angel.Stop: 天使右翼，停止工作；
-- Vampire: 吸血鬼 🧛🏻‍，实现了`Suck(conf string, v reflect.Value) gone.SuckError`
-  方法的是吸血鬼；吸血鬼是一个邪恶的存在，他可能毁掉整个天国。理论上吸血行为可以制造Goner，但是这可能会导致循环依赖，从而破坏系统。
-- Vampire.Suck: 吸血鬼"吸血行为"
+- **Goner** 是依赖注入的最小单位
+- **Goner** 可以封装框架组件
+- **Goner** 也可以是业务组件，比如一个 Service、一个 Controller、一个 Client、一个 Dao 等
 
-### 四种Goner
+> 下面是一个简单的例子，完整代码在[这里](https://github.com/gone-io/examples/tree/main/simple)
 
-- 普通Goner
-  > 普通Goner，可以用于抽象App中的Service、Controller、Client等常见的组件。
-  > 如果Goner提供了方法 **`AfterRevive(Cemetery, Tomb) ReviveAfterError`**，在升入天国后会被调用。
-- 先知Prophet
-  > 先知，复活后会去执行`AfterRevive() AfterReviveError`方法
-- 天使Angel
-  > 天使会在天国承担一定的职责：启动阶段，天使的`Start`方法会被调用；停止阶段，天使的`Stop`方法会被调用；所以天使适合抽象"
-  需要启停控制"的组件。
-- 吸血鬼Vampire
-  > 吸血鬼，具有吸血的能力，可以通过`Suck`方法去读取/写入被标记的字段；可以抽象需要控制其他组件某个属性的行为。
+### 2.1. 编写一个 **Goner**
 
-## 注入配置
+- 定一个 **`struct`**
+- 组合 `gone.Flag`，将其标记为一个 Goner
+- 定一个"构造函数"
 
-## 普通Goner安葬
+- 如下：
 
-```go
-package goner_demo
+  ```go
+  package user
 
-import "github.com/gone-io/gone"
+  import "github.com/gone-io/gone"
 
-type XGoner struct {
-	gone.GonerFlag
-}
+  // 1. 定义 Goner：userService
+  type userService struct {
+      gone.Flag //2. 聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
+  }
 
-type Demo struct {
-	gone.GonerFlag
-	a  *XGoner     `gone:"x-goner"` // x-goner 是 GonerId; 支持使用非导出属性
-	A  XGoner      `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体；⚠️尽量不要这样使用，由于结构体是值拷贝，会导致不能深度复制的问题
-	A1 *XGoner     `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体的指针
-	A2 any `gone:"x-goner"` // x-goner 是 GonerId; 支持接口
+  //NewUserService 3. 定义构造函数
+  func NewUserService() gone.Goner {
+      return &userService{}
+  }
+  ```
 
-	B  *XGoner       `gone:"*"` //  支持匿名注入
-	B1 []any `gone:"*"` // 支持匿名注入数组
-}
-```
+### 2.2. 给 **Goner** 依赖的属性注入值
 
-## 对吸血鬼安葬，被安葬的是Goner是一个Vampire
+- 假设 `user.userService` 的一个方法依赖`redis.Cache`
 
-> 吸血鬼是一种邪恶的生物，他可以读取/吸入被注入的Goner的属性
+  ```go
+  package user
 
-```go
-package goner_demo
+  import (
+    "fmt"
+    "github.com/gone-io/examples/simple/interface/service"
+    "github.com/gone-io/gone"
+    "github.com/gone-io/gone/goner/redis"
+  )
 
-import (
-	"github.com/gone-io/gone"
-	"github.com/magiconair/properties/assert"
-	"reflect"
-)
+  // 1. 定义 Goner：userService
+  type userService struct {
+    gone.Flag             //2. 聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
+    cache     redis.Cache `gone:"gone-redis-cache"` //4. 标记需要注入的依赖，这里表示在`cache`属性上注入一个ID=`gone-redis-cache`的 Goner 组件
+  }
 
-type ConfigVampire struct {
-	gone.GonerFlag
-}
+  func (s *userService) GetUserInfo(id int64) (*service.UserInfo, error) {
+    info := new(service.UserInfo)
+    key := fmt.Sprintf("user-%d", id)
+    return info, s.cache.Get(key, info) //5.使用注入的依赖完成业务
+  }
 
-func (*ConfigVampire) Suck(conf string, v reflect.Value) gone.SuckError {
-	// conf = abc.dex,xxx|xxx
-	// v = Demo.a 的 reflect.Value
+  // NewUserService 3. 定义 `userService` 构造函数
+  func NewUserService() gone.Goner {
+    return &userService{}
+  }
+  ```
 
-	return nil
-}
+- 假设 `student.studentService` 依赖 `redis.userService`
+- 给 `student.studentService` 增加一个 `AfterRevive() gone.AfterReviveError`（Goner 上的`AfterRevive`在属性注入完后自动运行）
 
-const ConfigVampireId = "x-config"
+  ```go
+  package student
 
-type Demo struct {
-	// 吸血鬼不会被注入到属性中，而是会在属性上调用`Vampire.Suck`函数完成吸血，吸血鬼可以读取、写入属性的值
-	a int `gone:"x-config,abc.dex,xxx|xxx"` //普通Goner会忽略GonerId(x-config)后面的字符串`abc.dex,xxx|xxx`; 而吸血鬼会用来进行"吸血"
-}
+  import (
+    "github.com/gone-io/examples/simple/interface/service"
+    "github.com/gone-io/gone"
+    "github.com/gone-io/gone/goner/logrus"
+  )
 
-func Priest(cemetery gone.Cemetery) error {
-	cemetery.Bury(&ConfigVampire{}, ConfigVampireId)
-	cemetery.Bury(&Demo{})
-	return nil
-}
+  // 1. 定义 Goner：studentService
+  type studentService struct {
+    gone.Flag                  // 2.  聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
+    service.User `gone:"*"`    //4. 聚合 service.User，这里的 `gone:"*"` 表示 `按类型注入` 一个Goner
+    log          logrus.Logger `gone:"gone-logger"` //6. 注入一个用于日志打印的Goner
+  }
 
-func run() {
-	gone.Run(Priest)
-}
-```
+  func (s *studentService) GetStudentInfo(id int64) (*service.UserInfo, error) {
+    return s.GetUserInfo(id) //5. 调用 User 的 `GetUserInfo` 来实现 `GetStudentInfo`方法
+  }
 
-## 使用
-
-- 启动
-
-```go
-package main
-
-import "github.com/gone-io/gone"
-
-func main() {
-	gone.Run(func(cemetery gone.Cemetery) error {
-		//安葬Goner
-		return nil
-	})
-}
-
-```
-
-## 代码生成(生成`Priest`函数)
-
-> 在gone框架中提供了一个同名的代码生成工具，他的作用是 扫描文件目录中标记了 `//go:gone`
-> 的函数，为这些函数生成一个 `Priest`函数；
-
-- 安装gone
-    ```shell 
-    go install github.com/gone-io/gone/tools/gone@v0.0.3
-    ```
-- 使用，参考 [example/app/Makefile](example/app/Makefile)
-    ```shell
-    gone -s ${scan_package_dir} -p ${pkgName} -f ${funcName} -o ${output_dir} [-w] --stat
-    ```
-- Demo
-    ```shell
-    # 进入本仓库的例子目录 
-    cd example/app
-    
-    # 安装gone
-    go install github.com/gone-io/gone/tools/gone@v0.0.4
-    
-    # 生成 priest.go 文件
-    gone -s internal -p internal -f Priest -o internal/priest.go
-    ```
-  将生成文件`internal/priest.go`，内容如下：
-    ```go
-    // Code generated by gone; DO NOT EDIT.
-    package internal
-    import (
-        "github.com/gone-io/gone/example/app/internal/worker"
-        "github.com/gone-io/gone"
-    )
-    
-    func Priest(cemetery gone.Cemetery) error {
-        cemetery.Bury(worker.NewPrintWorker())
-        worker.Priest(cemetery)
-        return nil
+  // AfterRevive 6.该方法会在 studentService 属性被注入完成后自动运行
+  func (s *studentService) AfterRevive() gone.AfterReviveError {
+    info, err := s.GetUserInfo(100)
+    if err != nil {
+      s.log.Errorf("get info err:%v", err) //调用日志Goner，打印错误日志
+    } else {
+      s.log.Infof("student info:%v", info) //调用日志Goner，打印student info
     }
-    ```
+    return nil
+  }
 
-## 组件库
+  // NewStudentService 3. 定义 `studentService` 构造函数
+  func NewStudentService() gone.Goner {
+    return &studentService{}
+  }
 
-- `github.com/gone-io/gone/goner/cumx`  
-  对 `github.com/soheilhy/cmux` 进行封装，用于复用同一个端口实现多种协议；
-- `github.com/gone-io/gone/goner/config`  
-  完成 gone-app 的配置
-- `github.com/gone-io/gone/goner/gin`  
-  对`github.com/gin-gonic/gin`封装，提供web服务
-- `github.com/gone-io/gone/goner/logrus`  
-  对`github.com/sirupsen/logrus`封装，提供日志服务
-- `github.com/gone-io/gone/goner/tracer`  
-  提供日志追踪，可以用于给同一条请求链路提供统一的tracerId
-- `github.com/gone-io/gone/goner/xorm`  
-  封装`xorm.io/xorm`，用于数据库的访问；使用时，按需引用数据库驱动；
-- `github.com/gone-io/gone/goner/redis`
-  封装`github.com/gomodule/redigo`，用于操作redis
-- `github.com/gone-io/gone/goner/schedule`
+  ```
+
+### 2.3. 启动程序
+
+- 增加 main 函数，调用 gone.Run
+- 给 gone.Run 方法提供一个 `Priest` 函数（在 **Gone** 中，**加载** **Goner** 的函数 叫 **Priest———牧师**；**Goner** 其实是**逝者**的意思）
+- 在 `Priest` 函数 中 “安葬” **Goner** （**Priest———牧师**，对 **Goner** 的加载过程叫 **Bury———安葬**，[更多概念](docs/gone-story.md)）
+
+  ```go
+  package main
+
+  import (
+    "github.com/gone-io/examples/simple/student"
+    "github.com/gone-io/examples/simple/user"
+    "github.com/gone-io/gone"
+  )
+
+  // 1. 增加 main 函数，调用 gone.Run
+  func main() {
+    //2. 给 gone.Run 方法提供一个 `Priest` 函数
+    gone.Run(Priest)
+  }
+
+  func Priest(cemetery gone.Cemetery) error {
+    // 3. "安葬" Goner
+    cemetery.Bury(user.NewUserService()) // 3.1 在 `Priest` 函数中 "安葬" `user.NewUserService()`构造出来的 Goner
+    cemetery.Bury(student.NewStudentService()) // 3.2 在 `Priest` 函数中 "安葬" `user.NewStudentService()`构造出来的 Goner
+    return nil
+  }
+  ```
+
+## 4. 更多例子：
+
+> 在[example](example)目录可以找到详细的例子，后续会补充完成的帮忙手册。
+
+## 5. 组件库，（👉🏻 跟多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）
+
+- [goner/cumx](goner/cmux)，
+  对 `github.com/soheilhy/cmux` 的封装，用于复用同一个端口实现多种协议；
+- [goner/config](goner/config)，用于实现对 **Gone-App** 配置
+- [goner/gin](goner/gin)，对 `github.com/gin-gonic/gin`封装，提供 web 服务
+- [goner/logrus](goner/logrus)，
+  对 `github.com/sirupsen/logrus`封装，提供日志服务
+- [goner/tracer](goner/tracer)，
+  提供日志追踪，可以给同一条请求链路提供统一的 `tracerId`
+- [goner/xorm](goner/xorm)，
+  封装 `xorm.io/xorm`，用于数据库的访问；使用时，按需引用数据库驱动；
+- [goner/redis](goner/redis)，
+  封装 `github.com/gomodule/redigo`，用于操作 redis
+- [goner/schedule](goner/schedule)，
   封装 `github.com/robfig/cron/v3`，用于设置定时器
+- [emitter](https://github.com/gone-io/emitter)，封装事件处理，可以用于 **DDD** 的 **事件风暴**
 
-## TODO LIST
+## 6. TODO LIST
 
-- emitter，封装事件处理
 - grpc，封装 github.com/grpc/grpc
+- 完善文档
+- 完善英文文档
+- 完善测试用例
 
-## 📢注意
+## 7. ⚠️ 注意
 
-- 尽量不用使用 struct（结构体）作为 `gone` 标记的字段，由于struct在golang中是值拷贝，可能导致相关依赖注入失败的情况
-- 下面这些Goner上的方法都不应该是阻塞的
-    - `AfterRevive(Cemetery, Tomb) ReviveAfterError`
-    - `Start(Cemetery) error`
-    - `Stop(Cemetery) error`
-    - `Suck(conf string, v reflect.Value) SuckError`
+- 尽量不用使用 struct（结构体）作为 `gone` 标记的字段，由于 struct 在 golang 中是值拷贝，可能导致相关依赖注入失败的情况
+- 下面这些 Goner 上的方法都不应该是阻塞的
+  - `AfterRevive(Cemetery, Tomb) ReviveAfterError`
+  - `Start(Cemetery) error`
+  - `Stop(Cemetery) error`
+  - `Suck(conf string, v reflect.Value) SuckError`

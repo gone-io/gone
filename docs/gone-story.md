@@ -1,0 +1,167 @@
+# Gone 的 故事
+
+这是 gone 框架的第二版，第一版在[这里](https://gitlab.openviewtech.com/gone/gone#gone)
+
+## 概念
+
+> gone 的意思是 `走了，去了，没了，死了`，那么 Gone 管理都是 Goner(逝者)
+> 存在一片神秘墓园，安葬在这里的逝者，灵魂😇会升入天国。天国指定的牧师可以将 Goner 葬入这片墓园...
+
+- Heaven: 天国 🕊☁️
+- Heaven.Start: 天国开始运行；Goner 永生，直到天崩地裂
+- Heaven.Stop: 天国崩塌，停止运行
+- Cemetery: 墓园 🪦
+- Cemetery.Bury: 安葬
+- Cemetery.revive: 复活 Goner，将其升入天国；对于 Goner 则是完成了属性的的注入（或者装配）
+- Tomb: 坟墓 ⚰️
+- Priest: 神父 ✝️，负责给 Goner 安葬
+- Goner: 逝者 💀；是对可注入对象的抽象：可以注入其他 Goner，可以被注入其他 Goner；
+- Prophet: 先知；如果一个 Goner 是先知，他被复活后会去执行`AfterRevive() AfterReviveError`方法，去窥视神的旨意
+- Prophet.AfterRevive: 复活后执行的方法
+- Angel: 天使 𓆩♡𓆪 ，实现了`Start(gone.Cemetery) error` 和 `Stop(gone.Cemetery) error`方法的 Goner，升入天国后被变成天使
+- Angel.Start: 天使左翼，开始工作；能力越大责任越大，天使是要工作的
+- Angel.Stop: 天使右翼，停止工作；
+- Vampire: 吸血鬼 🧛🏻‍，实现了`Suck(conf string, v reflect.Value) gone.SuckError`
+  方法的是吸血鬼；吸血鬼是一个邪恶的存在，他可能毁掉整个天国。理论上吸血行为可以制造 Goner，但是这可能会导致循环依赖，从而破坏系统。
+- Vampire.Suck: 吸血鬼"吸血行为"
+
+### 四种 Goner
+
+- 普通 Goner
+  > 普通 Goner，可以用于抽象 App 中的 Service、Controller、Client 等常见的组件。
+  > 如果 Goner 提供了方法 **`AfterRevive(Cemetery, Tomb) ReviveAfterError`**，在升入天国后会被调用。
+- 先知 Prophet
+  > 先知，复活后会去执行`AfterRevive() AfterReviveError`方法
+- 天使 Angel
+  > 天使会在天国承担一定的职责：启动阶段，天使的`Start`方法会被调用；停止阶段，天使的`Stop`方法会被调用；所以天使适合抽象"
+  > 需要启停控制"的组件。
+- 吸血鬼 Vampire
+  > 吸血鬼，具有吸血的能力，可以通过`Suck`方法去读取/写入被标记的字段；可以抽象需要控制其他组件某个属性的行为。
+
+## 注入配置
+
+## 普通 Goner 安葬
+
+```go
+package goner_demo
+
+import "github.com/gone-io/gone"
+
+type XGoner struct {
+	gone.GonerFlag
+}
+
+type Demo struct {
+	gone.GonerFlag
+	a  *XGoner `gone:"x-goner"` // x-goner 是 GonerId; 支持使用非导出属性
+	A  XGoner  `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体；⚠️尽量不要这样使用，由于结构体是值拷贝，会导致不能深度复制的问题
+	A1 *XGoner `gone:"x-goner"` // x-goner 是 GonerId; 支持结构体的指针
+	A2 any     `gone:"x-goner"` // x-goner 是 GonerId; 支持接口
+
+	B  *XGoner `gone:"*"` //  支持匿名注入
+	B1 []any   `gone:"*"` // 支持匿名注入数组
+}
+```
+
+## 对吸血鬼安葬，被安葬的是 Goner 是一个 Vampire
+
+> 吸血鬼是一种邪恶的生物，他可以读取/吸入被注入的 Goner 的属性
+
+```go
+package goner_demo
+
+import (
+	"github.com/gone-io/gone"
+	"github.com/magiconair/properties/assert"
+	"reflect"
+)
+
+type ConfigVampire struct {
+	gone.GonerFlag
+}
+
+func (*ConfigVampire) Suck(conf string, v reflect.Value) gone.SuckError {
+	// conf = abc.dex,xxx|xxx
+	// v = Demo.a 的 reflect.Value
+
+	return nil
+}
+
+const ConfigVampireId = "x-config"
+
+type Demo struct {
+	// 吸血鬼不会被注入到属性中，而是会在属性上调用`Vampire.Suck`函数完成吸血，吸血鬼可以读取、写入属性的值
+	a int `gone:"x-config,abc.dex,xxx|xxx"` //普通Goner会忽略GonerId(x-config)后面的字符串`abc.dex,xxx|xxx`; 而吸血鬼会用来进行"吸血"
+}
+
+func Priest(cemetery gone.Cemetery) error {
+	cemetery.Bury(&ConfigVampire{}, ConfigVampireId)
+	cemetery.Bury(&Demo{})
+	return nil
+}
+
+func run() {
+	gone.Run(Priest)
+}
+```
+
+## 使用
+
+- 启动
+
+```go
+package main
+
+import "github.com/gone-io/gone"
+
+func main() {
+	gone.Run(func(cemetery gone.Cemetery) error {
+		//安葬Goner
+		return nil
+	})
+}
+
+```
+
+## 代码生成(生成`Priest`函数)
+
+> 在 gone 框架中提供了一个同名的代码生成工具，他的作用是 扫描文件目录中标记了 `//go:gone`
+> 的函数，为这些函数生成一个 `Priest`函数；
+
+- 安装 gone
+  ```shell
+  go install github.com/gone-io/gone/tools/gone@v0.0.3
+  ```
+- 使用，参考 [example/app/Makefile](example/app/Makefile)
+  ```shell
+  gone -s ${scan_package_dir} -p ${pkgName} -f ${funcName} -o ${output_dir} [-w] --stat
+  ```
+- Demo
+
+  ```shell
+  # 进入本仓库的例子目录
+  cd example/app
+
+  # 安装gone
+  go install github.com/gone-io/gone/tools/gone@v0.0.4
+
+  # 生成 priest.go 文件
+  gone -s internal -p internal -f Priest -o internal/priest.go
+  ```
+
+  将生成文件`internal/priest.go`，内容如下：
+
+  ```go
+  // Code generated by gone; DO NOT EDIT.
+  package internal
+  import (
+      "github.com/gone-io/gone/example/app/internal/worker"
+      "github.com/gone-io/gone"
+  )
+
+  func Priest(cemetery gone.Cemetery) error {
+      cemetery.Bury(worker.NewPrintWorker())
+      worker.Priest(cemetery)
+      return nil
+  }
+  ```
