@@ -11,7 +11,7 @@
 
 ## 2. 怎么使用？
 
-### 所有的代码都应该封装到一个个叫 **Goner** 容器中，**Goner** 的概念可以类比 **Spring** 中的 **Spring Bean**
+> 所有的代码都应该封装到一个个叫 **Goner** 容器中，**Goner** 的概念可以类比 **Spring** 中的 **Spring Bean**
 
 - **Goner** 是依赖注入的最小单位
 - **Goner** 可以封装框架组件
@@ -119,8 +119,10 @@
 ### 2.3. 启动程序
 
 - 增加 main 函数，调用 gone.Run
-- 给 gone.Run 方法提供一个 `Priest` 函数（在 **Gone** 中，**加载** **Goner** 的函数 叫 **Priest———牧师**；**Goner** 其实是**逝者**的意思）
-- 在 `Priest` 函数 中 “安葬” **Goner** （**Priest———牧师**，对 **Goner** 的加载过程叫 **Bury———安葬**，[更多概念](docs/gone-story.md)）
+- 给 gone.Run 方法提供一个 `Priest` 函数（在 **Gone** 中，**加载** **Goner** 的函数 叫 **Priest———牧师**；**Goner**
+  其实是**逝者**的意思）
+- 在 `Priest` 函数 中 “安葬” **Goner** （**Priest———牧师**，对 **Goner** 的加载过程叫 **Bury———安葬**
+  ，[更多概念](docs/gone-story.md)）
 
   ```go
   package main
@@ -178,7 +180,7 @@
 
 - 尽量不用使用 struct（结构体）作为 `gone` 标记的字段，由于 struct 在 golang 中是值拷贝，可能导致相关依赖注入失败的情况
 - 下面这些 Goner 上的方法都不应该是阻塞的
-  - `AfterRevive(Cemetery, Tomb) ReviveAfterError`
-  - `Start(Cemetery) error`
-  - `Stop(Cemetery) error`
-  - `Suck(conf string, v reflect.Value) SuckError`
+    - `AfterRevive(Cemetery, Tomb) ReviveAfterError`
+    - `Start(Cemetery) error`
+    - `Stop(Cemetery) error`
+    - `Suck(conf string, v reflect.Value) SuckError`
