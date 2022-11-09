@@ -87,3 +87,18 @@ func TestCacheProvider(t *testing.T) {
 		}, Priest)
 	})
 }
+
+type useCacheProvider struct {
+	gone.Flag
+	Cache `gone:"gone-redis-provider,config=app.module.a.redis.prefix"`
+}
+
+func TestProviderUseConfig(t *testing.T) {
+	gone.Test(func(use *useCacheProvider) {
+		prefix := use.Prefix()
+		assert.Equal(t, prefix, "unit-test#module-a")
+	}, func(cemetery gone.Cemetery) error {
+		cemetery.Bury(&useCacheProvider{})
+		return Priest(cemetery)
+	})
+}

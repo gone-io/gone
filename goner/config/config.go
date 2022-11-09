@@ -11,7 +11,7 @@ type config struct {
 	configure Configure `gone:"gone-configure"`
 }
 
-func parseConfAnnotation(tag string) (key string, defaultVal string) {
+func ParseConfAnnotation(tag string) (key string, defaultVal string) {
 	splitArray := strings.Split(tag, ",")
 	key = strings.TrimSpace(splitArray[0])
 	if len(splitArray) > 1 {
@@ -30,7 +30,7 @@ func parseConfAnnotation(tag string) (key string, defaultVal string) {
 }
 
 func (f *config) Suck(conf string, v reflect.Value) gone.SuckError {
-	key, defaultVal := parseConfAnnotation(conf)
+	key, defaultVal := ParseConfAnnotation(conf)
 
 	if reflect.Ptr == v.Kind() {
 		if v.IsNil() {
@@ -43,6 +43,6 @@ func (f *config) Suck(conf string, v reflect.Value) gone.SuckError {
 
 // Configure 配置接口
 type Configure interface {
-	//GetProperties 将获取`key`所对应的值，值将写入到参数`v`中；参数`v`，只接受指针类型；如果`key`对应的值不存在，将使用defaultVal
+	//Get 将获取`key`所对应的值，值将写入到参数`v`中；参数`v`，只接受指针类型；如果`key`对应的值不存在，将使用defaultVal
 	Get(key string, v any, defaultVal string) error
 }

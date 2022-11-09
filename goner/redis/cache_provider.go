@@ -2,8 +2,10 @@ package redis
 
 import (
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/goner/tracer"
 	"reflect"
+	"strings"
 )
 
 func NewCacheProvider() (gone.Vampire, gone.GonerId) {
@@ -12,8 +14,9 @@ func NewCacheProvider() (gone.Vampire, gone.GonerId) {
 
 type cacheProvider struct {
 	gone.Flag
-	inner  *inner        `gone:"gone-redis-inner"`
-	tracer tracer.Tracer `gone:"gone-tracer"`
+	inner     *inner           `gone:"gone-redis-inner"`
+	tracer    tracer.Tracer    `gone:"gone-tracer"`
+	configure config.Configure `gone:"gone-configure"`
 }
 
 var cacheType = gone.GetInterfaceType(new(Cache))
@@ -24,6 +27,17 @@ var lockerType = gone.GetInterfaceType(new(Locker))
 func (p *cacheProvider) Suck(conf string, v reflect.Value) (err gone.SuckError) {
 	if conf == "" {
 		return CacheProviderNeedKeyError()
+	}
+
+	//get config from config files
+	if strings.HasPrefix(conf, "config=") {
+		left := strings.TrimLeft(conf, "config=")
+		key, defaultVal := config.ParseConfAnnotation(left)
+
+		err = p.configure.Get(key, &conf, defaultVal)
+		if err != nil {
+			return
+		}
 	}
 
 	var value interface{}

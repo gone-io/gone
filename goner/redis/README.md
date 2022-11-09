@@ -173,8 +173,7 @@ func (s *service) Use() {
 ### 5. Provider
 
 > Provider can isolate key namespace in app again. For Example, you want use `app-x#module-a` as redis prefix for module
-> A,
-> and use `app-x#module-b` as redis prefix for module B. You can use it like below.
+> A, and use `app-x#module-b` as redis prefix for module B. You can use it like below.
 
 ```go
 package A
@@ -209,6 +208,25 @@ type service struct {
 	cache  redis.Cache  `gone:"gone-redis-provider,module-b"` //use cache 
 	key    redis.Key    `gone:"gone-redis-provider,module-b"` //use key
 	locker redis.Locker `gone:"gone-redis-provider,module-b"` //use locker
+}
+```
+
+If the key value is in config files, you can use `gone:"gone-redis-provider,config=config-file-key,default=default-val"`
+.
+
+```go
+package A
+
+import (
+	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/redis"
+)
+
+//in module B
+//...
+type service struct {
+	gone.Flag
+	cache redis.Cache `gone:"gone-redis-provider,config=app.module-a.redis.prefix"` //use cache
 }
 ```
 
