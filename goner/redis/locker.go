@@ -25,7 +25,7 @@ func NewRedisLocker() (gone.Goner, gone.GonerId) {
 
 type locker struct {
 	tracer tracer.Tracer `gone:"gone-tracer"`
-	inner  `gone:"gone-redis-inner"`
+	*inner `gone:"gone-redis-inner"`
 }
 
 func (r *locker) getConn() redis.Conn {
@@ -40,12 +40,7 @@ type Unlock func()
 
 func (r *locker) TryLock(key string, expiresIn time.Duration) (unlock Unlock, err error) {
 	conn := r.getConn()
-	defer func(conn redis.Conn) {
-		err := conn.Close()
-		if err != nil {
-			r.Errorf("redis conn.Close() err:%v", err)
-		}
-	}(conn)
+	defer r.close(conn)
 
 	key = r.buildKey(key)
 	v := uuid.NewString()
@@ -70,7 +65,7 @@ func (r *locker) TryLock(key string, expiresIn time.Duration) (unlock Unlock, er
 
 func (r *locker) releaseLock(key, value string) error {
 	conn := r.getConn()
-	defer conn.Close()
+	defer r.close(conn)
 
 	_, err := conn.Do("EVAL", unlockLua, 1, key, value)
 	if err != nil {
@@ -81,15 +76,11 @@ func (r *locker) releaseLock(key, value string) error {
 }
 
 func (r *locker) Renewal(key string, ttl time.Duration) error {
-	connection := r.getConn()
-	defer func(connection redis.Conn) {
-		err := connection.Close()
-		if err != nil {
-			r.Error("redis connection.Close() err:", err)
-		}
-	}(connection)
+	conn := r.getConn()
+	defer r.close(conn)
+
 	key = r.buildKey(key)
-	return connection.Send("PEXPIRE", key, int64(ttl/time.Millisecond))
+	return conn.Send("PEXPIRE", key, int64(ttl/time.Millisecond))
 }
 
 func (r *locker) LockAndDo(key string, fn func(), lockTime, checkPeriod time.Duration) (err error) {
@@ -105,7 +96,6 @@ func (r *locker) LockAndDo(key string, fn func(), lockTime, checkPeriod time.Dur
 	//监听任务完成，给锁续期
 	r.tracer.Go(func() {
 		for {
-			//log.Info("---->ok")
 			select {
 			case <-cancelCtx.Done():
 				r.Debugf("lock watch end")

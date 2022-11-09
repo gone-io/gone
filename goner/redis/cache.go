@@ -15,7 +15,11 @@ func NewRedisCache() (gone.Goner, gone.GonerId) {
 }
 
 type cache struct {
-	inner `gone:"gone-redis-inner"`
+	*inner `gone:"gone-redis-inner"`
+}
+
+func (r *cache) Set(key string, value any, ttl ...time.Duration) error {
+	return r.Put(key, value, ttl...)
 }
 
 func (r *cache) Put(key string, value any, ttl ...time.Duration) error {
@@ -61,25 +65,89 @@ func (r *cache) Get(key string, value any) error {
 	return json.Unmarshal(bt, value)
 }
 
+func (r *cache) Del(key string) (err error) {
+	return r.Remove(key)
+}
+
 func (r *cache) Remove(key string) (err error) {
 	conn := r.getConn()
 	defer r.close(conn)
 	key = r.buildKey(key)
 	return conn.Send("DEL", key)
 }
-func (r *cache) Keys(key string) ([]string, error) {
+
+func (r *cache) Keys(key string) (keys []string, err error) {
 	conn := r.getConn()
 	defer r.close(conn)
 	key = r.buildKey(key)
-	list, err := redis.Strings(conn.Do("KEYS", key))
+
+	trimPrefix := r.cachePrefix + "#"
+	iter := 0
+	for {
+		var arr []interface{}
+		arr, err = redis.Values(conn.Do("SCAN", iter, "MATCH", key))
+
+		if err != nil {
+			return
+		}
+
+		iter, _ = redis.Int(arr[0], nil)
+
+		var list []string
+		list, err = redis.Strings(arr[1], nil)
+		if err != nil {
+			return
+		}
+
+		for _, k := range list {
+			keys = append(keys, strings.TrimPrefix(k, trimPrefix))
+		}
+
+		if iter == 0 {
+			break
+		}
+	}
+	return
+}
+
+func (r *cache) Prefix() string {
+	return r.inner.cachePrefix
+}
+
+func (r *cache) Expire(key string, ttl time.Duration) error {
+	conn := r.getConn()
+	defer r.close(conn)
+	key = r.buildKey(key)
+	return conn.Send("PEXPIRE", key, ttl.Milliseconds())
+}
+
+func (r *cache) ExpireAt(key string, t time.Time) error {
+	return r.Expire(key, t.Sub(time.Now()))
+}
+
+func (r *cache) Ttl(key string) (time.Duration, error) {
+	conn := r.getConn()
+	defer r.close(conn)
+	key = r.buildKey(key)
+
+	i, err := redis.Int64(conn.Do("PTTL", key))
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	prefix := r.cachePrefix + "#"
-	var strList = make([]string, 0, len(list))
-	for _, s := range list {
-		strList = append(strList, strings.TrimPrefix(s, prefix))
+	if i == -1 {
+		return 0, ErrNotExpire
 	}
-	return strList, nil
+	if i == -2 {
+		return 0, ErrNil
+	}
+
+	return time.Duration(i) * time.Millisecond, nil
+}
+
+func (r *cache) Incr(key string, increment int64) (int64, error) {
+	conn := r.getConn()
+	defer r.close(conn)
+	key = r.buildKey(key)
+	return redis.Int64(conn.Do("INCRBY", key, increment))
 }

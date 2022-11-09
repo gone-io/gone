@@ -36,9 +36,11 @@ const (
 	IdGoneXorm = "gone-xorm"
 
 	//IdGoneRedisPool redis pool goner; redis 相关 Goner，使用 [goner.RedisPriest](goner#RedisPriest) 牧师函数安葬
-	IdGoneRedisPool   = "gone-redis-pool"
-	IdGoneRedisCache  = "gone-redis-cache"
-	IdGoneRedisLocker = "gone-redis-locker"
+	IdGoneRedisPool     = "gone-redis-pool"
+	IdGoneRedisCache    = "gone-redis-cache"
+	IdGoneRedisKey      = "gone-redis-key"
+	IdGoneRedisLocker   = "gone-redis-locker"
+	IdGoneRedisProvider = "gone-redis-provider"
 
 	// IdGoneSchedule 定时器Goner；使用 [goner.SchedulePriest](goner#SchedulePriest) 牧师函数安葬
 	IdGoneSchedule = "gone-schedule"

@@ -25,8 +25,8 @@ import (
 //			c.Bury(componentB.New())
 //		}
 //
-// //开始运行
-// gone.Run(LoadServer, LoadComponent)
+//
+//		gone.Run(LoadServer, LoadComponent)//开始运行
 func Run(priests ...Priest) {
 	New(priests...).
 		Install().

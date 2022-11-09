@@ -25,6 +25,9 @@ func (r *inner) getConn() redis.Conn {
 }
 
 func (r *inner) buildKey(key string) string {
+	if r.cachePrefix == "" {
+		return key
+	}
 	return fmt.Sprintf("%s#%s", r.cachePrefix, key)
 }
 
