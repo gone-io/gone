@@ -147,11 +147,11 @@
   }
   ```
 
-## 4. 🌰 更多例子：
+## 3. 🌰 更多例子：
 
 > 在[example](example)目录可以找到详细的例子，后续会补充完成的帮忙手册。
 
-## 5. 🔣 组件库（👉🏻 更多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）
+## 4. 🔣 组件库（👉🏻 更多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）
 
 - [goner/cumx](goner/cmux)，
   对 `github.com/soheilhy/cmux` 的封装，用于复用同一个端口实现多种协议；
@@ -169,14 +169,14 @@
   封装 `github.com/robfig/cron/v3`，用于设置定时器
 - [emitter](https://github.com/gone-io/emitter)，封装事件处理，可以用于 **DDD** 的 **事件风暴**
 
-## 6. ⚙️ TODO LIST
+## 5. ⚙️ TODO LIST
 
 - grpc，封装 github.com/grpc/grpc
 - 完善文档
 - 完善英文文档
 - 完善测试用例
 
-## 7. ⚠️ 注意
+## 6. ⚠️ 注意
 
 - 尽量不用使用 struct（结构体）作为 `gone` 标记的字段，由于 struct 在 golang 中是值拷贝，可能导致相关依赖注入失败的情况
 - 下面这些 Goner 上的方法都不应该是阻塞的
