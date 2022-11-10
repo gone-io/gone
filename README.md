@@ -51,27 +51,27 @@
   package user
 
   import (
-    "fmt"
-    "github.com/gone-io/examples/simple/interface/service"
-    "github.com/gone-io/gone"
-    "github.com/gone-io/gone/goner/redis"
+      "fmt"
+      "github.com/gone-io/examples/simple/interface/service"
+      "github.com/gone-io/gone"
+      "github.com/gone-io/gone/goner/redis"
   )
 
   // 1. 定义 Goner：userService
   type userService struct {
-    gone.Flag             //2. 聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
-    cache     redis.Cache `gone:"gone-redis-cache"` //4. 标记需要注入的依赖，这里表示在`cache`属性上注入一个ID=`gone-redis-cache`的 Goner 组件
+      gone.Flag             //2. 聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
+      cache     redis.Cache `gone:"gone-redis-cache"` //4. 标记需要注入的依赖，这里表示在`cache`属性上注入一个ID=`gone-redis-cache`的 Goner 组件
   }
 
   func (s *userService) GetUserInfo(id int64) (*service.UserInfo, error) {
-    info := new(service.UserInfo)
-    key := fmt.Sprintf("user-%d", id)
-    return info, s.cache.Get(key, info) //5.使用注入的依赖完成业务
+      info := new(service.UserInfo)
+      key := fmt.Sprintf("user-%d", id)
+      return info, s.cache.Get(key, info) //5.使用注入的依赖完成业务
   }
 
   // NewUserService 3. 定义 `userService` 构造函数
   func NewUserService() gone.Goner {
-    return &userService{}
+      return &userService{}
   }
   ```
 
@@ -82,36 +82,36 @@
   package student
 
   import (
-    "github.com/gone-io/examples/simple/interface/service"
-    "github.com/gone-io/gone"
-    "github.com/gone-io/gone/goner/logrus"
+      "github.com/gone-io/examples/simple/interface/service"
+      "github.com/gone-io/gone"
+      "github.com/gone-io/gone/goner/logrus"
   )
 
   // 1. 定义 Goner：studentService
   type studentService struct {
-    gone.Flag                  // 2.  聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
-    service.User `gone:"*"`    //4. 聚合 service.User，这里的 `gone:"*"` 表示 `按类型注入` 一个Goner
-    log          logrus.Logger `gone:"gone-logger"` //6. 注入一个用于日志打印的Goner
+      gone.Flag                  // 2.  聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
+      service.User `gone:"*"`    //4. 聚合 service.User，这里的 `gone:"*"` 表示 `按类型注入` 一个Goner
+      log          logrus.Logger `gone:"gone-logger"` //6. 注入一个用于日志打印的Goner
   }
 
   func (s *studentService) GetStudentInfo(id int64) (*service.UserInfo, error) {
-    return s.GetUserInfo(id) //5. 调用 User 的 `GetUserInfo` 来实现 `GetStudentInfo`方法
+      return s.GetUserInfo(id) //5. 调用 User 的 `GetUserInfo` 来实现 `GetStudentInfo`方法
   }
 
   // AfterRevive 6.该方法会在 studentService 属性被注入完成后自动运行
   func (s *studentService) AfterRevive() gone.AfterReviveError {
-    info, err := s.GetUserInfo(100)
-    if err != nil {
-      s.log.Errorf("get info err:%v", err) //调用日志Goner，打印错误日志
-    } else {
-      s.log.Infof("student info:%v", info) //调用日志Goner，打印student info
-    }
-    return nil
+      info, err := s.GetUserInfo(100)
+      if err != nil {
+          s.log.Errorf("get info err:%v", err) //调用日志Goner，打印错误日志
+      } else {
+          s.log.Infof("student info:%v", info) //调用日志Goner，打印student info
+      }
+      return nil
   }
 
   // NewStudentService 3. 定义 `studentService` 构造函数
   func NewStudentService() gone.Goner {
-    return &studentService{}
+      return &studentService{}
   }
 
   ```
@@ -128,30 +128,30 @@
   package main
 
   import (
-    "github.com/gone-io/examples/simple/student"
-    "github.com/gone-io/examples/simple/user"
-    "github.com/gone-io/gone"
+      "github.com/gone-io/examples/simple/student"
+      "github.com/gone-io/examples/simple/user"
+      "github.com/gone-io/gone"
   )
 
   // 1. 增加 main 函数，调用 gone.Run
   func main() {
-    //2. 给 gone.Run 方法提供一个 `Priest` 函数
-    gone.Run(Priest)
+      //2. 给 gone.Run 方法提供一个 `Priest` 函数
+      gone.Run(Priest)
   }
 
   func Priest(cemetery gone.Cemetery) error {
-    // 3. "安葬" Goner
-    cemetery.Bury(user.NewUserService()) // 3.1 在 `Priest` 函数中 "安葬" `user.NewUserService()`构造出来的 Goner
-    cemetery.Bury(student.NewStudentService()) // 3.2 在 `Priest` 函数中 "安葬" `user.NewStudentService()`构造出来的 Goner
-    return nil
+      // 3. "安葬" Goner
+      cemetery.Bury(user.NewUserService()) // 3.1 在 `Priest` 函数中 "安葬" `user.NewUserService()`构造出来的 Goner
+      cemetery.Bury(student.NewStudentService()) // 3.2 在 `Priest` 函数中 "安葬" `user.NewStudentService()`构造出来的 Goner
+      return nil
   }
   ```
 
-## 4. 更多例子：
+## 4. 🌰 更多例子：
 
 > 在[example](example)目录可以找到详细的例子，后续会补充完成的帮忙手册。
 
-## 5. 组件库，（👉🏻 跟多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）
+## 5. 🔣 组件库（👉🏻 更多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）
 
 - [goner/cumx](goner/cmux)，
   对 `github.com/soheilhy/cmux` 的封装，用于复用同一个端口实现多种协议；
@@ -169,7 +169,7 @@
   封装 `github.com/robfig/cron/v3`，用于设置定时器
 - [emitter](https://github.com/gone-io/emitter)，封装事件处理，可以用于 **DDD** 的 **事件风暴**
 
-## 6. TODO LIST
+## 6. ⚙️ TODO LIST
 
 - grpc，封装 github.com/grpc/grpc
 - 完善文档
