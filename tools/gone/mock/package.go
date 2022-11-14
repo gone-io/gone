@@ -103,7 +103,7 @@ func patchMock(r io.Reader, w io.Writer) error {
 		lineStr := string(line)
 
 		if strings.HasPrefix(lineStr, "import (") {
-			_, err = w.Write([]byte("\t\"github.com/gone-io/gone\"\n"))
+			_, err = w.Write([]byte("\tgoneMock \"github.com/gone-io/gone\"\n"))
 			if err != nil {
 				return err
 			}
@@ -115,7 +115,7 @@ func patchMock(r io.Reader, w io.Writer) error {
 		}
 
 		if preMatchFlag && strings.HasPrefix(lineStr, "type") {
-			_, err = w.Write([]byte("\tgone.Flag\n"))
+			_, err = w.Write([]byte("\tgoneMock.Flag\n"))
 			if err != nil {
 				return err
 			}
