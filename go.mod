@@ -10,11 +10,12 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/jtolds/gls v4.20.0+incompatible
 	github.com/magiconair/properties v1.8.6
+	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.8.0
-	github.com/urfave/cli/v2 v2.20.2
+	github.com/urfave/cli/v2 v2.23.5
 	golang.org/x/tools v0.1.5
 	xorm.io/xorm v1.3.2
 )

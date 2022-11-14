@@ -1,4 +1,4 @@
-package main
+package priest
 
 import (
 	"github.com/fsnotify/fsnotify"

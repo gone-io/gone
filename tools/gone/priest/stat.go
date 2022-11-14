@@ -1,4 +1,4 @@
-package main
+package priest
 
 import (
 	log "github.com/sirupsen/logrus"
