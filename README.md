@@ -11,7 +11,7 @@
   
 **有意者请加微信👇，邀请你入群：**  
 
-<img src=docs/assert/qr_dapeng.png width=60% />
+<img src=docs/assert/qr_dapeng.png width=200px />
 
 
 ## 1. 这是什么？
@@ -199,4 +199,4 @@
 
 **入群交流吧？添加微信👇︎，邀你入群！🤟**  
 
-<img src=docs/assert/qr_nuoyi.png width=60% />
+<img src=docs/assert/qr_nuoyi.png width=200px />
