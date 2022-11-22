@@ -3,6 +3,15 @@
 [![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)
 [![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
 
+## 0. 框架定位
+**做一个对Spring程序员最友好的Golang框架**
+
+
+**广告**：长期寻觅一起完善和维护的框架的朋友："看你骨骼惊奇，就是你了🫵"  
+  
+有意者请加微信👇，邀请你入群：  
+![img.png](docs/assert/qr_dapeng.png)
+
 ## 1. 这是什么？
 
 - 一个类似 **Java Spring** 的 **Golang** **依赖注入** 框架
@@ -184,3 +193,7 @@
     - `Start(Cemetery) error`
     - `Stop(Cemetery) error`
     - `Suck(conf string, v reflect.Value) SuckError`
+
+
+**入群交流吧？添加微信👇︎，邀你入群！👍🏻**  
+![img.png](docs/assert/qr_nuoyi.png)
