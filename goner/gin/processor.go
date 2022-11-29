@@ -50,7 +50,7 @@ type sysProcessor struct {
 }
 
 func (p *sysProcessor) AfterRevive() gone.AfterReviveError {
-	m := []gin.HandlerFunc{p.trace, p.recovery}
+	m := []HandlerFunc{p.trace, p.recovery}
 	if p.ShowRequestTime {
 		m = append(m, p.statRequestTime)
 	}
@@ -64,10 +64,10 @@ func (p *sysProcessor) AfterRevive() gone.AfterReviveError {
 var RequestIdHeaderKey = "X-Request-ID"
 var TraceIdHeaderKey = "X-Trace-ID"
 
-func (p *sysProcessor) trace(context *gin.Context) {
+func (p *sysProcessor) trace(context *Context) (any, error) {
 	if p.HealthCheckUrl != "" && context.Request.URL.Path == "/api/health-check" {
 		context.AbortWithStatus(200)
-		return
+		return nil, nil
 	}
 
 	traceId := context.GetHeader(TraceIdHeaderKey)
@@ -76,9 +76,10 @@ func (p *sysProcessor) trace(context *gin.Context) {
 		p.Infof("bind requestId:%s", requestID)
 		context.Next()
 	})
+	return nil, nil
 }
 
-func (p *sysProcessor) recovery(context *gin.Context) {
+func (p *sysProcessor) recovery(context *Context) (any, error) {
 	traceID := p.tracer.GetTraceId()
 	defer func() {
 		if r := recover(); r != nil {
@@ -92,17 +93,19 @@ func (p *sysProcessor) recovery(context *gin.Context) {
 		}
 	}()
 	context.Next()
+	return nil, nil
 }
 
-func (p *sysProcessor) statRequestTime(c *gin.Context) {
+func (p *sysProcessor) statRequestTime(c *Context) (any, error) {
 	beginTime := time.Now()
 	defer func() {
 		p.Infof("request(%s %s) use time: %v", c.Request.Method, c.Request.URL.Path, time.Now().Sub(beginTime))
 	}()
 	c.Next()
+	return nil, nil
 }
 
-func (p *sysProcessor) accessLog(c *gin.Context) {
+func (p *sysProcessor) accessLog(c *Context) (any, error) {
 	remoteIP := c.GetHeader("X-Forwarded-For")
 	if remoteIP == "" {
 		remoteIP = c.RemoteIP()
@@ -132,9 +135,10 @@ func (p *sysProcessor) accessLog(c *gin.Context) {
 	} else {
 		p.Infof("api-response|%v %s\n", c.Writer.Status(), contentType)
 	}
+	return nil, nil
 }
 
-func cloneRequestBody(c *gin.Context) ([]byte, error) {
+func cloneRequestBody(c *Context) ([]byte, error) {
 	data, err := c.GetRawData()
 	if err != nil {
 		return nil, err

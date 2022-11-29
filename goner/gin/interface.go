@@ -37,7 +37,7 @@ type HandlerFunc func(ctx *Context) (any, error)
 // ```
 type IRoutes interface {
 	// Use 在路由上应用`gin`中间件
-	Use(...gin.HandlerFunc) IRoutes
+	Use(...HandlerFunc) IRoutes
 
 	Handle(string, string, ...HandlerFunc) IRoutes
 	Any(string, ...HandlerFunc) IRoutes
@@ -61,6 +61,8 @@ type IRouter interface {
 
 	// Group 3.定义路由分组
 	Group(string, ...HandlerFunc) RouteGroup
+
+	LoadHTMLGlob(pattern string)
 }
 
 // RouteGroup 路由分组
@@ -120,3 +122,5 @@ type BusinessError interface {
 	gone.Error
 	Data() any
 }
+
+type R map[string]any

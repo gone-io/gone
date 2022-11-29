@@ -20,11 +20,16 @@ type router struct {
 	r  gin.IRouter
 	*gin.Engine
 
+	htmlTpl string `gone:"config,server.html-tpl-pattern"`
+
 	HandleProxyToGin `gone:"gone-gin-proxy"`
 }
 
 func (r *router) AfterRevive() gone.AfterReviveError {
 	r.Engine = gin.New()
+	if r.htmlTpl != "" {
+		r.Engine.LoadHTMLGlob(r.htmlTpl)
+	}
 	return nil
 }
 
@@ -39,8 +44,8 @@ func (r *router) getR() gin.IRouter {
 	return r.r
 }
 
-func (r *router) Use(middleware ...gin.HandlerFunc) IRoutes {
-	r.getR().Use(middleware...)
+func (r *router) Use(middleware ...HandlerFunc) IRoutes {
+	r.getR().Use(r.ProxyForMiddleware(middleware...)...)
 	return r
 }
 
