@@ -47,6 +47,8 @@ type sysProcessor struct {
 	// 默认为`true`;
 	// 开启后，日志中将使用`Info`级别打印请求的 耗时
 	ShowRequestTime bool `gone:"config,server.log.show-request-time,default=true"`
+
+	logDataMaxLength int `gone:"config,server.log.data-max-length,default=0"`
 }
 
 func (p *sysProcessor) AfterRevive() gone.AfterReviveError {
@@ -114,6 +116,13 @@ func (p *sysProcessor) accessLog(c *Context) (any, error) {
 	data, err := cloneRequestBody(c)
 	if err != nil {
 		p.Error("accessLog - cloneRequestBody error:", err)
+	}
+
+	if p.logDataMaxLength > 0 && len(data) > p.logDataMaxLength {
+		buf := make([]byte, 0)
+		buf = append(buf, data[0:p.logDataMaxLength]...)
+		buf = append(buf, []byte("...")...)
+		data = buf
 	}
 
 	p.Infof("api-request|%s %s %s %s %s %s\n",
