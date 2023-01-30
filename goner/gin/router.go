@@ -54,6 +54,7 @@ func (r *router) Group(relativePath string, handlers ...HandlerFunc) RouteGroup 
 	return &router{
 		id:               incr,
 		r:                r.getR().Group(relativePath, r.ProxyForMiddleware(handlers...)...),
+		Engine:           r.Engine,
 		HandleProxyToGin: r.HandleProxyToGin,
 	}
 }
