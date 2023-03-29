@@ -5,6 +5,7 @@ import (
 	"github.com/magiconair/properties"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 //TestKit 模式会运行下面代码
@@ -32,15 +33,15 @@ func lookupConfigDir(begin string) (configDir string, err error) {
 		}
 	}
 
-	_, err = os.Stat(path.Join(begin, "go.mod"))
+	_, err = os.Stat(filepath.Join(begin, "go.mod"))
 	if err == nil { // 文件存在
-		configDir = path.Join(begin, "config")
+		configDir = filepath.Join(begin, "config")
 		_, err = os.Stat(configDir)
 		return
 	}
 
 	if os.IsNotExist(err) { // 文件不存在
-		return lookupConfigDir(path.Dir(begin))
+		return lookupConfigDir(filepath.Dir(begin))
 	}
 	//出错
 	return

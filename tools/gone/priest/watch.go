@@ -4,14 +4,14 @@ import (
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 )
 
 func doWatch(fn func(string, string, fsnotify.Op), scanDirs []string) {
 	watch(func(event fsnotify.Event) {
 		if event.Op&fsnotify.Write == fsnotify.Write || event.Op == fsnotify.Remove {
-			if path.Ext(event.Name) == ".go" {
-				fn(path.Dir(event.Name), event.Name, event.Op)
+			if filepath.Ext(event.Name) == ".go" {
+				fn(filepath.Dir(event.Name), event.Name, event.Op)
 			}
 		}
 	}, scanDirs)
@@ -59,7 +59,7 @@ func watchRecursively(watcher *fsnotify.Watcher, dir string) {
 	dirs, _ := ioutil.ReadDir(dir)
 	for i := range dirs {
 		if dirs[i].IsDir() {
-			watchRecursively(watcher, path.Join(dir, dirs[i].Name()))
+			watchRecursively(watcher, filepath.Join(dir, dirs[i].Name()))
 		}
 	}
 }

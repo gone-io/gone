@@ -220,5 +220,5 @@ func (loader *autoload) inSelfModule(v *Pkg) bool {
 	if err != nil {
 		panic(err)
 	}
-	return path.Dir(abs) == v.ID
+	return filepath.Dir(abs) == v.ID
 }

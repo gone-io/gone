@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -34,7 +34,7 @@ var Command = &cli.Command{
 
 func action(ctx *cli.Context) error {
 	outfilePath := ctx.String("o")
-	err := os.MkdirAll(path.Dir(outfilePath), os.ModePerm)
+	err := os.MkdirAll(filepath.Dir(outfilePath), os.ModePerm)
 	if err != nil {
 		return err
 	}

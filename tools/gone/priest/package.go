@@ -6,6 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 //for generate Priest function
@@ -72,7 +73,7 @@ func action(c *cli.Context) error {
 	}
 
 	if packageName == "" {
-		packageName = path.Base(path.Dir(outputFile))
+		packageName = path.Base(filepath.Dir(outputFile))
 	}
 
 	if functionName == "" {
