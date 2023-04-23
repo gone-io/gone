@@ -112,7 +112,7 @@ func goFileParse(goFilepath string) (*parseResult, error) {
 		return nil, err
 	}
 	return &parseResult{
-		Path:        path.Dir(absPath),
+		Path:        filepath.Dir(absPath),
 		PkgName:     PkgName,
 		InjectNames: InjectFns,
 	}, nil
