@@ -26,6 +26,8 @@ func (c *propertiesConfigure) Get(key string, v any, defaultVal string) error {
 	return c.parseKeyFromProperties(key, v, defaultVal, c.props)
 }
 
+const SliceMaxSize = 100
+
 func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defaultVale string, props *properties.Properties) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
@@ -44,6 +46,40 @@ func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defa
 		if err != nil {
 			c.Errorf("err:", err)
 		}
+	case reflect.Slice:
+		sliceElementType := el.Type().Elem()
+
+		for i := 0; i < SliceMaxSize; i++ {
+			k := fmt.Sprintf("%s[%d].", key, i)
+			conf := props.FilterStripPrefix(k)
+			if conf.Len() == 0 {
+				break
+			}
+
+			switch sliceElementType.Kind() {
+			case reflect.Struct:
+				v := reflect.New(sliceElementType)
+				err := conf.Decode(v.Interface())
+				if nil != err {
+					panic(fmt.Sprintf("config %s err:%s", k, err.Error()))
+				}
+				el.Set(reflect.Append(el, v.Elem()))
+			case reflect.Pointer:
+				if sliceElementType.Elem().Kind() == reflect.Struct {
+					v := reflect.New(sliceElementType.Elem())
+					err := conf.Decode(v.Interface())
+					if nil != err {
+						panic(fmt.Sprintf("config %s err:%s", k, err.Error()))
+					}
+					el.Set(reflect.Append(el, v))
+				} else {
+					panic(fmt.Sprintf("config %s err: bad type", k))
+				}
+			default:
+				panic(fmt.Sprintf("config %s err: bad type", k))
+			}
+		}
+
 	case reflect.Bool:
 		def, _ := strconv.ParseBool(defaultVale)
 		el.SetBool(props.GetBool(key, def))
