@@ -1,0 +1,13 @@
+package urllib
+
+import "github.com/imroc/req/v3"
+
+type Client interface {
+	R() *req.Request
+}
+
+type Res[T any] struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg,omitempty"`
+	Data T      `json:"data,omitempty"`
+}

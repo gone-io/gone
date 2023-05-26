@@ -8,6 +8,7 @@ import (
 	"github.com/gone-io/gone/goner/redis"
 	"github.com/gone-io/gone/goner/schedule"
 	"github.com/gone-io/gone/goner/tracer"
+	"github.com/gone-io/gone/goner/urllib"
 	"github.com/gone-io/gone/goner/xorm"
 )
 
@@ -36,4 +37,8 @@ func RedisPriest(cemetery gone.Cemetery) error {
 func SchedulePriest(cemetery gone.Cemetery) error {
 	_ = schedule.Priest(cemetery)
 	return nil
+}
+
+func UrllibPriest(cemetery gone.Cemetery) error {
+	return urllib.Priest(cemetery)
 }

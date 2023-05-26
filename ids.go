@@ -44,4 +44,6 @@ const (
 
 	// IdGoneSchedule 定时器Goner；使用 [goner.SchedulePriest](goner#SchedulePriest) 牧师函数安葬
 	IdGoneSchedule = "gone-schedule"
+
+	IdGoneReq = "gone-urllib"
 )

@@ -179,6 +179,8 @@
 - [goner/schedule](goner/schedule)，
   封装 `github.com/robfig/cron/v3`，用于设置定时器
 - [emitter](https://github.com/gone-io/emitter)，封装事件处理，可以用于 **DDD** 的 **事件风暴**
+- [goner/urllib](goner/urllib),
+  封装了 `github.com/imroc/req/v3`，用于发送http请求，打通了server和client的traceId
 
 ## 5. ⚙️ TODO LIST
 
