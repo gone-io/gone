@@ -16,9 +16,9 @@ type Client interface {
 
 type ClientRegister struct {
 	gone.Goner
-	connections map[string]*grpc.ClientConn
-	clients     []Client `gone:"*"`
-	tracer.Tracer
+	connections   map[string]*grpc.ClientConn
+	clients       []Client `gone:"*"`
+	tracer.Tracer `gone:"gone-tracer"`
 }
 
 //go:gone
