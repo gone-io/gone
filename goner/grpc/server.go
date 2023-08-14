@@ -41,14 +41,20 @@ func (g Server) Start(gone.Cemetery) error {
 		return nil
 	}
 
+	if g.port == 0 {
+		g.port = 9090
+	}
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", g.port))
 	if err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
 
 	g.grpcServer = grpc.NewServer(
-		grpc.UnaryInterceptor(g.TraceInterceptor()),
-		grpc.UnaryInterceptor(g.RecoveryInterceptor()),
+		grpc.ChainUnaryInterceptor(
+			g.TraceInterceptor(),
+			g.RecoveryInterceptor(),
+		),
 	)
 
 	for _, grpcService := range g.grpcServices {

@@ -3,10 +3,12 @@ package gone_grpc
 import (
 	"context"
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/logrus"
 	"github.com/gone-io/gone/goner/tracer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"reflect"
 )
 
 type Client interface {
@@ -16,6 +18,7 @@ type Client interface {
 
 type ClientRegister struct {
 	gone.Goner
+	logrus.Logger `gone:"gone-logger"`
 	connections   map[string]*grpc.ClientConn
 	clients       []Client `gone:"*"`
 	tracer.Tracer `gone:"gone-tracer"`
@@ -38,7 +41,7 @@ func (s *ClientRegister) register(client Client) error {
 	if !ok {
 		c, err := grpc.Dial(client.Address(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithUnaryInterceptor(s.TraceInterceptor()),
+			grpc.WithChainUnaryInterceptor(s.TraceInterceptor()),
 		)
 		if err != nil {
 			return err
@@ -54,6 +57,7 @@ func (s *ClientRegister) register(client Client) error {
 
 func (s *ClientRegister) Start(gone.Cemetery) error {
 	for _, c := range s.clients {
+		s.Infof("register gRPC client %v on address %v\n", reflect.ValueOf(c).Type().String(), c.Address())
 		if err := s.register(c); err != nil {
 			return err
 		}
@@ -62,7 +66,7 @@ func (s *ClientRegister) Start(gone.Cemetery) error {
 	return nil
 }
 
-func (s ClientRegister) Stop(gone.Cemetery) error {
+func (s *ClientRegister) Stop(gone.Cemetery) error {
 	for _, conn := range s.connections {
 		conn.Close()
 	}
