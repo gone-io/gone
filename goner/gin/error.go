@@ -42,6 +42,9 @@ func NewBusinessError(msg string, ext ...any) BusinessError {
 
 // ToError 将 golang 提供的 error 转为一个 `gone.Error`
 func ToError(err error) gone.Error {
+	if err == nil {
+		return nil
+	}
 	iErr, ok := err.(gone.Error)
 	if ok {
 		return iErr

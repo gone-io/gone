@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/logrus"
+	"io"
 )
 
 // NewGinProxy 新建代理器
@@ -45,12 +46,22 @@ func (p *proxy) proxyOne(handle HandlerFunc, last bool) gin.HandlerFunc {
 			if !context.Writer.Written() && last {
 				p.handler.Success(context, data)
 			}
-		} else {
-			if context.Writer.Written() {
-				p.Warnf("content had been written，check fn(%s)，maybe shouldn't return data", gone.GetFuncName(handle))
-				return
-			}
-			p.handler.Success(context, data)
+			return
 		}
+		reader, ok := data.(io.Reader)
+		if ok {
+			_, err = io.Copy(context.Writer, reader)
+			if err != nil {
+				p.Warnf("copy data to writer failed, err: %v", err)
+			}
+			return
+		}
+
+		if context.Writer.Written() {
+			p.Warnf("content had been written，check fn(%s)，maybe shouldn't return data", gone.GetFuncName(handle))
+			return
+		}
+		p.handler.Success(context, data)
+
 	}
 }
