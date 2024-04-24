@@ -37,7 +37,7 @@ func (s *server) Start(gone.Cemetery) error {
 
 	s.mount()
 
-	s.l = s.net.Match(Cmux.HTTP1Fast())
+	s.l = s.net.Match(Cmux.HTTP1Fast(http.MethodPatch))
 
 	s.httpServer = &http.Server{
 		Handler: s,
