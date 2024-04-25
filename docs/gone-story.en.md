@@ -1,16 +1,3 @@
-<p align="left">
-   English&nbsp ｜&nbsp <a href="README_CN.md">中文</a>
-</p>
-<br><br>
-
-# gone framework
-The most Spring programmer-friendly Golang framework, dependency injection, integrates Web.
-
-
-[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)
-[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
-
-
 # The story of the Gone framework
 > The word "gone" in English can mean "left," "departed," "absent," "missing," or "dead." Therefore, those managed by the Gone framework are referred to as "Goners".  
 > There exists a mysterious graveyard where the "Goners" are laid to rest, and their souls 😇 ascend to heaven. Only the designated priests of heaven can bury the "Goners" in the graveyard...  
@@ -42,17 +29,17 @@ The most Spring programmer-friendly Golang framework, dependency injection, inte
 > ordinary Goner, which can be used to abstract Service, Controller, Client and other common components in program.
 
 - Prophet `Goner`
-> The method **`AfterRevive (Cemetery, Tomb) ReviveAfterError`**, it will be called after ascending to the Kingdom of Heaven.
->
+> The method **`AfterRevive (Cemetery, Tomb) ReviveAfterError`**, it will be called after ascending to the Kingdom of Heaven.  
+> 
 > **example:** [urllib](goner/urllib/req.go), a Goner that comes with the framework, which encapsulates `github.com/imroc/req/v3`, for sending http requests.
 
 - Angel `Goner`
 > Angels will assume certain responsibilities in heaven: in the start phase, the angel's `Start` method will be called; in the stop phase, the angel's `Stop` method will be called; Therefore, angels are suitable for abstracting components which need to be started and to be stopped.
->
+> 
 > **example:** [xorm](goner/xorm/implement.go), a Goner that comes with the framework, which encapsulates `xorm.io/xorm`, for connecting mysql server.
 
 - Vampire `Goner`
 > Vampires, who have the ability to suck blood, can read / write marked fields through the `Suck` method, and can abstract the behavior of certain attributes of other components.
->
+> 
 > **example:** [config](goner/config/config.go), a Goner that comes with the framework, for injecting config values in config files to Goner Attributes.
 
