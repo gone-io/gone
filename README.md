@@ -9,8 +9,7 @@ The most Spring programmer-friendly Golang framework, dependency injection, inte
 
 ## Quick Start
 
-### Example of DI
-[code](example/di/main.go)
+### 1. Example of DI [code](example/di/main.go)
 
 ```go
 package main
@@ -53,6 +52,63 @@ func main() {
 ```
 
 Run the above code, and the screen will print: "I am the AGoner, My name is Injected Goner".
+
+### 2. Example of Web Service [code](example/web/main.go)
+```go
+package main
+
+import (
+	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner"
+	"github.com/gone-io/gone/goner/gin"
+)
+
+type controller struct {
+	gone.Flag
+	router gin.IRouter `gone:"gone-gin-router"` //inject gin router Goner, which is wrapped of `gin.Engine`
+}
+
+// Mount use for  mounting the router of gin framework
+func (ctr *controller) Mount() gin.MountError {
+	ctr.router.GET("/ping", func(c *gin.Context) (any, error) {
+		return "hello", nil
+	})
+	return nil
+}
+
+func NewController() gone.Goner {
+	return &controller{}
+}
+
+func Priest(cemetery gone.Cemetery) error {
+	//Load the Goner of the gin web framework into the system
+	_ = goner.GinPriest(cemetery)
+
+	//Load the business Goner
+	cemetery.Bury(NewController())
+	return nil
+}
+
+func main() {
+	
+	//Gone.Server is used to start a service, and the program will block until the service ends.
+	gone.Serve(Priest)
+}
+
+```
+Run the code, it will listen on port 8080, and the screen will print:
+![img.png](docs/assert/web_service_start.png)
+
+Test http request:
+```bash
+curl http://localhost:8080/ping
+```
+You  will get the response:
+```json
+{"code":0,"data":"hello"}
+```
+And prints on the screen:
+![img.png](docs/assert/request_print.png)
 
 
 
