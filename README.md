@@ -3,21 +3,67 @@
 </p>
 <br><br>
 
-# gone framework
+# gone framework  [![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)  [![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
 The most Spring programmer-friendly Golang framework, dependency injection, integrates Web.
 
 
-[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)
-[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
+## Quick Start
+
+### Example of DI
+[code](example/di/main.go)
+
+```go
+package main
+
+import "github.com/gone-io/gone"
+
+type AGoner struct {
+	gone.Flag //tell the framework that this struct is a Goner
+	Name      string
+}
+
+func (g *AGoner) Say() {
+	println("I am the AGoner, My name is", g.Name)
+}
+
+type BGoner struct {
+	gone.Flag         //tell the framework that this struct is a Goner
+	a         *AGoner `gone:"*"` //Gone Tag `gone` tell the framework that this field will be injected by the framework
+}
+
+// AfterRevive executed After the Goner is revived; After `gone.Run`, gone framework detects the AfterRevive function on goners and runs it.
+func (g *BGoner) AfterRevive() gone.AfterReviveError {
+	g.a.Say()
+
+	return nil
+}
+
+// Priest Responsible for putting Goners that need to be used into the framework
+func Priest(cemetery gone.Cemetery) error {
+	cemetery.Bury(&AGoner{Name: "Injected Goner"})
+	cemetery.Bury(&BGoner{})
+	return nil
+}
+
+func main() {
+
+	// start gone framework
+	gone.Run(Priest)
+}
+```
+
+Run the above code, and the screen will print: "I am the AGoner, My name is Injected Goner".
 
 
-# The story of the Gone framework
+
+
+## The story of the Gone framework
 > The word "gone" in English can mean "left," "departed," "absent," "missing," or "dead." Therefore, those managed by the Gone framework are referred to as "Goners".  
 > There exists a mysterious graveyard where the "Goners" are laid to rest, and their souls 😇 ascend to heaven. Only the designated priests of heaven can bury the "Goners" in the graveyard...  
 > The gates of heaven are slowly opening...
 
 
-## Concept
+### Concept
 
 - [Heaven](https://pkg.go.dev/github.com/gone-io/gone#Heaven):  🕊☁️,The running program.
 - Heaven.Start: Means the program starts to run；Goner lives forever until the heaven end (the program terminates).
@@ -28,7 +74,7 @@ The most Spring programmer-friendly Golang framework, dependency injection, inte
 - [Tomb](https://pkg.go.dev/github.com/gone-io/gone#Tomb): ⚰️，The place where the Goner is buried；Which is a container for the Goner, and the Goner can be injected into other Goner.
 - [Priest](https://pkg.go.dev/github.com/gone-io/gone#Priest):  ✝️，A special function responsible for burying the Goner.
 - [Goner](https://pkg.go.dev/github.com/gone-io/gone#Goner): 💀, A interface, which is an abstraction of injectable objects: can inject other Goner, can be injected by other Goner.
-- [Prophet](https://pkg.go.dev/github.com/gone-io/gone#Prophet): A interface, If a Goner is a `Prophet`, after being resurrected, `AfterRevive() AfterReviveError` will be executed.
+- [Prophet](https://pkg.go.dev/github.com/gone-io/gone#Prophet): A interface, If a Goner is a `Prophet`, after being resurrected, `AfterRevive() gone.AfterReviveError` will be executed.
 - Prophet.AfterRevive: A function, which allows Prophet to regain control of the program after resurrection. It is crucial that the execution of this function occurs swiftly, without causing any program interruptions. "The key to glimpsing heaven can only be temporary."
 - [Angel](https://pkg.go.dev/github.com/gone-io/gone#Angel): 𓆩♡𓆪 ，Both `Start (gone.Cemetery) error` and `Stop (gone.Cemetery) error` methods need to be implemented at the same time, just like angel wings.
 - Angel.Start: A function. Angel left wing, which means to start work; which can be used to start some long-running service goroutines.

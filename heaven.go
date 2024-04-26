@@ -28,6 +28,7 @@ import (
 //
 //		gone.Run(LoadServer, LoadComponent)//开始运行
 func Run(priests ...Priest) {
+	AfterStopSignalWaitSecond = 0
 	New(priests...).
 		Install().
 		Start().
@@ -185,7 +186,9 @@ func (h *heaven) Stop() Heaven {
 	h.stopFlow()
 	close(h.stopSignal)
 
-	h.Infof("WAIT %d SECOND TO STOP!!", AfterStopSignalWaitSecond)
+	if AfterStopSignalWaitSecond > 0 {
+		h.Infof("WAIT %d SECOND TO STOP!!", AfterStopSignalWaitSecond)
+	}
 	for i := 0; i < AfterStopSignalWaitSecond; i++ {
 		h.Infof("Stop in %d seconds.", AfterStopSignalWaitSecond-i)
 		<-time.After(time.Second)
