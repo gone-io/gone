@@ -2,6 +2,8 @@
    English&nbsp ｜&nbsp <a href="README_CN.md">中文</a>
 </p>
 
+<img src="docs/assert/logo.png" width = "250" alt="logo" align=center />
+
 
 - [gone framework    ](#gone-framework----)
 	- [Quick Start](#quick-start)
