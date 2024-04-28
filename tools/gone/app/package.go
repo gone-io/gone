@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"github.com/urfave/cli/v2"
 	"io/fs"
 	"os"
@@ -10,28 +11,26 @@ import (
 	"strings"
 )
 
-//for generate a gone app
-
 var appName, template, modName string
 
 var flags = []cli.Flag{
 	&cli.StringFlag{
-		Name:  "t",
-		Value: "web",
-		Usage: "template type: only support web, more will be supported in the future",
-		//Required:    true,
+		Name:        "t",
+		Value:       "web",
+		Usage:       "template: only support web, more will be supported in the future",
 		Destination: &template,
 	},
 
 	&cli.StringFlag{
-		Name:        "mod-name",
-		Value:       "",
-		Usage:       "package name",
+		Name:        "m",
+		Usage:       "modName",
 		Destination: &modName,
 	},
 }
 
-//go:embed templates/**
+//go:embed templates/*
+//go:embed templates/*/.dockerignore
+//go:embed templates/*/.gitignore
 var f embed.FS
 
 func copyToAndReplace(source, target string, mode fs.FileMode, replace map[string]string) error {
@@ -90,6 +89,10 @@ func copyToAndReplace(source, target string, mode fs.FileMode, replace map[strin
 }
 
 func action(c *cli.Context) error {
+	if template != "web" {
+		return fmt.Errorf("template: only support web, more will be supported in the future")
+	}
+
 	appName = c.Args().Get(0)
 	if appName == "" {
 		appName = "demo"
@@ -111,9 +114,9 @@ func action(c *cli.Context) error {
 }
 
 var Command = &cli.Command{
-	Name:        "app",
-	Usage:       "${appName} [-t ${template} [--mod-name ${modeName}]]",
-	Description: "generate a gone app",
+	Name:        "create",
+	Usage:       "[-t ${template} [-m ${modName}]] ${appName}",
+	Description: "create a gone app",
 
 	Flags:  flags,
 	Action: action,
