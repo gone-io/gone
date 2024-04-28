@@ -1,0 +1,74 @@
+### 鉴权失败
+GET http://localhost:8080/api/demo/show
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 401, "Response status is not 401");
+    });
+
+
+    client.test("error code is 1000000", function() {
+        client.assert(1000000 == response.body.code, "code is error");
+    });
+%}
+
+### 鉴权成功
+GET http://localhost:8080/api/demo/show?auth=pass
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+
+
+    client.test("error code is 1000000", function() {
+        client.assert(0 == response.body.code, "code is error");
+    });
+%}
+
+### 无需鉴权
+GET http://localhost:8080/api/demo2/show
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+
+
+    client.test("error code is 1000000", function() {
+        client.assert(0 == response.body.code, "code is error");
+    });
+%}
+
+
+### 错误
+GET http://localhost:8080/api/demo2/error
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+    });
+
+
+    client.test("error code is 1000000", function() {
+        client.assert(1001000 == response.body.code, "code is error");
+    });
+%}
+
+### echo api
+GET http://localhost:8080/api/demo2/echo?echo=info
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+
+
+    client.test("error code is 1000000", function() {
+        client.assert(0 == response.body.code, "code is error");
+    });
+
+    client.test("echo data is info", function() {
+        client.assert('info' == response.body.data, "code is error");
+    });
+%}
