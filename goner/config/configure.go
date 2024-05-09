@@ -83,10 +83,11 @@ func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defa
 	case reflect.Bool:
 		def, _ := strconv.ParseBool(defaultVale)
 		el.SetBool(props.GetBool(key, def))
-	case reflect.Int:
+	case reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
 		def, _ := strconv.ParseInt(defaultVale, 10, 32)
 		confVal := props.GetInt(key, int(def))
 		el.SetInt(int64(confVal))
+
 	case reflect.Int64:
 		if isDuration(el.Type()) {
 			var duration time.Duration
@@ -110,14 +111,17 @@ func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defa
 		def, _ := strconv.ParseUint(defaultVale, 10, 32)
 		confVal := props.GetUint(key, uint(def))
 		el.Set(reflect.ValueOf(confVal))
-	case reflect.Uint64:
+
+	case reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
 		def, _ := strconv.ParseUint(defaultVale, 10, 64)
 		confVal := props.GetUint64(key, def)
-		el.Set(reflect.ValueOf(confVal))
-	case reflect.Float64:
+		el.SetUint(confVal)
+
+	case reflect.Float64, reflect.Float32:
 		def, _ := strconv.ParseFloat(defaultVale, 64)
 		confVal := props.GetFloat64(key, def)
-		el.Set(reflect.ValueOf(confVal))
+		el.SetFloat(confVal)
+
 	case reflect.String:
 		confVal := props.GetString(key, defaultVale)
 		rv.Elem().SetString(confVal)

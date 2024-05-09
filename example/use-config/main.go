@@ -16,7 +16,8 @@ type UseConfig struct {
 	gone.Flag
 
 	int      int           `gone:"config,my.conf.int"`
-	float64  float64       `config:"config,my.conf.float64"`
+	int8     int8          `gone:"config,my.conf.int8"`
+	float64  float64       `gone:"config,my.conf.float64"`
 	string   string        `gone:"config,my.conf.string"`
 	bool     bool          `gone:"config,my.conf.bool"`
 	duration time.Duration `gone:"config,my.conf.duration"`
@@ -27,6 +28,7 @@ type UseConfig struct {
 
 func (g *UseConfig) AfterRevive() gone.AfterReviveError {
 	fmt.Printf("int=%d\n", g.int)
+	fmt.Printf("int8=%d\n", g.int8)
 	fmt.Printf("float64=%f\n", g.float64)
 	fmt.Printf("string=%s\n", g.string)
 	fmt.Printf("bool=%t\n", g.bool)
