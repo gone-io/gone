@@ -53,7 +53,7 @@ func (h *testHeaven[T]) getTestGonerType() reflect.Type {
 
 func (h *testHeaven[T]) Run() {
 	//将自己安葬了，便于其他组件引用 和 感知自己在TestKit
-	h.cemetery.bury(h, IdGoneTestKit)
+	h.cemetery.Bury(h, IdGoneTestKit)
 
 	h.burial()
 

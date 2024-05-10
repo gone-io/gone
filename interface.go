@@ -2,7 +2,7 @@ package gone
 
 import "reflect"
 
-// Goner 逝者
+// Goner which is an abstraction of injectable objects: can inject other Goner, can be injected by other Goner.
 type Goner interface {
 	goneFlag()
 }
@@ -11,67 +11,107 @@ type identity interface {
 	GetId() GonerId
 }
 
-// GonerId 逝者ID
+// GonerId Goner's id
 type GonerId string
 
-// Tomb 坟墓，逝者的容器
+// Tomb container of Goner
 type Tomb interface {
 	SetId(GonerId) Tomb
 	GetId() GonerId
 	GetGoner() Goner
 	GonerIsRevive(flags ...bool) bool
 }
+
 type SetLoggerError error
-type DefaultLoggerUser interface {
+type DefaultLogger interface {
 	SetLogger(logger Logger) SetLoggerError
 }
 
-// Cemetery 墓园
+// Cemetery which is for burying and reviving Goner
 type Cemetery interface {
-	DefaultLoggerUser
+	//DefaultLogger
+
 	Goner
 
-	bury(goner Goner, ids ...GonerId) Tomb
-	Bury(Goner, ...GonerId) Cemetery  // 埋葬，将逝者埋葬到墓园
-	ReplaceBury(Goner, GonerId) error // 替换性埋葬
+	//bury(goner Goner, ids ...GonerId) Tomb
 
-	revive() error // 复活，对逝者进行复活，让他们升入天堂
-	reviveOne(tomb Tomb) (deps []Tomb, err error)
+	//Bury a Goner to the Cemetery
+	Bury(Goner, ...GonerId) Cemetery
+
+	//ReplaceBury replace the Goner in the Cemetery with a new Goner
+	ReplaceBury(Goner, GonerId) error
+
+	//ReviveOne Revive a Goner from the Cemetery
+	ReviveOne(goner any) (deps []Tomb, err error)
+
+	//ReviveAllFromTombs Revive all Goner from the Cemetery
+	ReviveAllFromTombs() error
+
+	//reviveOneFromTomb(tomb Tomb) (deps []Tomb, err error)
 	reviveDependence(tomb Tomb) (deps []Tomb, err error)
 
+	//GetTomById return the Tomb by the GonerId
 	GetTomById(GonerId) Tomb
+
+	//GetTomByType return the Tombs by the GonerType
 	GetTomByType(reflect.Type) []Tomb
 }
 
-// Priest 神父，负责给Goner下葬
+// Priest A function which has A Cemetery parameter, and return an error. use for Burying Goner
 type Priest func(cemetery Cemetery) error
 
+// Process a function which has a Cemetery parameter, and return an error. use for hooks
 type Process func(cemetery Cemetery) error
+
 type Heaven interface {
+
+	//Install do some prepare before start
 	Install() Heaven
+
+	//WaitEnd make program block until heaven stop
 	WaitEnd() Heaven
+
+	//End send a signal to heaven to stop
 	End() Heaven
 
+	//Start make heaven start
 	Start() Heaven
 	Stop() Heaven
 
+	//GetHeavenStopSignal return a channel to listen the signal of heaven stop
 	GetHeavenStopSignal() <-chan struct{}
 
+	//BeforeStart add a hook function which will execute before start;
 	BeforeStart(Process) Heaven
+
+	//AfterStart add a hook function which will execute after start
 	AfterStart(Process) Heaven
 
+	//BeforeStop add a hook function which will execute before stop
 	BeforeStop(Process) Heaven
+
+	//AfterStop add a hook function which will execute after stop
 	AfterStop(Process) Heaven
-	DefaultLoggerUser
+
+	//DefaultLogger
 }
 
 type AfterReviveError error
 
-// Prophet  先知
+// Prophet A interface which has a AfterRevive method
 type Prophet interface {
 	Goner
-	//AfterRevive 在Goner复活后会被执行
+
+	//AfterRevive A method which will execute after revive
+	// Deprecate: use `AfterRevive() error` instead
 	AfterRevive() AfterReviveError
+}
+
+type Prophet2 interface {
+	Goner
+
+	//AfterRevive A method which will execute after revive
+	AfterRevive() error
 }
 
 type Angel interface {
@@ -86,14 +126,14 @@ type Vampire interface {
 	Suck(conf string, v reflect.Value) SuckError
 }
 
-// Error 普通错误
+// Error normal error
 type Error interface {
 	error
 	Msg() string
 	Code() int
 }
 
-// InnerError 内部错误
+// InnerError which has stack
 type InnerError interface {
 	Error
 	Stack() []byte

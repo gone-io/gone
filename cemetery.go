@@ -86,7 +86,7 @@ func (c *cemetery) ReplaceBury(goner Goner, id GonerId) (err error) {
 	}
 
 	c.tombs = append(c.tombs, replaceTomb)
-	_, err = c.reviveOne(replaceTomb)
+	_, err = c.reviveOneFromTomb(replaceTomb)
 	c.replaceTombsGonerField(id, goner, oldGoner, buried)
 	return
 }
@@ -189,7 +189,7 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 		builder, ok := goner.(Vampire)
 		if ok {
 			if !tomb.GonerIsRevive() {
-				_, err = c.reviveOneDep(tomb)
+				_, err = c.reviveOneAndItsDeps(tomb)
 				if err != nil {
 					return
 				}
@@ -261,7 +261,7 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 }
 
 func (c *cemetery) reviveDependence(tomb Tomb) (deps []Tomb, err error) {
-	deps, err = c.reviveOneDep(tomb)
+	deps, err = c.reviveOneAndItsDeps(tomb)
 	if err != nil {
 		return
 	}
@@ -270,8 +270,8 @@ func (c *cemetery) reviveDependence(tomb Tomb) (deps []Tomb, err error) {
 	return
 }
 
-func (c *cemetery) reviveOneDep(tomb Tomb) (deps []Tomb, err error) {
-	deps, err = c.reviveOne(tomb)
+func (c *cemetery) reviveOneAndItsDeps(tomb Tomb) (deps []Tomb, err error) {
+	deps, err = c.reviveOneFromTomb(tomb)
 	if err != nil {
 		return
 	}
@@ -284,7 +284,7 @@ func (c *cemetery) reviveOneDep(tomb Tomb) (deps []Tomb, err error) {
 	for _, tomb := range deps {
 		if !tomb.GonerIsRevive() {
 			var tmpDeps []Tomb
-			tmpDeps, err = c.reviveOneDep(tomb)
+			tmpDeps, err = c.reviveOneAndItsDeps(tomb)
 			if err != nil {
 				return
 			}
@@ -300,9 +300,7 @@ func (c *cemetery) reviveOneDep(tomb Tomb) (deps []Tomb, err error) {
 	return
 }
 
-func (c *cemetery) reviveOne(tomb Tomb) (deps []Tomb, err error) {
-	goner := tomb.GetGoner()
-
+func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 	gonerType := reflect.TypeOf(goner).Elem()
 	gonerValue := reflect.ValueOf(goner).Elem()
 
@@ -355,14 +353,21 @@ func (c *cemetery) reviveOne(tomb Tomb) (deps []Tomb, err error) {
 
 		return deps, CannotFoundGonerByTypeError(field.Type)
 	}
+	return
+}
+
+func (c *cemetery) reviveOneFromTomb(tomb Tomb) (deps []Tomb, err error) {
+	goner := tomb.GetGoner()
+
+	deps, err = c.ReviveOne(goner)
 
 	tomb.GonerIsRevive(true)
 	return
 }
 
-func (c *cemetery) revive() error {
+func (c *cemetery) ReviveAllFromTombs() error {
 	for _, tomb := range c.tombs {
-		_, err := c.reviveOne(tomb)
+		_, err := c.reviveOneFromTomb(tomb)
 		if err != nil {
 			return err
 		}
@@ -372,6 +377,9 @@ func (c *cemetery) revive() error {
 
 var obsessionPtr *Prophet
 var obsessionType = reflect.TypeOf(obsessionPtr).Elem()
+
+var obsessionPtr2 *Prophet2
+var obsessionType2 = reflect.TypeOf(obsessionPtr2).Elem()
 
 func (c *cemetery) prophesy(deps ...Tomb) error {
 	var tombs []Tomb
@@ -388,6 +396,22 @@ func (c *cemetery) prophesy(deps ...Tomb) error {
 			return err
 		}
 	}
+
+	// deal with Prophet2
+	if len(deps) > 0 {
+		tombs = Tombs(deps).GetTomByType(obsessionType2)
+	} else {
+		tombs = c.GetTomByType(obsessionType2)
+	}
+
+	for _, tomb := range tombs {
+		obsession := tomb.GetGoner().(Prophet2)
+		err := obsession.AfterRevive()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

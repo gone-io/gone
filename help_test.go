@@ -28,3 +28,39 @@ func Test_getInterfaceType(t *testing.T) {
 	interfaceType := GetInterfaceType(new(XX))
 	assert.Equal(t, interfaceType, XXType)
 }
+
+func forText(in struct {
+	a Point `gone:"point-a"`
+	b Point `gone:"point-b"`
+}) int {
+	println(in.a.GetIndex(), in.b.GetIndex())
+	return in.a.GetIndex() + in.b.GetIndex()
+}
+
+func TestInjectWrapFn(t *testing.T) {
+	heaven :=
+		New(func(cemetery Cemetery) error {
+			cemetery.
+				Bury(&Point{Index: 1}, "point-a").
+				Bury(&Point{Index: 2}, "point-b").
+				Bury(&Point{Index: 3}, "point-c")
+
+			return nil
+		})
+
+	flag := 0
+	heaven.AfterStart(func(cemetery Cemetery) error {
+		fn, err := InjectWrapFn(cemetery, forText)
+		assert.Nil(t, err)
+
+		results := ExecuteInjectWrapFn(fn)
+		assert.Equal(t, 3, results[0])
+
+		flag = 1
+
+		return nil
+	})
+	heaven.Install()
+	heaven.Start()
+	assert.Equal(t, 1, flag)
+}

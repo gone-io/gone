@@ -216,8 +216,8 @@ func Test_cemetery_revive(t *testing.T) {
 				c.Bury(tomb.GetGoner(), tomb.GetId())
 			}
 
-			if err := c.revive(); (err != nil) != tt.wantErr {
-				t.Errorf("revive() error = %v, wantErr %v", err, tt.wantErr)
+			if err := c.ReviveAllFromTombs(); (err != nil) != tt.wantErr {
+				t.Errorf("ReviveAllFromTombs() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -252,7 +252,7 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 		}
 		c.Bury(c, IdGoneCemetery)
 
-		err := c.revive()
+		err := c.ReviveAllFromTombs()
 		assert.Nil(t, err)
 
 		logger := TestLogger{X: 100}
@@ -279,7 +279,7 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 			Bury(&Point{x: -1, y: -2}, "point-a").
 			Bury(&Point{x: 1, y: 2}, "point-b")
 
-		err := c.revive()
+		err := c.ReviveAllFromTombs()
 		assert.Nil(t, err)
 
 		c.ReplaceBury(&ZeroPoint{}, "point-a")

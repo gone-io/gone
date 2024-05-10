@@ -11,10 +11,10 @@ func Priest(cemetery gone.Cemetery) error {
 		logger, id := NewLogger()
 		cemetery.Bury(logger, id)
 
-		tombs := cemetery.GetTomByType(gone.GetInterfaceType(new(gone.DefaultLoggerUser)))
+		tombs := cemetery.GetTomByType(gone.GetInterfaceType(new(gone.DefaultLogger)))
 		for _, tomb := range tombs {
 			goner := tomb.GetGoner()
-			user := goner.(gone.DefaultLoggerUser)
+			user := goner.(gone.DefaultLogger)
 			_ = user.SetLogger(logger.(gone.Logger))
 		}
 	}

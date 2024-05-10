@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	gone.Serve(app.Priest)
+	gone.Prepare(app.Priest).Serve()
 }

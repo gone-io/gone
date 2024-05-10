@@ -105,7 +105,7 @@ func (h *heaven) burial() {
 func (h *heaven) install() {
 	h.burial()
 
-	err := h.cemetery.revive()
+	err := h.cemetery.ReviveAllFromTombs()
 	if err != nil {
 		panic(err)
 	}
@@ -180,7 +180,7 @@ func (h *heaven) End() Heaven {
 }
 
 // AfterStopSignalWaitSecond 收到停机信号后，退出程序等待的时间
-var AfterStopSignalWaitSecond = 10
+var AfterStopSignalWaitSecond = 5
 
 func (h *heaven) Stop() Heaven {
 	h.stopFlow()
@@ -197,7 +197,7 @@ func (h *heaven) Stop() Heaven {
 }
 
 func (h *heaven) BeforeStart(p Process) Heaven {
-	h.beforeStartHandlers = append(h.beforeStartHandlers, p)
+	h.beforeStartHandlers = append([]Process{p}, h.beforeStartHandlers...)
 	return h
 }
 func (h *heaven) AfterStart(p Process) Heaven {
@@ -206,7 +206,7 @@ func (h *heaven) AfterStart(p Process) Heaven {
 }
 
 func (h *heaven) BeforeStop(p Process) Heaven {
-	h.beforeStopHandlers = append(h.beforeStopHandlers, p)
+	h.beforeStopHandlers = append([]Process{p}, h.beforeStopHandlers...)
 	return h
 }
 func (h *heaven) AfterStop(p Process) Heaven {
