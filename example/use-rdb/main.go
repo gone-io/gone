@@ -34,7 +34,7 @@ func (e *SqlExecutor) Execute() {
 		return
 	}
 
-	fmt.Printf("%v", demo)
+	fmt.Printf("demo:%v\n", demo)
 
 	var list []Demo
 	err = e.db.Find(&list)
@@ -43,7 +43,7 @@ func (e *SqlExecutor) Execute() {
 		return
 	}
 
-	fmt.Printf("demo records:%v", list)
+	fmt.Printf("demo records:%v\n", list)
 
 }
 
