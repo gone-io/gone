@@ -1,10 +1,11 @@
-module github.com/gone-io/gone/example/http-server
+module use-mysql
 
-go 1.21
+go 1.21.1
 
-toolchain go1.21.1
-
-require github.com/gone-io/gone v0.0.4
+require (
+	github.com/go-sql-driver/mysql v1.6.0
+	github.com/gone-io/gone v0.1.5
+)
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
@@ -64,4 +65,4 @@ require (
 	xorm.io/xorm v1.3.2 // indirect
 )
 
-replace github.com/gone-io/gone v0.0.4 => ../../
+replace github.com/gone-io/gone v0.1.5 => ../..
