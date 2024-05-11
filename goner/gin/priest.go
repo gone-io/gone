@@ -25,6 +25,9 @@ func ginPriest(cemetery gone.Cemetery) error {
 	if nil == cemetery.GetTomById(gone.IdGoneGin) {
 		cemetery.Bury(NewGinServer())
 	}
+	if nil == cemetery.GetTomById(gone.IdHttpInjector) {
+		cemetery.Bury(NewHttInjector())
+	}
 	return nil
 }
 

@@ -76,6 +76,11 @@ func (p *sysProcessor) trace(context *Context) (any, error) {
 	p.tracer.SetTraceId(traceId, func() {
 		requestID := context.GetHeader(RequestIdHeaderKey)
 		p.Infof("bind requestId:%s", requestID)
+		traceId = p.tracer.GetTraceId()
+
+		xMap.Store(traceId, context)
+		defer xMap.Delete(traceId)
+
 		context.Next()
 	})
 	return nil, nil

@@ -32,6 +32,8 @@ const (
 	IdGoneGinProxy     = "gone-gin-proxy"
 	IdGoneGinResponser = "gone-gin-responser"
 
+	IdHttpInjector = "http"
+
 	//IdGoneXorm Xorm Goner 的ID，封装了xorm，用于操作数据库；使用 [goner.XormPriest](goner#XormPriest) 牧师函数安葬
 	IdGoneXorm = "gone-xorm"
 

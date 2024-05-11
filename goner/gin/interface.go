@@ -12,8 +12,12 @@ type Context struct {
 	*gin.Context
 }
 
+//type HandlerFuncSingleWithReturnAndError func(ctx *Context) (any, error)
+//type HandlerFuncSingleWithError func(ctx *Context) error
+//type HandlerFuncSingle func(ctx *Context)
+
 // HandlerFunc `gone`框架的路由处理函数
-type HandlerFunc func(ctx *Context) (any, error)
+type HandlerFunc any
 
 // IRoutes `gone`框架基于`gin`封装的路由，用于定义处理特定请求的函数
 // 注入默认的路由使用Id: gone-gin-router (`gone.IdGoneGinRouter`)
