@@ -1,6 +1,7 @@
 package logrus
 
-// Logger 日志接口
+// Logger log interface
+// Deprecated: use gone.Logger instead
 type Logger interface {
 	Tracef(format string, args ...any)
 	Debugf(format string, args ...any)

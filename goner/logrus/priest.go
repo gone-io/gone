@@ -14,8 +14,8 @@ func Priest(cemetery gone.Cemetery) error {
 		tombs := cemetery.GetTomByType(gone.GetInterfaceType(new(gone.DefaultLogger)))
 		for _, tomb := range tombs {
 			goner := tomb.GetGoner()
-			user := goner.(gone.DefaultLogger)
-			_ = user.SetLogger(logger.(gone.Logger))
+			log := goner.(gone.DefaultLogger)
+			_ = log.SetLogger(logger.(gone.SimpleLogger))
 		}
 	}
 	return nil

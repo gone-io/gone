@@ -208,8 +208,8 @@ func Test_cemetery_revive(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &cemetery{
-				Logger:  &defaultLogger{},
-				tombMap: make(map[GonerId]Tomb),
+				SimpleLogger: &defaultLogger{},
+				tombMap:      make(map[GonerId]Tomb),
 			}
 
 			for _, tomb := range tt.fields.goneList {
@@ -247,8 +247,8 @@ func (p *ZeroPoint) GetIndex() int {
 func Test_cemetery_ReplaceBury(t *testing.T) {
 	t.Run("replace has default value field", func(t *testing.T) {
 		c := &cemetery{
-			Logger:  &defaultLogger{},
-			tombMap: make(map[GonerId]Tomb),
+			SimpleLogger: &defaultLogger{},
+			tombMap:      make(map[GonerId]Tomb),
 		}
 		c.Bury(c, IdGoneCemetery)
 
@@ -259,13 +259,13 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 
 		c.ReplaceBury(&logger, IdGoneLogger)
 
-		assert.Equal(t, c.Logger, &logger)
+		assert.Equal(t, c.SimpleLogger, &logger)
 	})
 
 	t.Run("replace revived field", func(t *testing.T) {
 		c := &cemetery{
-			Logger:  &defaultLogger{},
-			tombMap: make(map[GonerId]Tomb),
+			SimpleLogger: &defaultLogger{},
+			tombMap:      make(map[GonerId]Tomb),
 		}
 		const line = "the-line"
 		type Line struct {

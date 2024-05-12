@@ -13,7 +13,7 @@ func NewTracer() (gone.Goner, gone.GonerId) {
 
 type tracer struct {
 	gone.Flag
-	gone.Logger `gone:"gone-logger"`
+	gone.SimpleLogger `gone:"gone-logger"`
 }
 
 var xMap sync.Map

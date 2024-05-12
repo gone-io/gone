@@ -48,11 +48,11 @@ func Serve(priests ...Priest) {
 func New(priests ...Priest) Heaven {
 	cemetery := newCemetery()
 	h := heaven{
-		Logger:     &defaultLogger{},
-		cemetery:   cemetery,
-		priests:    priests,
-		signal:     make(chan os.Signal),
-		stopSignal: make(chan struct{}),
+		SimpleLogger: &defaultLogger{},
+		cemetery:     cemetery,
+		priests:      priests,
+		signal:       make(chan os.Signal),
+		stopSignal:   make(chan struct{}),
 	}
 
 	h.
@@ -65,8 +65,8 @@ func New(priests ...Priest) Heaven {
 type heaven struct {
 	Flag
 
-	Logger   `gone:"gone-logger"`
-	cemetery Cemetery
+	SimpleLogger `gone:"gone-logger"`
+	cemetery     Cemetery
 
 	priests []Priest
 
@@ -84,8 +84,8 @@ func getAngelType() reflect.Type {
 	return reflect.TypeOf(angelPtr).Elem()
 }
 
-func (h *heaven) SetLogger(logger Logger) SetLoggerError {
-	h.Logger = logger
+func (h *heaven) SetLogger(logger SimpleLogger) SetLoggerError {
+	h.SimpleLogger = logger
 	return nil
 }
 

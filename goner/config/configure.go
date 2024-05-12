@@ -12,9 +12,9 @@ import (
 
 type propertiesConfigure struct {
 	gone.Flag
-	gone.Logger `gone:"gone-logger"`
-	props       *properties.Properties
-	cemetery    gone.Cemetery `gone:"gone-cemetery"`
+	gone.SimpleLogger `gone:"gone-logger"`
+	props             *properties.Properties
+	cemetery          gone.Cemetery `gone:"gone-cemetery"`
 }
 
 func (c *propertiesConfigure) Get(key string, v any, defaultVal string) error {

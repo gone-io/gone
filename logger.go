@@ -2,7 +2,7 @@ package gone
 
 import "fmt"
 
-type Logger interface {
+type SimpleLogger interface {
 	Tracef(format string, args ...any)
 	Errorf(format string, args ...any)
 	Warnf(format string, args ...any)
