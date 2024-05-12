@@ -126,6 +126,11 @@ type Vampire interface {
 	Suck(conf string, v reflect.Value) SuckError
 }
 
+type Vampire2 interface {
+	Goner
+	Suck(conf string, v reflect.Value, field reflect.StructField) error
+}
+
 // Error normal error
 type Error interface {
 	error

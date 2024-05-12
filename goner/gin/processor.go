@@ -30,6 +30,8 @@ type sysProcessor struct {
 	router     IRouter       `gone:"gone-gin-router"`
 	resHandler Responser     `gone:"gone-gin-responser"`
 
+	httpInjector *httpInjector `gone:"http"`
+
 	// HealthCheckUrl 健康检查路劲
 	// 对应配置项为: `server.health-check`
 	// 默认为空，不开启；
@@ -52,7 +54,7 @@ type sysProcessor struct {
 }
 
 func (p *sysProcessor) AfterRevive() gone.AfterReviveError {
-	m := []HandlerFunc{p.trace, p.recovery}
+	m := []HandlerFunc{p.trace, p.httpInjector.SetContext, p.recovery}
 	if p.ShowRequestTime {
 		m = append(m, p.statRequestTime)
 	}
@@ -76,11 +78,6 @@ func (p *sysProcessor) trace(context *Context) (any, error) {
 	p.tracer.SetTraceId(traceId, func() {
 		requestID := context.GetHeader(RequestIdHeaderKey)
 		p.Infof("bind requestId:%s", requestID)
-		traceId = p.tracer.GetTraceId()
-
-		xMap.Store(traceId, context)
-		defer xMap.Delete(traceId)
-
 		context.Next()
 	})
 	return nil, nil

@@ -186,8 +186,7 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 		}
 
 		//如果不兼容，检查Goner是否为Vampire；对Vampire启动吸血行为
-		builder, ok := goner.(Vampire)
-		if ok {
+		if builder, ok := goner.(Vampire); ok {
 			if !tomb.GonerIsRevive() {
 				_, err = c.reviveOneAndItsDeps(tomb)
 				if err != nil {
@@ -198,6 +197,19 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 			suc = err == nil
 			return
 		}
+
+		if builder, ok := goner.(Vampire2); ok {
+			if !tomb.GonerIsRevive() {
+				_, err = c.reviveOneAndItsDeps(tomb)
+				if err != nil {
+					return
+				}
+			}
+			err = builder.Suck(extConfig, v, field)
+			suc = err == nil
+			return
+		}
+
 		err = NotCompatibleError(field.Type, reflect.TypeOf(goner).Elem())
 	}
 	return
