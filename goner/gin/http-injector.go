@@ -34,10 +34,14 @@ func parseConfKeyValue(conf string) (key, value string) {
 }
 
 func (s *httpInjector) SetContext(context *Context) (any, error) {
+	return s.setContext(context, context.Next)
+}
+
+func (s *httpInjector) setContext(context *Context, next func()) (any, error) {
 	traceId := s.tracer.GetTraceId()
 	xMap.Store(traceId, context)
 	defer xMap.Delete(traceId)
-	context.Next()
+	next()
 	return nil, nil
 }
 

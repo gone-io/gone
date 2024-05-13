@@ -44,7 +44,6 @@ func (e *engine) Start(gone.Cemetery) error {
 	e.SetMaxOpenConns(e.maxOpen)
 	e.SetMaxIdleConns(e.maxIdleCount)
 	e.SetLogger(&dbLogger{Logger: e.Logger, showSql: e.showSql})
-
 	return e.Ping()
 }
 

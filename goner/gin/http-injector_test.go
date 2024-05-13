@@ -16,13 +16,8 @@ import (
 	"testing"
 )
 
-var f func()
-
-func (c *Context) Next() {
-	f()
-}
-
 func Test_HttpInject(t *testing.T) {
+
 	gone.
 		Prepare(func(cemetery gone.Cemetery) error {
 			_ = tracer.Priest(cemetery)
@@ -59,6 +54,7 @@ func Test_HttpInject(t *testing.T) {
 				}
 
 				var err error
+				var f func()
 				_, err = gone.InjectWrapFn(in.cemetery, func() {})
 				assert.Nil(t, err)
 
@@ -93,7 +89,7 @@ func Test_HttpInject(t *testing.T) {
 					assert.Equal(t, 1, i)
 					i++
 				}
-				_, _ = in.httpInjector.SetContext(&context)
+				_, _ = in.httpInjector.setContext(&context, f)
 				assert.Equal(t, 2, i)
 
 				//cannot inject
@@ -109,7 +105,7 @@ func Test_HttpInject(t *testing.T) {
 					assert.Nil(t, fn)
 					i++
 				}
-				_, _ = in.httpInjector.SetContext(&context)
+				_, _ = in.httpInjector.setContext(&context, f)
 				assert.Equal(t, 1, i)
 
 				//inject query,cookie,header
@@ -143,7 +139,7 @@ func Test_HttpInject(t *testing.T) {
 					in.log.Infof("%v", err)
 					i++
 				}
-				_, _ = in.httpInjector.SetContext(&context)
+				_, _ = in.httpInjector.setContext(&context, f)
 				assert.Equal(t, 2, i)
 
 				//inject body
@@ -180,7 +176,7 @@ func Test_HttpInject(t *testing.T) {
 					in.log.Infof("%v", err)
 					i++
 				}
-				_, _ = in.httpInjector.SetContext(&context)
+				_, _ = in.httpInjector.setContext(&context, f)
 				assert.Equal(t, 2, i)
 
 				//use pointer
@@ -202,7 +198,7 @@ func Test_HttpInject(t *testing.T) {
 					in.log.Infof("%v", err)
 					i++
 				}
-				_, _ = in.httpInjector.SetContext(&context)
+				_, _ = in.httpInjector.setContext(&context, f)
 				assert.Equal(t, 2, i)
 
 				//use xml
@@ -226,7 +222,7 @@ func Test_HttpInject(t *testing.T) {
 					in.log.Infof("%v", err)
 					i++
 				}
-				_, _ = in.httpInjector.SetContext(&context)
+				_, _ = in.httpInjector.setContext(&context, f)
 				assert.Equal(t, 2, i)
 
 				//use form

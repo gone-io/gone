@@ -11,9 +11,9 @@ const (
 )
 
 func CacheProviderNeedKeyError() gone.Error {
-	return gone.NewInnerError(CacheProviderNeedKey, "redis cache provider need a key")
+	return gone.NewInnerError("redis cache provider need a key", CacheProviderNeedKey)
 }
 
 func KeyNoExpirationError() gone.Error {
-	return gone.NewInnerError(KeyNoExpiration, "There is no expiration time on redis key")
+	return gone.NewInnerError("There is no expiration time on redis key", KeyNoExpiration)
 }

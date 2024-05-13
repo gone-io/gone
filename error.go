@@ -42,7 +42,7 @@ func (e *iError) Stack() []byte {
 	return e.trace
 }
 
-func NewInnerError(code int, msg string) Error {
+func NewInnerError(msg string, code int) Error {
 	return &iError{defaultErr: &defaultErr{code: code, msg: msg}, trace: PanicTrace(2)}
 }
 
@@ -65,21 +65,21 @@ const (
 )
 
 func GonerIdIsExistedError(id GonerId) Error {
-	return NewInnerError(GonerIdIsExisted, fmt.Sprintf("Goner Id(%s) is existed", id))
+	return NewInnerError(fmt.Sprintf("Goner Id(%s) is existed", id), GonerIdIsExisted)
 }
 
 func CannotFoundGonerByIdError(id GonerId) Error {
-	return NewInnerError(CannotFoundGonerById, fmt.Sprintf("Cannot found the Goner by Id(%s)", id))
+	return NewInnerError(fmt.Sprintf("Cannot found the Goner by Id(%s)", id), CannotFoundGonerById)
 }
 
 func CannotFoundGonerByTypeError(t reflect.Type) Error {
-	return NewInnerError(CannotFoundGonerByType, fmt.Sprintf("Cannot found the Goner by Type(%s)", t.Name()))
+	return NewInnerError(fmt.Sprintf("Cannot found the Goner by Type(%s)", t.Name()), CannotFoundGonerByType)
 }
 
 func NotCompatibleError(a reflect.Type, b reflect.Type) Error {
-	return NewInnerError(NotCompatible, fmt.Sprintf("Not compatible: %s/%s vs %s/%s", a.PkgPath(), a.Name(), b.PkgPath(), b.Name()))
+	return NewInnerError(fmt.Sprintf("Not compatible: %s/%s vs %s/%s", a.PkgPath(), a.Name(), b.PkgPath(), b.Name()), NotCompatible)
 }
 
 func ReplaceBuryIdParamEmptyError() Error {
-	return NewInnerError(ReplaceBuryIdParamEmpty, "ReplaceBury id cannot be empty")
+	return NewInnerError("ReplaceBury id cannot be empty", ReplaceBuryIdParamEmpty)
 }

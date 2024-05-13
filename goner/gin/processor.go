@@ -69,7 +69,7 @@ var RequestIdHeaderKey = "X-Request-ID"
 var TraceIdHeaderKey = "X-Trace-ID"
 
 func (p *sysProcessor) trace(context *Context) (any, error) {
-	if p.HealthCheckUrl != "" && context.Request.URL.Path == "/api/health-check" {
+	if p.HealthCheckUrl != "" && context.Request.URL.Path == p.HealthCheckUrl {
 		context.AbortWithStatus(200)
 		return nil, nil
 	}
@@ -92,7 +92,7 @@ func (p *sysProcessor) recovery(context *Context) (any, error) {
 			if !ok {
 				err = errors.New(fmt.Sprintf("%v", r))
 			}
-			p.resHandler.Failed(context, err)
+			p.resHandler.Failed(context.Context, err)
 			context.Abort()
 		}
 	}()

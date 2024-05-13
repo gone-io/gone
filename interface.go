@@ -1,6 +1,9 @@
 package gone
 
-import "reflect"
+import (
+	"reflect"
+	"xorm.io/xorm"
+)
 
 // Goner which is an abstraction of injectable objects: can inject other Goner, can be injected by other Goner.
 type Goner interface {
@@ -175,4 +178,31 @@ type Logger interface {
 	Errorln(args ...any)
 	Fatalln(args ...any)
 	Panicln(args ...any)
+}
+
+// Tracer Log tracking, which is used to assign a unified traceId to the same call link to facilitate log tracking.
+type Tracer interface {
+
+	//SetTraceId to set `traceId` to the calling function. If traceId is an empty string, an automatic one will
+	//be generated. TraceId can be obtained by using the GetTraceId () method in the calling function.
+	SetTraceId(traceId string, fn func())
+
+	//GetTraceId Get the traceId of the current goroutine
+	GetTraceId() string
+
+	//Go Start a new goroutine instead of `go func`, which can pass the traceid to the new goroutine.
+	Go(fn func())
+
+	//Recover use for catch panic in goroutine
+	Recover()
+
+	//RecoverSetTraceId SetTraceId and Recover
+	RecoverSetTraceId(traceId string, fn func())
+}
+
+type XormEngine interface {
+	xorm.EngineInterface
+	Transaction(fn func(session xorm.Interface) error) error
+	Sqlx(sql string, args ...any) *xorm.Session
+	GetOriginEngine() *xorm.Engine
 }

@@ -8,16 +8,12 @@ import (
 // RouterGroupName 路由分组名称
 type RouterGroupName string
 
-type Context struct {
-	*gin.Context
-}
-
-//type HandlerFuncSingleWithReturnAndError func(ctx *Context) (any, error)
-//type HandlerFuncSingleWithError func(ctx *Context) error
-//type HandlerFuncSingle func(ctx *Context)
+// Context `gone`框架基于`gin`封装的上下文
+// Deprecated use `gone.Context` instead
+type Context = gone.Context
 
 // HandlerFunc `gone`框架的路由处理函数
-type HandlerFunc any
+type HandlerFunc = gone.HandlerFunc
 
 // IRoutes `gone`框架基于`gin`封装的路由，用于定义处理特定请求的函数
 // 注入默认的路由使用Id: gone-gin-router (`gone.IdGoneGinRouter`)
@@ -39,41 +35,47 @@ type HandlerFunc any
 //	}
 //
 // ```
-type IRoutes interface {
-	// Use 在路由上应用`gin`中间件
-	Use(...HandlerFunc) IRoutes
-
-	Handle(string, string, ...HandlerFunc) IRoutes
-	Any(string, ...HandlerFunc) IRoutes
-	GET(string, ...HandlerFunc) IRoutes
-	POST(string, ...HandlerFunc) IRoutes
-	DELETE(string, ...HandlerFunc) IRoutes
-	PATCH(string, ...HandlerFunc) IRoutes
-	PUT(string, ...HandlerFunc) IRoutes
-	OPTIONS(string, ...HandlerFunc) IRoutes
-	HEAD(string, ...HandlerFunc) IRoutes
-}
+//
+//	type IRoutes interface {
+//		// Use 在路由上应用`gin`中间件
+//		Use(...HandlerFunc) IRoutes
+//
+//		Handle(string, string, ...HandlerFunc) IRoutes
+//		Any(string, ...HandlerFunc) IRoutes
+//		GET(string, ...HandlerFunc) IRoutes
+//		POST(string, ...HandlerFunc) IRoutes
+//		DELETE(string, ...HandlerFunc) IRoutes
+//		PATCH(string, ...HandlerFunc) IRoutes
+//		PUT(string, ...HandlerFunc) IRoutes
+//		OPTIONS(string, ...HandlerFunc) IRoutes
+//		HEAD(string, ...HandlerFunc) IRoutes
+//	}
+type IRoutes = gone.IRoutes
 
 // IRouter `gone`框架基于`gin`封装的"路由器"
 // 注入默认的路由器使用Id: gone-gin-router (`gone.IdGoneGinRouter`)
-type IRouter interface {
-	// IRoutes 1. 组合了`gone.IRoutes`，可以定义路由
-	IRoutes
-
-	// GetGinRouter 2. 可以获取被封装的ginRouter对象，用于操作原始的gin路由
-	GetGinRouter() gin.IRouter
-
-	// Group 3.定义路由分组
-	Group(string, ...HandlerFunc) RouteGroup
-
-	LoadHTMLGlob(pattern string)
-}
+//
+//	type IRouter interface {
+//		// IRoutes 1. 组合了`gone.IRoutes`，可以定义路由
+//		IRoutes
+//
+//		// GetGinRouter 2. 可以获取被封装的ginRouter对象，用于操作原始的gin路由
+//		GetGinRouter() gin.IRouter
+//
+//		// Group 3.定义路由分组
+//		Group(string, ...HandlerFunc) RouteGroup
+//
+//		LoadHTMLGlob(pattern string)
+//	}
+type IRouter = gone.IRouter
 
 // RouteGroup 路由分组
 // 注入默认的路由分组使用Id: gone-gin-router (`gone.IdGoneGinRouter`)
-type RouteGroup interface {
-	IRouter
-}
+//
+//	type RouteGroup interface {
+//		IRouter
+//	}
+type RouteGroup = gone.RouteGroup
 
 // Controller 控制器接口，由业务代码编码实现，用于挂载和处理路由
 // 使用方式参考 [示例代码](https://gitlab.openviewtech.com/gone/gone-example/-/tree/master/gone-app)
@@ -83,7 +85,7 @@ type Controller interface {
 }
 
 // MountError `gin.Controller#Mount`返回的类型，用于识别 `gin.Controller` 的实现，避免被错误的调用到
-type MountError error
+type MountError = gone.GinMountError
 
 // ## 错误处理
 // 我们定义两种错误接口，3种具体的错误
@@ -99,12 +101,14 @@ type jsonWriter interface {
 	JSON(code int, obj any)
 }
 
+type WrappedDataFunc func(code int, msg string, data any) any
+
 // Responser 响应处理器
 // 注入默认的响应处理器使用Id: gone-gin-responser (`gone.IdGoneGinResponser`)
 type Responser interface {
 	gone.Goner
-	Success(ctx jsonWriter, data any)
-	Failed(ctx jsonWriter, err error)
+	Success(ctx *gin.Context, data any)
+	Failed(ctx *gin.Context, err error)
 }
 
 type Close func()
@@ -122,9 +126,6 @@ type Server interface {
 // 2. BusinessError，业务错误
 // 业务错误是业务上的特殊情况，需要在不同的业务场景返回不同的数据类型；本质上不算错误，是为了便于业务编写做的一种抽象，
 // 让同一个接口拥有在特殊情况返回不同业务代码和业务数据的能力
-type BusinessError interface {
-	gone.Error
-	Data() any
-}
+type BusinessError = gone.BusinessError
 
 type R map[string]any
