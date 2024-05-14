@@ -53,7 +53,7 @@
 ## 命令
 
 > 假设已经安装了Golang环境  
-> 下列命令使用Makefile定义，系统中需要安装Make(参考[安装make](https://cn.bing.com/search?q=%E5%AE%89%E8%A3%85+make))
+> 下列命令使用Makefile定义，系统中需要安装Make(参考[安装make](https://blog.csdn.net/waitdeng/article/details/138849321))
 
 - `make gone`   
   用于生成Priest代码，在IED中运行前**⚠️必须先执行**该命令，否则代码不完整无法运行

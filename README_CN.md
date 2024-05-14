@@ -1,174 +1,91 @@
 <p align="left">
     <a href="README.md">English</a>&nbsp ｜&nbsp 中文
 </p>
-<br><br>
+<br>
 
-# gone
+# Gone
 
-[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)
-[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
+[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
 
-## 0. 框架定位
-**做一个对Spring程序员最友好的Golang框架**
+Gone首先是一个轻量的，基于Golang的，依赖注入框架，灵感来源于Java中的Spring Framework；其次，Gone框架中包含了一系列内置组件，通过这些组件提供一整套Web开发方案，提供服务配置、日志追踪、服务调用、数据库访问、消息中间件等微服务常用能力。
+
+下面使用Gone来编写一个Web服务吧！
+
+## 🌐Web服务
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner"
+)
+
+// 实现一个Goner，什么是Goner？ => https://goner.fun/zh/guide/core-concept.html#goner-%E9%80%9D%E8%80%85
+type controller struct {
+	gone.Flag //goner 标记，匿名嵌入后，一个结构体就实现了Goner
+	gone.RouteGroup `gone:"gone-gin-router"` //注入根路由
+}
+
+// 实现 Mount 方法，挂载路由；框架会自动执行该方法
+func (ctr *controller) Mount() gone.GinMountError {
+
+	// 定义请求结构体
+	type Req struct {
+		Msg string `json:"msg"`
+	}
+
+	//注册 `POST /hello` 的 处理函数
+	ctr.POST("/hello", func(in struct {
+		to  string `gone:"http,query"` //注入http请求Query参数To
+		req *Req   `gone:"http,body"`  //注入http请求Body
+	}) any {
+		return fmt.Sprintf("to %s msg is: %s", in.to, in.req.Msg)
+	})
+
+	return nil
+}
+
+func main() {
+	//启动服务
+	gone.Serve(func(cemetery gone.Cemetery) error {
+		// 调用框架内置组件，加载gin框架
+		_ = goner.GinPriest(cemetery)
+
+		//将 一个controller类型的Goner埋葬到墓园
+		//埋葬是什么意思？ => https://goner.fun/zh/guide/core-concept.html#bury-%E5%9F%8B%E8%91%AC
+		//墓园是什么意思？ => https://goner.fun/zh/guide/core-concept.html#cemetery-%E5%A2%93%E5%9B%AD
+		cemetery.Bury(&controller{})
+		return nil
+	})
+}
+```
+
+运行上面代码：go run main.go，程序将监听8080端口，使用curl测试：
+```bash
+curl -X POST 'http://localhost:8080/hello' \
+    -H 'Content-Type: application/json' \
+	--data-raw '{"msg": "你好呀？"}'
+```
+
+结果如下：
+```
+{"code":0,"data":"to  msg is: 你好呀？"}
+```
+[快速开始](https://goner.fun/zh/quick-start/)
 
 
-**广告**：长期寻觅一起完善和维护的框架的朋友："看你骨骼惊奇，就是你了🫵"  
-  
-**有意者请加微信👇，邀请你入群：**  
+## 💡概念
+> 我们编写的代码终究只是死物，除非他们被运行起来。
+在Gone中，组件被抽象为Goner（逝者），Goner属性可以注入其他的Goner。Gone启动前，需要将所有 Goners 埋葬（Bury）到墓园（cemetery）；Gone启动后，会将所有 Goners 复活，建立一个 天国（Heaven），“天国的所有人都不再残缺，他们想要的必定得到满足”。
 
-<img src=docs/assert/qr_dapeng.png width=200px />
+[核心概念](https://goner.fun/zh/guide/core-concept.html)
 
-
-## 1. 这是什么？
-
-- 一个类似 **Java Spring** 的 **Golang** **依赖注入** 框架
-- 一个不断完善的 **微服务解决方案**
-- 更多信息，参考 [Gone Story](docs/gone-story.cn.md)
-
-## 2. 怎么使用？
-
-> 所有的代码都应该封装到一个个叫 **Goner** 容器中，**Goner** 的概念可以类比 **Spring** 中的 **Spring Bean**
-
-- **Goner** 是依赖注入的最小单位
-- **Goner** 可以封装框架组件
-- **Goner** 也可以是业务组件，比如一个 Service、一个 Controller、一个 Client、一个 Dao 等
-
-> 下面是一个简单的例子，完整代码在[这里](https://github.com/gone-io/examples/tree/main/simple)
-
-### 2.1. 编写一个 **Goner**
-
-- 定一个 **`struct`**
-- 组合 `gone.Flag`，将其标记为一个 Goner
-- 定一个"构造函数"
-
-- 如下：
-
-  ```go
-  package user
-
-  import "github.com/gone-io/gone"
-
-  // 1. 定义 Goner：userService
-  type userService struct {
-      gone.Flag //2. 聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
-  }
-
-  //NewUserService 3. 定义构造函数
-  func NewUserService() gone.Goner {
-      return &userService{}
-  }
-  ```
-
-### 2.2. 给 **Goner** 依赖的属性注入值
-
-- 假设 `user.userService` 的一个方法依赖`redis.Cache`
-
-  ```go
-  package user
-
-  import (
-      "fmt"
-      "github.com/gone-io/examples/simple/interface/service"
-      "github.com/gone-io/gone"
-      "github.com/gone-io/gone/goner/redis"
-  )
-
-  // 1. 定义 Goner：userService
-  type userService struct {
-      gone.Flag             //2. 聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
-      cache     redis.Cache `gone:"gone-redis-cache"` //4. 标记需要注入的依赖，这里表示在`cache`属性上注入一个ID=`gone-redis-cache`的 Goner 组件
-  }
-
-  func (s *userService) GetUserInfo(id int64) (*service.UserInfo, error) {
-      info := new(service.UserInfo)
-      key := fmt.Sprintf("user-%d", id)
-      return info, s.cache.Get(key, info) //5.使用注入的依赖完成业务
-  }
-
-  // NewUserService 3. 定义 `userService` 构造函数
-  func NewUserService() gone.Goner {
-      return &userService{}
-  }
-  ```
-
-- 假设 `student.studentService` 依赖 `redis.userService`
-- 给 `student.studentService` 增加一个 `AfterRevive() gone.AfterReviveError`（Goner 上的`AfterRevive`在属性注入完后自动运行）
-
-  ```go
-  package student
-
-  import (
-      "github.com/gone-io/examples/simple/interface/service"
-      "github.com/gone-io/gone"
-      "github.com/gone-io/gone/goner/logrus"
-  )
-
-  // 1. 定义 Goner：studentService
-  type studentService struct {
-      gone.Flag                  // 2.  聚合 gone.Flag，使其实现gone.Goner接口成为一个Goner
-      service.User `gone:"*"`    //4. 聚合 service.User，这里的 `gone:"*"` 表示 `按类型注入` 一个Goner
-      log          logrus.Logger `gone:"gone-logger"` //6. 注入一个用于日志打印的Goner
-  }
-
-  func (s *studentService) GetStudentInfo(id int64) (*service.UserInfo, error) {
-      return s.GetUserInfo(id) //5. 调用 User 的 `GetUserInfo` 来实现 `GetStudentInfo`方法
-  }
-
-  // AfterRevive 6.该方法会在 studentService 属性被注入完成后自动运行
-  func (s *studentService) AfterRevive() gone.AfterReviveError {
-      info, err := s.GetUserInfo(100)
-      if err != nil {
-          s.log.Errorf("get info err:%v", err) //调用日志Goner，打印错误日志
-      } else {
-          s.log.Infof("student info:%v", info) //调用日志Goner，打印student info
-      }
-      return nil
-  }
-
-  // NewStudentService 3. 定义 `studentService` 构造函数
-  func NewStudentService() gone.Goner {
-      return &studentService{}
-  }
-
-  ```
-
-### 2.3. 启动程序
-
-- 增加 main 函数，调用 gone.Run
-- 给 gone.Run 方法提供一个 `Priest` 函数（在 **Gone** 中，**加载** **Goner** 的函数 叫 **Priest———牧师**；**Goner**
-  其实是**逝者**的意思）
-- 在 `Priest` 函数 中 “安葬” **Goner** （**Priest———牧师**，对 **Goner** 的加载过程叫 **Bury———安葬**
-  ，[更多概念](docs/gone-story.cn.md)）
-
-  ```go
-  package main
-
-  import (
-      "github.com/gone-io/examples/simple/student"
-      "github.com/gone-io/examples/simple/user"
-      "github.com/gone-io/gone"
-  )
-
-  // 1. 增加 main 函数，调用 gone.Run
-  func main() {
-      //2. 给 gone.Run 方法提供一个 `Priest` 函数
-      gone.Run(Priest)
-  }
-
-  func Priest(cemetery gone.Cemetery) error {
-      // 3. "安葬" Goner
-      cemetery.Bury(user.NewUserService()) // 3.1 在 `Priest` 函数中 "安葬" `user.NewUserService()`构造出来的 Goner
-      cemetery.Bury(student.NewStudentService()) // 3.2 在 `Priest` 函数中 "安葬" `user.NewStudentService()`构造出来的 Goner
-      return nil
-  }
-  ```
-
-## 3. 🌰 更多例子：
+## 🌰 更多例子：
 
 > 在[example](example)目录可以找到详细的例子，后续会补充完成的帮忙手册。
 
-## 4. 🔣 组件库（👉🏻 更多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）
-
+## 🪜🧰🛠️ 组件库（👉🏻 更多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）
 - [goner/cumx](goner/cmux)，
   对 `github.com/soheilhy/cmux` 的封装，用于复用同一个端口实现多种协议；
 - [goner/config](goner/config)，用于实现对 **Gone-App** 配置
@@ -187,18 +104,4 @@
 - [goner/urllib](goner/urllib),
   封装了 `github.com/imroc/req/v3`，用于发送http请求，打通了server和client的traceId
 
-## 5. ⚙️ TODO LIST
-
-- grpc，封装 github.com/grpc/grpc
-- 完善文档
-- 完善英文文档
-- 完善测试用例
-
-## 6. ⚠️ 注意
-
-- 尽量不用使用 struct（结构体）作为 `gone` 标记的字段，由于 struct 在 golang 中是值拷贝，可能导致相关依赖注入失败的情况
-- 下面这些 Goner 上的方法都不应该是阻塞的
-    - `AfterRevive(Cemetery, Tomb) ReviveAfterError`
-    - `Start(Cemetery) error`
-    - `Stop(Cemetery) error`
-    - `Suck(conf string, v reflect.Value) SuckError`
+## [完整文档](https://goner.fun/zh/)
