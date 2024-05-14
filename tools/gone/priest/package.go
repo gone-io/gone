@@ -107,7 +107,7 @@ func action(c *cli.Context) error {
 
 var Command = &cli.Command{
 	Name:        "priest",
-	Usage:       "-s ${scanPackageDir} -p ${pkgName} -f ${funcName} -o ${outputDir} [-w]",
+	Usage:       "-s ${scanPackageDir} -p ${pkgName} -f ${funcName} -o ${outputFilePath} [-w]",
 	Description: "generate gone priest function",
 	Flags:       flags,
 	Action:      action,

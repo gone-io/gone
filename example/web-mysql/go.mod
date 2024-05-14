@@ -6,7 +6,7 @@ toolchain go1.21.1
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/gone-io/gone v0.2.1
+	github.com/gone-io/gone v0.3.0
 )
 
 require (
@@ -67,4 +67,4 @@ require (
 	xorm.io/xorm v1.3.2 // indirect
 )
 
-replace github.com/gone-io/gone v0.2.1 => ../..
+//replace github.com/gone-io/gone v0.3.0 => ../..

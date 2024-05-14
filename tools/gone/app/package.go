@@ -2,8 +2,8 @@ package app
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
+	"github.com/gone-io/gone/templates"
 	"github.com/urfave/cli/v2"
 	"io/fs"
 	"os"
@@ -17,7 +17,7 @@ var flags = []cli.Flag{
 	&cli.StringFlag{
 		Name:        "t",
 		Value:       "web",
-		Usage:       "template: only support web, more will be supported in the future",
+		Usage:       "template: only support web、web+mysql, more will be supported in the future",
 		Destination: &template,
 	},
 
@@ -28,10 +28,7 @@ var flags = []cli.Flag{
 	},
 }
 
-//go:embed templates/*
-//go:embed templates/*/.dockerignore
-//go:embed templates/*/.gitignore
-var f embed.FS
+var f = templates.F
 
 func copyToAndReplace(source, target string, mode fs.FileMode, replace map[string]string) error {
 	err := os.MkdirAll(target, mode)
@@ -89,8 +86,8 @@ func copyToAndReplace(source, target string, mode fs.FileMode, replace map[strin
 }
 
 func action(c *cli.Context) error {
-	if template != "web" {
-		return fmt.Errorf("template: only support web, more will be supported in the future")
+	if template != "web" && template != "web+mysql" {
+		return fmt.Errorf("only support web、web+mysql, more will be supported in the future")
 	}
 
 	appName = c.Args().Get(0)
@@ -103,7 +100,7 @@ func action(c *cli.Context) error {
 	}
 
 	return copyToAndReplace(
-		path.Join("templates", template),
+		path.Join(".", template),
 		appName,
 		0766,
 		map[string]string{
