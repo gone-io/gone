@@ -5,7 +5,7 @@
 
 # Gone
 
-[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
+[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE) [![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
 
 Gone首先是一个轻量的，基于Golang的，依赖注入框架，灵感来源于Java中的Spring Framework；其次，Gone框架中包含了一系列内置组件，通过这些组件提供一整套Web开发方案，提供服务配置、日志追踪、服务调用、数据库访问、消息中间件等微服务常用能力。
 
