@@ -1,5 +1,5 @@
 <p align="left">
-    <a href="README.md">English</a>&nbsp ｜&nbsp 中文
+   English&nbsp ｜&nbsp <a href="README_CN.md">中文</a>
 </p>
 <img src="docs/assert/logo.png" width = "250" alt="logo" align=center />
 
