@@ -1,7 +1,7 @@
 version: '3'
 services:
-  redis:
-    image: web-mysql
+  web:
+    image: web
     build:
       context: .
       args:
@@ -9,3 +9,15 @@ services:
     restart: always
     ports:
       - "8080:8080"
+
+  mysql:
+    image: mysql:8.3
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: demo
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./scripts/mysql/initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"

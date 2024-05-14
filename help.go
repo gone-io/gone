@@ -77,7 +77,7 @@ func InjectWrapFn(cemetery Cemetery, fn any) (*reflect.Value, error) {
 		goner := parameter.Interface()
 		_, err := cemetery.ReviveOne(goner)
 		if err != nil {
-			return nil, errors.New("ReviveOne failed:" + err.Error())
+			return nil, err
 		}
 		args = append(args, parameter.Elem())
 	}
@@ -97,7 +97,14 @@ func ExecuteInjectWrapFn(fn *reflect.Value) (results []any) {
 	call := fn.Call([]reflect.Value{})
 
 	for i := 0; i < len(call); i++ {
-		results = append(results, call[i].Interface())
+		arg := call[i].Interface()
+		v := reflect.ValueOf(arg)
+
+		if v.Kind() == reflect.Pointer && v.IsNil() {
+			results = append(results, nil)
+		} else {
+			results = append(results, arg)
+		}
 	}
 	return
 }

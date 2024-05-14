@@ -69,3 +69,11 @@
 - `make run-in-docker`  
   在docker中运行，假设已经安装 [docker](https://www.docker.com/)
   和 [docker-compose](https://docs.docker.com/compose/install/)
+
+## 数据库
+在`docker-compose.yaml`中定义了数据库，默认使用`mysql`，默认用户名密码为`root/123456`，启动方法：
+
+```bash
+docker compose up -d mysql
+```
+如果另外使用数据库，请修改`config/default.properties`中的相关信息

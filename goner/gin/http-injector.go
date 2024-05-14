@@ -141,7 +141,27 @@ func (s *httpInjector) inject(ctx *Context, kind string, key string, v reflect.V
 		case keyParam:
 			value = ctx.Param(key)
 		case keyQuery:
-			value = ctx.Query(key)
+			switch t.Kind() {
+			case reflect.Struct:
+				body := reflect.New(t).Interface()
+				if err := ctx.ShouldBindQuery(body); err != nil {
+					return NewParameterError(err.Error())
+				}
+				v.Set(reflect.ValueOf(body).Elem())
+				return nil
+			case reflect.Pointer:
+				if v.IsNil() {
+					v.Set(reflect.New(v.Type()))
+				}
+				if err := ctx.ShouldBindQuery(v.Interface()); err != nil {
+					return NewParameterError(err.Error())
+				}
+				return nil
+			case reflect.Slice:
+				return s.injectQueryArray(ctx, key, v, fieldName)
+			default:
+				value = ctx.Query(key)
+			}
 		case keyCookie:
 			var err error
 			value, err = ctx.Context.Cookie(key)
@@ -178,8 +198,6 @@ func (s *httpInjector) inject(ctx *Context, kind string, key string, v reflect.V
 				return NewParameterError(err.Error())
 			}
 			v.SetFloat(def)
-		case reflect.Slice:
-			return s.injectQueryArray(ctx, key, v, fieldName)
 		default:
 			s.Errorf("inject field(%s) failed", fieldName)
 			return unsupportedAttributeType(fieldName)

@@ -1,4 +1,4 @@
-FROM golang:1.19.1-alpine3.16 as builder
+FROM golang:1.22-alpine3.19 as builder
 WORKDIR /app
 
 RUN sed 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' -i /etc/apk/repositories && \
@@ -17,7 +17,7 @@ COPY internal internal
 #编译
 RUN --mount=type=cache,target=/go,id=go make build
 
-FROM alpine:3.16
+FROM alpine:3.19
 RUN sed 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' -i /etc/apk/repositories && \
     apk update && \
     apk add tzdata && \

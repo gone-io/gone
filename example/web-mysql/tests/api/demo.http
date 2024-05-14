@@ -72,3 +72,44 @@ GET http://localhost:8080/api/demo2/echo?echo=info
         client.assert('info' == response.body.data, "code is error");
     });
 %}
+
+### inject-query
+GET http://localhost:8080/api/inject-query?key=100&key=200
+
+### inject-url-define-param
+GET http://localhost:8080/api/inject/100
+
+### inject-http-body json
+POST http://localhost:8080/api/inject-http-body
+Content-Type: application/json
+
+{
+    "echo":"hello"
+}
+
+### inject-http-body xml
+POST http://localhost:8080/api/inject-http-body
+Content-Type: application/xml
+
+<xml>
+    <echo>hello</echo>
+</xml>
+
+### inject-http-body form-data
+POST http://localhost:8080/api/inject-http-body
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="echo"
+
+hello
+
+
+### inject-http-body x-www-form-urlencoded
+POST http://localhost:8080/api/inject-http-body
+Content-Type: application/x-www-form-urlencoded
+
+echo=hello
+
+### inject-http-struct
+GET http://localhost:8080/api/inject-http-struct

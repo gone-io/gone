@@ -96,6 +96,9 @@ func (p *proxy) proxyOne(x HandlerFunc, last bool) gin.HandlerFunc {
 			results := gone.ExecuteInjectWrapFn(fn)
 
 			for _, result := range results {
+				if result == nil {
+					continue
+				}
 				if context.Writer.Written() && result != nil {
 					p.Warnf("content had been written，check fn(%s)，maybe shouldn't return data", gone.GetFuncName(x))
 					return

@@ -49,8 +49,7 @@ func ToError(err error) Error {
 	if err == nil {
 		return nil
 	}
-	iErr, ok := err.(Error)
-	if ok {
+	if iErr, ok := err.(Error); ok {
 		return iErr
 	}
 	return NewInnerError(err.Error(), http.StatusInternalServerError)

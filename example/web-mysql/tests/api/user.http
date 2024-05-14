@@ -1,0 +1,29 @@
+### 创建用户
+POST {{host}}/api/users HTTP/1.1
+content-type: application/json
+
+{
+  "name": "degfy",
+  "email": "degfy@hotmail.com"
+}
+
+### 获取用户
+GET {{host}}/api/users/1 HTTP/1.1
+
+### 获取用户列表
+GET {{host}}/api/users HTTP/1.1
+
+### 获取用户分页
+GET {{host}}/api/users/page?page=0&pageSize=10 HTTP/1.1
+
+### 更新用户
+PUT {{host}}/api/users/1 HTTP/1.1
+content-type: application/json
+
+{
+  "name": "dapeng",
+  "email": "degfy@hotmail.com"
+}
+
+### 删除用户
+DELETE {{host}}/api/users/1 HTTP/1.1

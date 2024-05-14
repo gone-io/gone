@@ -13,10 +13,10 @@ build:
 
 
 build-docker:
-	docker-compose build
+	docker compose build
 
 run-in-docker:
-	docker-comopose up
+	docker comopose up
 
 
 # for test
