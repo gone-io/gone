@@ -1,170 +1,116 @@
 <p align="left">
-   English&nbsp ｜&nbsp <a href="README_CN.md">中文</a>
+    <a href="README.md">English</a>&nbsp ｜&nbsp 中文
 </p>
-
 <img src="docs/assert/logo.png" width = "250" alt="logo" align=center />
 
-
-- [gone framework    ](#gone-framework----)
-	- [Quick Start](#quick-start)
-		- [1. Example of DI code](#1-example-of-di-code)
-		- [2. Example of Web Service code](#2-example-of-web-service-code)
-	- [The story of the Gone framework](#the-story-of-the-gone-framework)
-		- [Concept](#concept)
-		- [Four kinds of Goner.](#four-kinds-of-goner)
-
-# gone framework  [![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)  [![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
-The most Spring programmer-friendly Golang framework, dependency injection, integrates Web.
+- [💡Concepts](#concepts)
+- [🌰 More Examples:](#-more-examples)
+- [🪜🧰🛠️ Component Library (👉🏻 More components are under development... 💪🏻 ヾ(◍°∇°◍)ﾉﾞ 🖖🏻)](#️-component-library--more-components-are-under-development--ヾﾉﾞ-)
+- [📚Full Documentation](#full-documentation)
 
 
-## Quick Start
+# Gone
 
-### 1. Example of DI [code](example/di/main.go)
+[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE) [![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
 
-```go
-package main
+First and foremost, Gone is a lightweight, Golang-based dependency injection framework inspired by the Spring Framework in Java. Secondly, the Gone framework includes a series of built-in components that provide a complete set of web development solutions through these components, offering services configuration, logging, tracing, service calls, database access, message middleware, and other commonly used microservice capabilities.
 
-import "github.com/gone-io/gone"
+[Full Documentation](https://goner.fun/)
 
-type AGoner struct {
-	gone.Flag //tell the framework that this struct is a Goner
-	Name      string
-}
+Let's use Gone to write a web service below!
 
-func (g *AGoner) Say() {
-	println("I am the AGoner, My name is", g.Name)
-}
-
-type BGoner struct {
-	gone.Flag         //tell the framework that this struct is a Goner
-	a         *AGoner `gone:"*"` //Gone Tag `gone` tell the framework that this field will be injected by the framework
-}
-
-// AfterRevive executed After the Goner is revived; After `gone.Run`, gone framework detects the AfterRevive function on goners and runs it.
-func (g *BGoner) AfterRevive() gone.AfterReviveError {
-	g.a.Say()
-
-	return nil
-}
-
-// Priest Responsible for putting Goners that need to be used into the framework
-func Priest(cemetery gone.Cemetery) error {
-	cemetery.Bury(&AGoner{Name: "Injected Goner"})
-	cemetery.Bury(&BGoner{})
-	return nil
-}
-
-func main() {
-
-	// start gone framework
-	gone.Run(Priest)
-}
-```
-
-Run the above code, and the screen will print: "I am the AGoner, My name is Injected Goner".
-
-### 2. Example of Web Service [code](example/web/main.go)
+## 🌐Web Service
 ```go
 package main
 
 import (
+	"fmt"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner"
-	"github.com/gone-io/gone/goner/gin"
 )
 
+// Implement a Goner. What is a Goner? => https://goner.fun/guide/core-concept.html#goner-%E9%80%9D%E8%80%85
 type controller struct {
-	gone.Flag
-	router gin.IRouter `gone:"gone-gin-router"` //inject gin router Goner, which is wrapped of `gin.Engine`
+	gone.Flag // Goner tag, when anonymously embedded, a structure implements Goner
+	gone.RouteGroup `gone:"gone-gin-router"` // Inject root routes
 }
 
-// Mount use for  mounting the router of gin framework
-func (ctr *controller) Mount() gin.MountError {
-	ctr.router.GET("/ping", func(c *gin.Context) (any, error) {
-		return "hello", nil
+// Implement the Mount method to mount routes; the framework will automatically execute this method
+func (ctr *controller) Mount() gone.GinMountError {
+
+	// Define request structure
+	type Req struct {
+		Msg string `json:"msg"`
+	}
+
+	// Register the handler for `POST /hello`
+	ctr.POST("/hello", func(in struct {
+		to  string `gone:"http,query"` // Inject http request Query parameter To
+		req *Req   `gone:"http,body"`  // Inject http request Body
+	}) any {
+		return fmt.Sprintf("to %s msg is: %s", in.to, in.req.Msg)
 	})
-	return nil
-}
 
-func NewController() gone.Goner {
-	return &controller{}
-}
-
-func Priest(cemetery gone.Cemetery) error {
-	//Load the Goner of the gin web framework into the system
-	_ = goner.GinPriest(cemetery)
-
-	//Load the business Goner
-	cemetery.Bury(NewController())
 	return nil
 }
 
 func main() {
-	
-	//Gone.Server is used to start a service, and the program will block until the service ends.
-	gone.Serve(Priest)
+	// Start the service
+	gone.Serve(func(cemetery gone.Cemetery) error {
+		// Call the framework's built-in component, load the gin framework
+		_ = goner.GinPriest(cemetery)
+
+		// Bury a controller-type Goner in the cemetery
+		// What does bury mean? => https://goner.fun/guide/core-concept.html#burying
+		// What is a cemetery? => https://goner.fun/guide/core-concept.html#cemetery
+		cemetery.Bury(&controller{})
+		return nil
+	})
 }
-
 ```
-Run the code, it will listen on port 8080, and the screen will print:
-![img.png](docs/assert/web_service_start.png)
 
-Test http request:
+Run the above code: go run main.go, the program will listen on port 8080. Test it using curl:
 ```bash
-curl http://localhost:8080/ping
+curl -X POST 'http://localhost:8080/hello' \
+    -H 'Content-Type: application/json' \
+	--data-raw '{"msg": "你好呀？"}'
 ```
-You  will get the response:
-```json
-{"code":0,"data":"hello"}
+
+The result is as follows:
 ```
-And prints on the screen:
-![img.png](docs/assert/request_print.png)
+{"code":0,"data":"to  msg is: 你好呀？"}
+```
+[Quick Start](https://goner.fun/quick-start/)
 
+## 💡Concepts
+> The code we write is ultimately lifeless unless it is run.
+In Gone, components are abstracted as Goners, whose properties can inject other Goners. Before Gone starts, all Goners need to be buried in the cemetery; after Gone starts, all Goners will be resurrected to establish a Heaven, "everyone in Heaven is no longer incomplete, and what they want will be satisfied."
 
+[Core Concepts](https://goner.fun/guide/core-concept.html)
 
+## 🌰 More Examples:
 
-## The story of the Gone framework
-> The word "gone" in English can mean "left," "departed," "absent," "missing," or "dead." Therefore, those managed by the Gone framework are referred to as "Goners".  
-> There exists a mysterious graveyard where the "Goners" are laid to rest, and their souls 😇 ascend to heaven. Only the designated priests of heaven can bury the "Goners" in the graveyard...  
-> The gates of heaven are slowly opening...
+> Detailed examples can be found in the [example](example) directory, and more will be completed in the future.
 
+## 🪜🧰🛠️ Component Library (👉🏻 More components are under development... 💪🏻 ヾ(◍°∇°◍)ﾉﾞ 🖖🏻)
+- [goner/cumx](goner/cmux),
+  a wrapper for `github.com/soheilhy/cmux`, used to reuse the same port to implement multiple protocols;
+- [goner/config](goner/config), used to implement configuration for **Gone-App**
+- [goner/gin](goner/gin),
+  a wrapper for `github.com/gin-gonic/gin`, providing web services
+- [goner/logrus](goner/logrus),
+  a wrapper for `github.com/sirupsen/logrus`, providing logging services
+- [goner/tracer](goner/tracer),
+  providing log tracing, providing a unified `tracer```markdown
+  Id` for the same request chain
+- [goner/xorm](goner/xorm),
+  a wrapper for `xorm.io/xorm`, used for database access; when using it, import the database driver as needed;
+- [goner/redis](goner/redis),
+  a wrapper for `github.com/gomodule/redigo`, used for interacting with redis
+- [goner/schedule](goner/schedule),
+  a wrapper for `github.com/robfig/cron/v3`, used for setting timers
+- [emitter](https://github.com/gone-io/emitter), encapsulates event handling, which can be used for **DDD**'s **Event Storm**
+- [goner/urllib](goner/urllib),
+  encapsulates `github.com/imroc/req/v3`, used for sending HTTP requests, and connects the traceId between server and client
 
-### Concept
-
-- [Heaven](https://pkg.go.dev/github.com/gone-io/gone#Heaven):  🕊☁️,The running program.
-- Heaven.Start: Means the program starts to run；Goner lives forever until the heaven end (the program terminates).
-- Heaven.Stop: The heaven end; the program terminates.
-- [Cemetery](https://pkg.go.dev/github.com/gone-io/gone#Cemetery): 🪦, Graveyard, Used to manage Tomb.
-- Cemetery.Bury: Put Goner in Tomb and bury him in the graveyard.
-- Cemetery.revive: Resurrect the Goner and elevate it to heaven; for the Goner, it signifies the completion of attribute injection (or assembly).
-- [Tomb](https://pkg.go.dev/github.com/gone-io/gone#Tomb): ⚰️，The place where the Goner is buried；Which is a container for the Goner, and the Goner can be injected into other Goner.
-- [Priest](https://pkg.go.dev/github.com/gone-io/gone#Priest):  ✝️，A special function responsible for burying the Goner.
-- [Goner](https://pkg.go.dev/github.com/gone-io/gone#Goner): 💀, A interface, which is an abstraction of injectable objects: can inject other Goner, can be injected by other Goner.
-- [Prophet](https://pkg.go.dev/github.com/gone-io/gone#Prophet): A interface, If a Goner is a `Prophet`, after being resurrected, `AfterRevive() gone.AfterReviveError` will be executed.
-- Prophet.AfterRevive: A function, which allows Prophet to regain control of the program after resurrection. It is crucial that the execution of this function occurs swiftly, without causing any program interruptions. "The key to glimpsing heaven can only be temporary."
-- [Angel](https://pkg.go.dev/github.com/gone-io/gone#Angel): 𓆩♡𓆪 ，Both `Start (gone.Cemetery) error` and `Stop (gone.Cemetery) error` methods need to be implemented at the same time, just like angel wings.
-- Angel.Start: A function. Angel left wing, which means to start work; which can be used to start some long-running service goroutines.
-- Angel.Stop: A function. Angel right wing means the end of work. which can be used to send a stop signal to the service goroutines and clean up some resources.
-- [Vampire](https://pkg.go.dev/github.com/gone-io/gone#Vampire): 🧛🏻‍，The Goner that implements `Suck(conf string, v reflect.Value) gone.SuckError` is termed as Vampire. Objects that are not classified as Goner can be injected into the Goner property through the `Suck` method. A vampire is an ominous entity that might annihilate the entire kingdom of heaven. Although the blood-sucking behavior can alter the standard behavior of dependency injection and add new features to the framework, it may also introduce circular dependencies, potentially harming the system.
-- Vampire.Suck: A function. Vampire "bloodsucking behavior"; before a vampire is injected into the Goner, its "bloodsucking behavior" is triggered so that it can allow other objects to inject into the Goner rather than itself.
-
-### Four kinds of Goner.
-
-- `Goner`
-> ordinary Goner, which can be used to abstract Service, Controller, Client and other common components in program.
-
-- Prophet `Goner`
-> The method **`AfterRevive (Cemetery, Tomb) ReviveAfterError`**, it will be called after ascending to the Kingdom of Heaven.
->
-> **example:** [urllib](goner/urllib/req.go), a Goner that comes with the framework, which encapsulates `github.com/imroc/req/v3`, for sending http requests.
-
-- Angel `Goner`
-> Angels will assume certain responsibilities in heaven: in the start phase, the angel's `Start` method will be called; in the stop phase, the angel's `Stop` method will be called; Therefore, angels are suitable for abstracting components which need to be started and to be stopped.
->
-> **example:** [xorm](goner/xorm/implement.go), a Goner that comes with the framework, which encapsulates `xorm.io/xorm`, for connecting mysql server.
-
-- Vampire `Goner`
-> Vampires, who have the ability to suck blood, can read / write marked fields through the `Suck` method, and can abstract the behavior of certain attributes of other components.
->
-> **example:** [config](goner/config/config.go), a Goner that comes with the framework, for injecting config values in config files to Goner Attributes.
-
+## 📚[Full Documentation](https://goner.fun/)
