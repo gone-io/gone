@@ -43,7 +43,7 @@ func TestCache(t *testing.T) {
 		err = c.Put(key, value, ttl)
 		assert.Nil(t, err)
 
-		<-time.After(ttl + 10)
+		<-time.After(ttl + 2*time.Second)
 		err = c.Get(key, value2)
 		assert.Equal(t, ErrNil, err)
 	}, Priest)
