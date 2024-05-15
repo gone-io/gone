@@ -5,4 +5,4 @@ services:
     image: redis:latest
     restart: always
     ports:
-      - "46379:6379"
+      - "6379:6379"
