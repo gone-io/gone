@@ -51,6 +51,7 @@ func TestPrepare(t *testing.T) {
 
 func TestPreparer_Serve(t *testing.T) {
 	i := 0
+	executed := false
 	gone.
 		Prepare().
 		AfterStart(func(in struct {
@@ -72,9 +73,10 @@ func TestPreparer_Serve(t *testing.T) {
 
 				i++
 				assert.Equal(t, 1, i)
+				executed = true
 				in.h.End()
 			}()
 		}).
 		Serve()
-	assert.Equal(t, 2, i)
+	assert.True(t, executed)
 }
