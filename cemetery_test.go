@@ -272,6 +272,7 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 			Flag
 			A XPoint `gone:"point-a"`
 			B XPoint `gone:"point-b"`
+			c XPoint `gone:"point-a"`
 		}
 
 		c.Bury(c, IdGoneCemetery).
@@ -282,12 +283,110 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 		err := c.ReviveAllFromTombs()
 		assert.Nil(t, err)
 
-		c.ReplaceBury(&ZeroPoint{}, "point-a")
+		err = c.ReplaceBury(&ZeroPoint{}, "point-a")
+		assert.Nil(t, err)
 
 		tomb := c.GetTomById(line)
 		goner := tomb.GetGoner().(*Line)
 		assert.Equal(t, goner.A.GetIndex(), 0)
 		assert.Equal(t, goner.A.GetX(), 0)
 		assert.Equal(t, goner.A.GetY(), 0)
+	})
+
+	t.Run("replace revived with empty goneId", func(t *testing.T) {
+		c := newCemetery()
+		err := c.ReplaceBury(&ZeroPoint{}, "")
+		assert.Equal(t, err.(Error).Code(), ReplaceBuryIdParamEmpty)
+	})
+
+	t.Run("replace revived failed", func(t *testing.T) {
+		c := &cemetery{
+			SimpleLogger: &defaultLogger{},
+			tombMap:      make(map[GonerId]Tomb),
+		}
+		const line = "the-line"
+		type Line struct {
+			Flag
+			A XPoint `gone:"point-a"`
+			B XPoint `gone:"point-b"`
+			c XPoint `gone:"point-a"`
+			z XPoint `gone:"point-z"`
+		}
+
+		c.Bury(c, IdGoneCemetery).
+			Bury(&Line{
+				z: &Point{},
+			}, line).
+			Bury(&Point{x: -1, y: -2}, "point-a").
+			Bury(&Point{x: 1, y: 2}, "point-b")
+
+		err := c.ReviveAllFromTombs()
+		assert.Nil(t, err)
+
+		err = c.ReplaceBury(&Line{}, line)
+		assert.NotNil(t, err)
+	})
+}
+
+func Test_cemetery_SetLogger(t *testing.T) {
+	c := cemetery{}
+
+	type TestLogger struct {
+		defaultLogger
+	}
+
+	logger := &TestLogger{}
+
+	err := c.SetLogger(logger)
+	assert.Nil(t, err)
+	assert.Equal(t, c.SimpleLogger, logger)
+}
+
+type identityGoner struct {
+	Flag
+}
+
+func (i *identityGoner) GetId() GonerId {
+	return "identityGoner"
+}
+
+func TestGetGoneDefaultId(t *testing.T) {
+	type args struct {
+		goner Goner
+	}
+	tests := []struct {
+		name string
+		args args
+		want GonerId
+	}{
+		{
+			name: "identityGoner",
+			args: args{goner: &identityGoner{}},
+			want: "github.com/gone-io/gone/identityGoner#identityGoner",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, GetGoneDefaultId(tt.args.goner), "GetGoneDefaultId(%v)", tt.args.goner)
+		})
+	}
+}
+
+func Test_cemetery_bury(t *testing.T) {
+	t.Run("GonerIdIsExistedError", func(t *testing.T) {
+		executed := false
+		func() {
+			defer func() {
+				a := recover()
+
+				assert.Equal(t, a.(Error).Code(), GonerIdIsExisted)
+			}()
+
+			c := newCemetery()
+			c.Bury(&Point{x: 1, y: 2}, "point-a")
+			executed = true
+			c.Bury(&Point{x: 1, y: 2}, "point-a")
+		}()
+		assert.True(t, executed)
 	})
 }
