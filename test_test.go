@@ -1,38 +1,21 @@
 package gone
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func Test_Test(t *testing.T) {
-	type Line struct {
-		Flag
-		A XPoint `gone:"point-a"`
-		b XPoint `gone:"point-b"`
-	}
-
-	var a = &Point{x: 1}
-	var b = &Point{x: 2}
-
-	var executed = false
-	Test(func(l *Line) {
-		assert.Equal(t, a, l.A)
-		assert.Equal(t, b, l.b)
-
-		executed = true
-	}, func(cemetery Cemetery) error {
-		cemetery.Bury(a, "point-a")
-		cemetery.Bury(b, "point-b")
-		cemetery.Bury(&Line{})
-		return nil
-	})
-	assert.True(t, executed)
+type errProphet struct {
+	Flag
 }
 
-func Test_TestAt(t *testing.T) {
+func (e *errProphet) AfterRevive() error {
+	return errors.New("AfterReviveError")
+}
+
+func Test_Test(t *testing.T) {
 	t.Run("suc", func(t *testing.T) {
-		var executed = false
 		type Line struct {
 			Flag
 			A XPoint `gone:"point-a"`
@@ -42,8 +25,10 @@ func Test_TestAt(t *testing.T) {
 		var a = &Point{x: 1}
 		var b = &Point{x: 2}
 
-		TestAt("point-a", func(p *Point) {
-			assert.Equal(t, p, a)
+		var executed = false
+		Test(func(l *Line) {
+			assert.Equal(t, a, l.A)
+			assert.Equal(t, b, l.b)
 
 			executed = true
 		}, func(cemetery Cemetery) error {
@@ -91,6 +76,52 @@ func Test_TestAt(t *testing.T) {
 		assert.True(t, executed)
 	})
 
+	t.Run("failed: AfterRevive err", func(t *testing.T) {
+		var executed = false
+
+		func() {
+			defer func() {
+				a := recover()
+				assert.Equal(t, "AfterReviveError", a.(error).Error())
+				executed = true
+			}()
+			Test(func(p *errProphet) {
+
+			}, func(cemetery Cemetery) error {
+				cemetery.Bury(&errProphet{})
+				return nil
+			})
+		}()
+
+		assert.True(t, executed)
+	})
+}
+
+func Test_TestAt(t *testing.T) {
+	t.Run("suc", func(t *testing.T) {
+		var executed = false
+		type Line struct {
+			Flag
+			A XPoint `gone:"point-a"`
+			b XPoint `gone:"point-b"`
+		}
+
+		var a = &Point{x: 1}
+		var b = &Point{x: 2}
+
+		TestAt("point-a", func(p *Point) {
+			assert.Equal(t, p, a)
+
+			executed = true
+		}, func(cemetery Cemetery) error {
+			cemetery.Bury(a, "point-a")
+			cemetery.Bury(b, "point-b")
+			cemetery.Bury(&Line{})
+			return nil
+		})
+		assert.True(t, executed)
+	})
+
 	t.Run("suc: more than one Goner found by type", func(t *testing.T) {
 		var executed = false
 		a := &Point{}
@@ -123,6 +154,30 @@ func Test_TestAt(t *testing.T) {
 			TestAt("point-a", func(p *Point) {
 
 			}, func(cemetery Cemetery) error {
+				cemetery.Bury(&Line{}, "point-a")
+				return nil
+			})
+		}()
+
+		assert.True(t, executed)
+	})
+
+	t.Run("failed: NotCompatible", func(t *testing.T) {
+		var executed = false
+		func() {
+			defer func() {
+				a := recover()
+				assert.Equal(t, NotCompatible, a.(Error).Code())
+				executed = true
+			}()
+
+			type Line struct {
+				Flag
+			}
+			TestAt("point-a", func(p *Point) {
+
+			}, func(cemetery Cemetery) error {
+
 				cemetery.Bury(&Line{}, "point-a")
 				return nil
 			})
