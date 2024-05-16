@@ -54,6 +54,82 @@ func Test_TestAt(t *testing.T) {
 		})
 		assert.True(t, executed)
 	})
+
+	t.Run("failed: CannotFoundGonerById", func(t *testing.T) {
+		var executed = false
+		func() {
+			defer func() {
+				a := recover()
+				assert.Equal(t, CannotFoundGonerById, a.(Error).Code())
+				executed = true
+			}()
+			TestAt("point-a", func(p *Point) {
+
+			}, func(cemetery Cemetery) error {
+				return nil
+			})
+		}()
+
+		assert.True(t, executed)
+	})
+
+	t.Run("failed: CannotFoundGonerByType", func(t *testing.T) {
+		var executed = false
+		func() {
+			defer func() {
+				a := recover()
+				assert.Equal(t, CannotFoundGonerByType, a.(Error).Code())
+				executed = true
+			}()
+			Test(func(p *Point) {
+
+			}, func(cemetery Cemetery) error {
+				return nil
+			})
+		}()
+
+		assert.True(t, executed)
+	})
+
+	t.Run("suc: more than one Goner found by type", func(t *testing.T) {
+		var executed = false
+		a := &Point{}
+		b := &Point{}
+
+		Test(func(p *Point) {
+			executed = true
+			assert.Equal(t, a, p)
+		}, func(cemetery Cemetery) error {
+			cemetery.Bury(a)
+			cemetery.Bury(b)
+			return nil
+		})
+
+		assert.True(t, executed)
+	})
+
+	t.Run("failed: NotCompatible", func(t *testing.T) {
+		var executed = false
+		func() {
+			defer func() {
+				a := recover()
+				assert.Equal(t, NotCompatible, a.(Error).Code())
+				executed = true
+			}()
+
+			type Line struct {
+				Flag
+			}
+			TestAt("point-a", func(p *Point) {
+
+			}, func(cemetery Cemetery) error {
+				cemetery.Bury(&Line{}, "point-a")
+				return nil
+			})
+		}()
+
+		assert.True(t, executed)
+	})
 }
 
 func Test_testHeaven_WithId(t *testing.T) {
