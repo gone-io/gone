@@ -1,39 +1,40 @@
 package xorm
 
 import (
+	"database/sql/driver"
+	"fmt"
+	"github.com/gone-io/gone"
 	"github.com/jtolds/gls"
+	"io"
 	"sync"
 	"xorm.io/xorm"
 )
 
 var sessionMap = sync.Map{}
 
-// ============================================================================
-func (e *engine) sessionRollback(session *xorm.Session) {
-	err := session.Rollback()
-	if err != nil {
-		e.Logger.Errorf("session rollback err:%v", err)
-		panic(err)
-	}
+//go:generate mockgen -package xorm  -source transaction.go XInterface > session_mock_test.go
+type XInterface interface {
+	xorm.Interface
+	driver.Tx
+	io.Closer
+	Begin() error
 }
 
-func (e *engine) getTransaction(id uint) (*xorm.Session, bool) {
+// ============================================================================
+func (e *engine) getTransaction(id uint) (XInterface, bool) {
 	session, suc := sessionMap.Load(id)
 	if suc {
-		return session.(*xorm.Session), false
+		return session.(XInterface), false
+	} else {
+		s := e.NewSession()
+		sessionMap.Store(id, s)
+		return s, true
 	}
-	session = e.NewSession()
-	sessionMap.Store(id, session)
-	return session.(*xorm.Session), true
 }
 
-func (e *engine) delTransaction(id uint, session *xorm.Session) {
-	err := session.Close()
-	if err != nil {
-		e.Logger.Errorf("session.Close() err:%v", err)
-		return
-	}
-	sessionMap.Delete(id)
+func (e *engine) delTransaction(id uint, session XInterface) error {
+	defer sessionMap.Delete(id)
+	return session.Close()
 }
 
 // Transaction 事物处理 不允许在事物中新开协程，否则事物会失效
@@ -43,11 +44,31 @@ func (e *engine) Transaction(fn func(session Interface) error) error {
 		session, isNew := e.getTransaction(gid)
 
 		if isNew {
-			defer e.delTransaction(gid, session)
+			rollback := func() {
+				rollbackErr := session.Rollback()
+				if rollbackErr != nil {
+					e.Errorf("rollback err:%v", rollbackErr)
+					err = rollbackErr
+				}
+			}
+
+			isRollback := false
+			defer func(e *engine, id uint, session XInterface) {
+				err := e.delTransaction(id, session)
+				if err != nil {
+					e.Errorf("del session err:%v", err)
+				}
+			}(e, gid, session)
 			defer func() {
 				if info := recover(); info != nil {
-					e.Logger.Errorf("transaction has panic:%v, transaction will rollback", info)
-					e.sessionRollback(session)
+					e.Errorf("session rollback for panic: %s", info)
+					e.Errorf("%s", gone.PanicTrace(2))
+					if !isRollback {
+						rollback()
+						err = gone.NewInnerError(fmt.Sprintf("%s", info), gone.DbRollForPanic)
+					} else {
+						panic(info)
+					}
 				}
 			}()
 
@@ -55,17 +76,16 @@ func (e *engine) Transaction(fn func(session Interface) error) error {
 			if err != nil {
 				return
 			}
-		}
-
-		err = fn(session)
-		if err == nil && isNew {
-			err = session.Commit()
-		}
-
-		if err != nil {
-			if isNew {
-				e.sessionRollback(session)
+			err = fn(session)
+			if err == nil {
+				err = session.Commit()
+			} else {
+				e.Errorf("session rollback for err: %v", err)
+				isRollback = true
+				rollback()
 			}
+		} else {
+			err = fn(session)
 		}
 	})
 	return err

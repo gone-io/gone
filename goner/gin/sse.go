@@ -8,8 +8,19 @@ import (
 	"io"
 )
 
+func NewSSE(writer gin.ResponseWriter) SSE {
+	return &Sse{Writer: writer}
+}
+
+type SSE interface {
+	Start()
+	Write(delta any) error
+	End() error
+	WriteError(err gone.Error) error
+}
+
 type Sse struct {
-	*gin.Context
+	Writer gin.ResponseWriter
 }
 
 func (s *Sse) Start() {
@@ -26,7 +37,7 @@ func (s *Sse) Write(delta any) error {
 		return err
 	}
 
-	_, _ = io.WriteString(s.Writer, "event: data\n")
+	_, err = io.WriteString(s.Writer, "event: data\n")
 	if err != nil {
 		return err
 	}
@@ -44,6 +55,7 @@ func (s *Sse) End() error {
 		return err
 	}
 	s.Writer.Flush()
+	s.Writer.CloseNotify()
 	return nil
 }
 func (s *Sse) WriteError(err gone.Error) error {

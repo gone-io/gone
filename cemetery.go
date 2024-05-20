@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -119,6 +120,10 @@ func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, 
 			if oldId == id {
 				_, _, err := c.reviveFieldById(tag, field, v)
 				if err != nil {
+					var iErr InnerError
+					if errors.As(err, &iErr) {
+						c.Errorf("inner Error: %s(code=%d)\n%s", iErr.Msg(), iErr.Code(), iErr.Stack())
+					}
 					panic(err)
 				}
 			}

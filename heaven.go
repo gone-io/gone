@@ -106,9 +106,7 @@ func (h *heaven) install() {
 	h.burial()
 
 	err := h.cemetery.ReviveAllFromTombs()
-	if err != nil {
-		panic(err)
-	}
+	h.panicOnError(err)
 }
 
 func (h *heaven) installAngelHook() {
@@ -124,17 +122,23 @@ func (h *heaven) startFlow() {
 	// start Handlers 顺序调用：先注册的先调用
 	for _, before := range h.beforeStartHandlers {
 		err := before(h.cemetery)
-		if err != nil {
-			panic(err)
-		}
+		h.panicOnError(err)
 	}
 
 	for _, after := range h.afterStartHandlers {
 		err := after(h.cemetery)
-		if err != nil {
-			panic(err)
-		}
+		h.panicOnError(err)
 	}
+}
+
+func (h *heaven) panicOnError(err error) {
+	if err == nil {
+		return
+	}
+	if iErr, ok := err.(InnerError); ok {
+		h.Errorf("%s\n", iErr.Error())
+	}
+	panic(err)
 }
 
 func (h *heaven) stopFlow() {
@@ -142,17 +146,13 @@ func (h *heaven) stopFlow() {
 	for i := len(h.beforeStopHandlers) - 1; i >= 0; i-- {
 		before := h.beforeStopHandlers[i]
 		err := before(h.cemetery)
-		if err != nil {
-			panic(err)
-		}
+		h.panicOnError(err)
 	}
 
 	for i := len(h.afterStopHandlers) - 1; i >= 0; i-- {
 		before := h.afterStopHandlers[i]
 		err := before(h.cemetery)
-		if err != nil {
-			panic(err)
-		}
+		h.panicOnError(err)
 	}
 }
 

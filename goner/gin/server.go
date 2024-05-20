@@ -1,25 +1,27 @@
 package gin
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/cmux"
-	"github.com/gone-io/gone/goner/logrus"
 	Cmux "github.com/soheilhy/cmux"
 	"net"
 	"net/http"
 	"sync"
 )
 
-func NewGinServer() (gone.Angel, gone.GonerId) {
-	return &server{}, gone.IdGoneGin
+func NewGinServer() (gone.Goner, gone.GonerId) {
+	s := server{}
+	return &s, gone.IdGoneGin
 }
 
 type server struct {
 	gone.Flag
-	httpServer    *http.Server
-	logrus.Logger `gone:"gone-logger"`
-	http.Handler  `gone:"gone-gin-router"`
+	httpServer   *http.Server
+	gone.Logger  `gone:"gone-logger"`
+	http.Handler `gone:"gone-gin-router"`
+	gone.Tracer  `gone:"gone-tracer"`
 
 	net         cmux.Server  `gone:"gone-cumx"`
 	mode        string       `gone:"config,server.mode,default=release"`
@@ -31,32 +33,40 @@ type server struct {
 }
 
 func (s *server) Start(gone.Cemetery) error {
+	err := s.mount()
+	if err != nil {
+		return err
+	}
+	s.setServer()
+
+	s.Infof("Server Listen At %s", s.net.GetAddress())
+	s.Go(s.serve)
+	return nil
+}
+func (s *server) setServer() {
 	s.stopFlag = false
-	//设置模式
-	gin.SetMode(s.mode)
-
-	s.mount()
-
+	gin.SetMode(s.mode) //设置模式
 	s.l = s.net.Match(Cmux.HTTP1Fast(http.MethodPatch))
-
 	s.httpServer = &http.Server{
 		Handler: s,
 	}
+}
 
-	s.Infof("Server Listen At %s", s.net.GetAddress())
-	go func() {
-		if err := s.httpServer.Serve(s.l); err != nil && err != http.ErrServerClosed {
-			s.lock.Lock()
-			if !s.stopFlag {
-				s.Errorf("http server error: %v", err)
-				panic(err)
-			} else {
-				s.Warnf("http server error: %v", err)
-			}
-			s.lock.Unlock()
-		}
-	}()
-	return nil
+func (s *server) serve() {
+	if err := s.httpServer.Serve(s.l); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		s.processServeError(err)
+	}
+}
+
+func (s *server) processServeError(err error) {
+	s.lock.Lock()
+	if !s.stopFlag {
+		s.Errorf("http server error: %v", err)
+		panic(err)
+	} else {
+		s.Warnf("http server error: %v", err)
+	}
+	s.lock.Unlock()
 }
 
 func (s *server) Stop(gone.Cemetery) (err error) {
@@ -76,15 +86,8 @@ func (s *server) Stop(gone.Cemetery) (err error) {
 	return err
 }
 
-func (s *server) Serve() Close {
-	_ = s.Start(nil)
-	return func() {
-		_ = s.Stop(nil)
-	}
-}
-
 // 挂载路由
-func (s *server) mount() {
+func (s *server) mount() error {
 	if len(s.controllers) == 0 {
 		s.Warnf("There is no controller working")
 	}
@@ -93,7 +96,8 @@ func (s *server) mount() {
 		err := c.Mount()
 		if err != nil {
 			s.Errorf("controller mount err:%v", err)
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }

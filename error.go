@@ -62,6 +62,11 @@ const (
 
 	//ReplaceBuryIdParamEmpty 替换性下葬，GonerId不能为空
 	ReplaceBuryIdParamEmpty
+
+	StartError
+	StopError
+
+	DbRollForPanic
 )
 
 func GonerIdIsExistedError(id GonerId) Error {

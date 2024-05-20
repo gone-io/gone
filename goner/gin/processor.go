@@ -2,13 +2,9 @@ package gin
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/logrus"
-	"github.com/gone-io/gone/goner/tracer"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 )
@@ -18,19 +14,19 @@ import (
 // `recovery`，负责恢复请求内发生panic
 // `statRequestTime`，用于在日志中打印统计的请求耗时，可以通过设置配置项(`server.log.show-request-time=false`)来关闭
 // `accessLog`，用于在日志中打印请求、响应信息
-func NewGinProcessor() (gone.Prophet, gone.GonerId) {
+func NewGinProcessor() (gone.Goner, gone.GonerId) {
 	return &sysProcessor{}, gone.IdGoneGinProcessor
 }
 
 type sysProcessor struct {
 	gone.Flag
-	logrus.Logger `gone:"gone-logger"`
+	gone.Logger `gone:"gone-logger"`
 
-	tracer     tracer.Tracer `gone:"gone-tracer"`
-	router     IRouter       `gone:"gone-gin-router"`
-	resHandler Responser     `gone:"gone-gin-responser"`
+	tracer     gone.Tracer `gone:"gone-tracer"`
+	router     IRouter     `gone:"gone-gin-router"`
+	resHandler Responser   `gone:"gone-gin-responser"`
 
-	httpInjector *httpInjector `gone:"http"`
+	httpInjector keepContext `gone:"http"`
 
 	// HealthCheckUrl 健康检查路劲
 	// 对应配置项为: `server.health-check`
@@ -84,20 +80,19 @@ func (p *sysProcessor) trace(context *Context) (any, error) {
 }
 
 func (p *sysProcessor) recovery(context *Context) (any, error) {
-	traceID := p.tracer.GetTraceId()
-	defer func() {
-		if r := recover(); r != nil {
-			p.Errorf("[%s] handle panic: %v, %s", traceID, r, gone.PanicTrace(2))
-			err, ok := r.(error)
-			if !ok {
-				err = errors.New(fmt.Sprintf("%v", r))
-			}
-			p.resHandler.Failed(context.Context, err)
-			context.Abort()
-		}
-	}()
+	defer p.recover(context)
 	context.Next()
 	return nil, nil
+}
+
+func (p *sysProcessor) recover(context *Context) {
+	if r := recover(); r != nil {
+		traceID := p.tracer.GetTraceId()
+		p.Errorf("[%s] handle panic: %v, %s", traceID, r, gone.PanicTrace(2))
+		err := gone.ToError(r)
+		p.resHandler.Failed(context.Context, err)
+		context.Abort()
+	}
 }
 
 func (p *sysProcessor) statRequestTime(c *Context) (any, error) {
@@ -154,7 +149,7 @@ func cloneRequestBody(c *Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(data))
 	return data, nil
 }
 

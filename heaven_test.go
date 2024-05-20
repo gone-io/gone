@@ -1,76 +1,66 @@
-package gone_test
+package gone
 
 import (
-	"github.com/gone-io/gone"
+	"errors"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-type Triangle struct {
-	gone.Flag
-	a gone.XPoint `gone:"point-a"`
-	b gone.Point  `gone:"point-b"`
-	c *gone.Point `gone:"point-c"`
+func Test_heaven_SetLogger(t *testing.T) {
+	h := heaven{}
+	err := h.SetLogger(&defaultLogger{})
+	assert.Nil(t, err)
+
 }
 
-func TestRun(t *testing.T) {
-	gone.Run(func(cemetery gone.Cemetery) error {
-		cemetery.
-			Bury(&Triangle{}).
-			Bury(&gone.Point{Index: 1}, "point-a").
-			Bury(&gone.Point{Index: 2}, "point-b").
-			Bury(&gone.Point{Index: 3}, "point-c")
+func Test_heaven_burial(t *testing.T) {
+	executed := false
+	func() {
+		defer func() {
+			err := recover()
+			assert.Equal(t, errors.New("test"), err)
+			executed = true
+		}()
 
-		return nil
-	})
+		New(func(cemetery Cemetery) error {
+			return errors.New("test")
+		}).(*heaven).burial()
+	}()
+	assert.True(t, executed)
 }
 
-func TestNew(t *testing.T) {
-	var sort []int
+func Test_heaven_install(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	const gonerId = "Triangle"
+	mockCemetery := NewMockCemetery(ctrl)
 
-	heaven := gone.
-		New(func(cemetery gone.Cemetery) error {
-			cemetery.
-				Bury(&Triangle{}, gonerId).
-				Bury(&gone.Point{Index: 1}, "point-a").
-				Bury(&gone.Point{Index: 2}, "point-b").
-				Bury(&gone.Point{Index: 3}, "point-c")
+	mockCemetery.EXPECT().ReviveAllFromTombs().Return(errors.New("ReviveAllFromTombs failed"))
 
-			return nil
-		})
-
-	heaven.
-		BeforeStart(func(cemetery gone.Cemetery) error {
-			tomb := cemetery.GetTomById(gonerId)
-			triangle, ok := tomb.GetGoner().(*Triangle)
-			assert.True(t, ok)
-			assert.Equal(t, triangle.a.GetIndex(), 1)
-			assert.Equal(t, triangle.b.GetIndex(), 2)
-			assert.Equal(t, triangle.c.Index, 3)
-
-			sort = append(sort, 0)
-			return nil
-		}).
-		AfterStart(func(cemetery gone.Cemetery) error {
-			sort = append(sort, 1)
-			return nil
-		}).
-		BeforeStop(func(cemetery gone.Cemetery) error {
-			sort = append(sort, 2)
-			return nil
-		}).
-		AfterStop(func(cemetery gone.Cemetery) error {
-			sort = append(sort, 3)
-			return nil
-		})
-
-	heaven.Install()
-	heaven.Start()
-	heaven.Stop()
-
-	for i := range sort {
-		assert.Equal(t, i, sort[i])
+	h := heaven{
+		cemetery: mockCemetery,
 	}
+
+	executed := false
+	func() {
+		defer func() {
+			err := recover()
+			assert.Equal(t, errors.New("ReviveAllFromTombs failed"), err)
+			executed = true
+		}()
+		h.install()
+	}()
+	assert.True(t, executed)
+}
+
+func Test_heaven_installAngelHook(t *testing.T) {
+	h := New(func(cemetery Cemetery) error {
+		cemetery.Bury(&angel{})
+		return nil
+	}).(*heaven)
+	h.burial()
+	h.installAngelHook()
+	assert.Equal(t, 1, len(h.beforeStartHandlers))
+	assert.Equal(t, 1, len(h.beforeStopHandlers))
 }

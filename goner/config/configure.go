@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"github.com/gone-io/gone"
 	"github.com/magiconair/properties"
@@ -21,31 +20,52 @@ func (c *propertiesConfigure) Get(key string, v any, defaultVal string) error {
 	if c.props == nil {
 		env := GetEnv("")
 		c.Infof("==>Use Env: %s", env)
-		c.props = c.mustGetProperties()
+		var err error
+		c.props, err = c.mustGetProperties()
+		if err != nil {
+			return gone.ToError(err)
+		}
 	}
-	return c.parseKeyFromProperties(key, v, defaultVal, c.props)
+	return parseKeyFromProperties(key, v, defaultVal, c.props)
 }
 
 const SliceMaxSize = 100
 
-func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defaultVale string, props *properties.Properties) error {
+type PropertiesConfigure interface {
+	FilterStripPrefix(prefix string) *properties.Properties
+	Decode(x interface{}) error
+	GetParsedDuration(key string, def time.Duration) time.Duration
+	GetBool(key string, def bool) bool
+	GetInt(key string, def int) int
+	GetInt64(string, int64) int64
+	GetUint(string, uint) uint
+	GetUint64(string, uint64) uint64
+	GetFloat64(string, float64) float64
+	GetString(string, string) string
+	Len() int
+}
+
+func parseKeyFromProperties(
+	key string,
+	value any,
+	defaultVale string,
+	props PropertiesConfigure,
+) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
-		return errors.New("type of value must be ptr")
+		return gone.NewInnerError("type of value must be ptr", gone.NotCompatible)
 	}
 
 	el := rv.Elem()
 
 	switch rv.Elem().Kind() {
 	default:
-		return errors.New(fmt.Sprintf("<%s>(%v) is not support", el.Type().Name(), el.Type().Kind()))
+		return gone.NewInnerError(fmt.Sprintf("<%s>(%v) is not support", el.Type().Name(), el.Type().Kind()), gone.NotCompatible)
 	case reflect.Struct:
 		k := key + "."
 		conf := props.FilterStripPrefix(k)
 		err := conf.Decode(value)
-		if err != nil {
-			c.Errorf("err:", err)
-		}
+		return gone.ToError(err)
 	case reflect.Slice:
 		sliceElementType := el.Type().Elem()
 
@@ -55,28 +75,9 @@ func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defa
 			if conf.Len() == 0 {
 				break
 			}
-
-			switch sliceElementType.Kind() {
-			case reflect.Struct:
-				v := reflect.New(sliceElementType)
-				err := conf.Decode(v.Interface())
-				if nil != err {
-					panic(fmt.Sprintf("config %s err:%s", k, err.Error()))
-				}
-				el.Set(reflect.Append(el, v.Elem()))
-			case reflect.Pointer:
-				if sliceElementType.Elem().Kind() == reflect.Struct {
-					v := reflect.New(sliceElementType.Elem())
-					err := conf.Decode(v.Interface())
-					if nil != err {
-						panic(fmt.Sprintf("config %s err:%s", k, err.Error()))
-					}
-					el.Set(reflect.Append(el, v))
-				} else {
-					panic(fmt.Sprintf("config %s err: bad type", k))
-				}
-			default:
-				panic(fmt.Sprintf("config %s err: bad type", k))
+			err := decodeSlice(sliceElementType, k, conf, el)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -97,7 +98,7 @@ func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defa
 			} else {
 				duration, err = time.ParseDuration(defaultVale)
 				if err != nil {
-					c.Errorf("err:", err)
+					return gone.ToError(err)
 				}
 			}
 			confVal := props.GetParsedDuration(key, duration)
@@ -130,25 +131,44 @@ func (c *propertiesConfigure) parseKeyFromProperties(key string, value any, defa
 	return nil
 }
 
+func decodeSlice(sliceElementType reflect.Type, k string, conf PropertiesConfigure, el reflect.Value) error {
+	switch sliceElementType.Kind() {
+	case reflect.Struct:
+		v := reflect.New(sliceElementType)
+		err := conf.Decode(v.Interface())
+		if nil != err {
+			return gone.NewInnerError(fmt.Sprintf("config %s err:%s", k, err.Error()), gone.NotCompatible)
+		}
+		el.Set(reflect.Append(el, v.Elem()))
+	case reflect.Pointer:
+		if sliceElementType.Elem().Kind() == reflect.Struct {
+			v := reflect.New(sliceElementType.Elem())
+			err := conf.Decode(v.Interface())
+			if nil != err {
+				return gone.NewInnerError(fmt.Sprintf("config %s err:%s", k, err.Error()), gone.NotCompatible)
+			}
+			el.Set(reflect.Append(el, v))
+		} else {
+			return gone.NewInnerError(fmt.Sprintf("config %s err: bad type", k), gone.NotCompatible)
+		}
+	default:
+		return gone.NewInnerError(fmt.Sprintf("config %s err: bad type", k), gone.NotCompatible)
+	}
+	return nil
+}
+
 func (c *propertiesConfigure) isInTestKit() bool {
 	return c.cemetery.GetTomById(gone.IdGoneTestKit) != nil
 }
 
-func (c *propertiesConfigure) mustGetProperties() *properties.Properties {
-	var props *properties.Properties
-	var err error
-
+func (c *propertiesConfigure) mustGetProperties() (*properties.Properties, error) {
 	properties.LogPrintf = c.Warnf
 
 	if c.isInTestKit() {
-		props, err = GetTestProperties()
+		return GetTestProperties()
 	} else {
-		props, err = GetProperties("")
+		return GetProperties("")
 	}
-	if err != nil {
-		panic(err)
-	}
-	return props
 }
 
 func isDuration(t reflect.Type) bool { return t == reflect.TypeOf(time.Second) }

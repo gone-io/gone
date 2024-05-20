@@ -2,7 +2,6 @@ package gone
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -51,25 +50,25 @@ func InjectWrapFn(cemetery Cemetery, fn any) (*reflect.Value, error) {
 	ft := reflect.TypeOf(fn)
 	fv := reflect.ValueOf(fn)
 	if ft.Kind() != reflect.Func {
-		return nil, errors.New("fn must be a function")
+		return nil, NewInnerError("fn must be a function", NotCompatible)
 	}
 
 	in := ft.NumIn()
 	if in > 1 {
-		return nil, errors.New("fn only support one input parameter or no input parameter")
+		return nil, NewInnerError("fn only support one input parameter or no input parameter", NotCompatible)
 	}
 
 	var args = make([]reflect.Value, 0)
 
 	if in == 1 {
 		if ft.In(0).Kind() != reflect.Struct {
-			return nil, errors.New("fn input parameter must be a struct")
+			return nil, NewInnerError("fn input parameter must be a struct", NotCompatible)
 		}
 
 		pt := ft.In(0)
 
 		if pt.Name() != "" || pt.PkgPath() != "" {
-			return nil, errors.New("fn input parameter must be a anonymous struct")
+			return nil, NewInnerError("fn input parameter must be a anonymous struct", NotCompatible)
 		}
 
 		parameter := reflect.New(pt)
@@ -77,7 +76,7 @@ func InjectWrapFn(cemetery Cemetery, fn any) (*reflect.Value, error) {
 		goner := parameter.Interface()
 		_, err := cemetery.ReviveOne(goner)
 		if err != nil {
-			return nil, err
+			return nil, ToError(err)
 		}
 		args = append(args, parameter.Elem())
 	}
@@ -122,5 +121,11 @@ func WrapNormalFnToProcess(fn any) Process {
 			}
 		}
 		return nil
+	}
+}
+
+func CheckAndBury(cemetery Cemetery, goner Goner, goneId GonerId) {
+	if nil == cemetery.GetTomById(goneId) {
+		cemetery.Bury(goner)
 	}
 }

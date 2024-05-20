@@ -204,5 +204,5 @@ type XormEngine interface {
 	xorm.EngineInterface
 	Transaction(fn func(session xorm.Interface) error) error
 	Sqlx(sql string, args ...any) *xorm.Session
-	GetOriginEngine() *xorm.Engine
+	GetOriginEngine() xorm.EngineInterface
 }

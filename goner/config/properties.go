@@ -1,9 +1,9 @@
 package config
 
 import (
-	"errors"
 	"flag"
 	"fmt"
+	"github.com/gone-io/gone"
 	"github.com/magiconair/properties"
 	"os"
 	"path"
@@ -53,30 +53,8 @@ func GetProperties(envParams ...string) (*properties.Properties, error) {
 		)
 	}
 
-	if len(filenames) == 0 {
-		return nil, errors.New("cannot read config path")
-	}
-
 	props, err := properties.LoadFiles(filenames, properties.UTF8, true)
-	if err != nil {
-		return nil, err
-	}
-
-	return props, fixVariableConfig(props)
-}
-
-func fixVariableConfig(props *properties.Properties) error {
-	keys := props.Keys()
-	for _, k := range keys {
-		v, ok := props.Get(k)
-		if ok {
-			_, _, err := props.Set(k, v)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return props, gone.ToError(err)
 }
 
 func getConfDir() string {
@@ -89,9 +67,5 @@ func getConfDir() string {
 
 func getExecutableDir() (string, error) {
 	dir, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Dir(dir), nil
+	return filepath.Dir(dir), gone.ToError(err)
 }

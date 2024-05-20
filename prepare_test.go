@@ -4,6 +4,7 @@ import (
 	"github.com/gone-io/gone"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestPrepare(t *testing.T) {
@@ -39,7 +40,43 @@ func TestPrepare(t *testing.T) {
 			i++
 			assert.Equal(t, 1, i)
 		}).
+		AfterStop(func() {
+			i++
+			assert.Equal(t, 5, i)
+		}).
 		Run()
 
-	assert.Equal(t, 4, i)
+	assert.Equal(t, 5, i)
+}
+
+func TestPreparer_Serve(t *testing.T) {
+	i := 0
+	executed := false
+	gone.
+		Prepare().
+		AfterStart(func(in struct {
+			h gone.Heaven `gone:"gone-heaven"`
+		}) {
+			signal := in.h.GetHeavenStopSignal()
+
+			go func() {
+				_, ok := <-signal
+				assert.False(t, ok)
+				i++
+				assert.Equal(t, 2, i)
+			}()
+			assert.Equal(t, 0, i)
+
+			go func() {
+				after := time.After(1 * time.Second)
+				<-after
+
+				i++
+				assert.Equal(t, 1, i)
+				executed = true
+				in.h.End()
+			}()
+		}).
+		Serve()
+	assert.True(t, executed)
 }

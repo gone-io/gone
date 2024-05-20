@@ -7,6 +7,7 @@ toolchain go1.21.1
 require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gone-io/gone v0.3.0
+	github.com/sirupsen/logrus v1.9.0
 )
 
 require (
@@ -47,7 +48,6 @@ require (
 	github.com/quic-go/quic-go v0.43.0 // indirect
 	github.com/refraction-networking/utls v1.6.4 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -67,4 +67,4 @@ require (
 	xorm.io/xorm v1.3.2 // indirect
 )
 
-//replace github.com/gone-io/gone v0.3.0 => ../..
+replace github.com/gone-io/gone v0.3.0 => ../..

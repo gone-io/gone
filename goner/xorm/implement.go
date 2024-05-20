@@ -2,20 +2,25 @@ package xorm
 
 import (
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/logrus"
-	"reflect"
 	"time"
 	"xorm.io/xorm"
 )
 
 func NewXormEngine() (gone.Angel, gone.GonerId) {
-	return &engine{}, gone.IdGoneXorm
+	return &engine{
+		newFunc: newEngine,
+	}, gone.IdGoneXorm
 }
 
+func newEngine(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
+	return xorm.NewEngine(driverName, dataSourceName)
+}
+
+//go:generate mockgen -package xorm  xorm.io/xorm EngineInterface > ./engine_mock_test.go
 type engine struct {
 	gone.Flag
-	*xorm.Engine
-	logrus.Logger `gone:"gone-logger"`
+	xorm.EngineInterface
+	gone.Logger `gone:"gone-logger"`
 
 	driverName   string        `gone:"config,database.driver-name"`
 	dsn          string        `gone:"config,database.dsn"`
@@ -23,43 +28,47 @@ type engine struct {
 	maxOpen      int           `gone:"config,database.max-open"`
 	maxLifetime  time.Duration `gone:"config,database.max-lifetime"`
 	showSql      bool          `gone:"config,database.showSql,default=false"`
+
+	newFunc func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
 }
 
-func (e *engine) GetOriginEngine() *xorm.Engine {
-	return e.Engine
+func (e *engine) GetOriginEngine() xorm.EngineInterface {
+	return e.EngineInterface
 }
 
 func (e *engine) Start(gone.Cemetery) error {
-	if e.Engine != nil {
-		panic("duplicate call Start()")
+	err := e.create()
+	if err != nil {
+		return err
+	}
+	e.config()
+	return e.Ping()
+}
+func (e *engine) create() error {
+	if e.EngineInterface != nil {
+		return gone.NewInnerError("duplicate call Start()", gone.StartError)
 	}
 
 	var err error
-	e.Engine, err = xorm.NewEngine(e.driverName, e.dsn)
+	e.EngineInterface, err = e.newFunc(e.driverName, e.dsn)
 	if err != nil {
-		panic(err)
+		return gone.NewInnerError(err.Error(), gone.StartError)
 	}
+	return nil
+}
 
+func (e *engine) config() {
 	e.SetConnMaxLifetime(e.maxLifetime)
 	e.SetMaxOpenConns(e.maxOpen)
 	e.SetMaxIdleConns(e.maxIdleCount)
 	e.SetLogger(&dbLogger{Logger: e.Logger, showSql: e.showSql})
-	return e.Ping()
 }
 
 func (e *engine) Stop(gone.Cemetery) error {
-	return e.Close()
+	return e.EngineInterface.(*xorm.Engine).Close()
 }
 
-type NameMap map[string]any
-
-var NameMapType = reflect.TypeOf(&NameMap{}).Elem()
-
 func (e *engine) Sqlx(sql string, args ...any) *xorm.Session {
-	if len(args) == 1 && reflect.TypeOf(args[0]) == NameMapType {
-		sql, args = MustNamed(sql, args[0])
-	} else {
-		sql, args = MustIn(sql, args...)
-	}
+	sql, args = sqlDeal(sql, args...)
 	return e.SQL(sql, args...)
 }

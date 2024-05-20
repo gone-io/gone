@@ -6,27 +6,18 @@ import (
 )
 
 func ginPriest(cemetery gone.Cemetery) error {
-	if nil == cemetery.GetTomById(gone.IdGoneGinProxy) {
-		cemetery.Bury(NewGinProxy())
+	arr := []func() (gone.Goner, gone.GonerId){
+		NewGinProxy,
+		NewGinRouter,
+		NewGinProcessor,
+		NewGinResponser,
+		NewGinServer,
+		NewHttInjector,
 	}
 
-	if nil == cemetery.GetTomById(gone.IdGoneGinRouter) {
-		cemetery.Bury(NewGinRouter())
-	}
-
-	if nil == cemetery.GetTomById(gone.IdGoneGinProcessor) {
-		cemetery.Bury(NewGinProcessor())
-	}
-
-	if nil == cemetery.GetTomById(gone.IdGoneGinResponser) {
-		cemetery.Bury(NewGinResponser())
-	}
-
-	if nil == cemetery.GetTomById(gone.IdGoneGin) {
-		cemetery.Bury(NewGinServer())
-	}
-	if nil == cemetery.GetTomById(gone.IdHttpInjector) {
-		cemetery.Bury(NewHttInjector())
+	for _, f := range arr {
+		goner, id := f()
+		gone.CheckAndBury(cemetery, goner, id)
 	}
 	return nil
 }

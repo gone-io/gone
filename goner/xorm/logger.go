@@ -1,12 +1,12 @@
 package xorm
 
 import (
-	"github.com/gone-io/gone/goner/logrus"
+	"github.com/gone-io/gone"
 	"xorm.io/xorm/log"
 )
 
 type dbLogger struct {
-	logrus.Logger
+	gone.Logger
 	showSql bool
 	level   log.LogLevel
 }

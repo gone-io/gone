@@ -9,8 +9,7 @@ import (
 func Priest(cemetery gone.Cemetery) error {
 	_ = config.Priest(cemetery)
 	_ = logrus.Priest(cemetery)
-	if nil == cemetery.GetTomById(gone.IdGoneXorm) {
-		cemetery.Bury(NewXormEngine())
-	}
+	xormEngine, id := NewXormEngine()
+	gone.CheckAndBury(cemetery, xormEngine, id)
 	return nil
 }

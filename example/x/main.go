@@ -1,23 +1,42 @@
 package main
 
-import "github.com/gone-io/gone"
+import (
+	"fmt"
+	"github.com/gone-io/gone"
+)
 
 type Worker struct {
 	gone.Flag // Goner标志，匿名内嵌`gone.Flag`表示该结构体为一个Goner
-	Name      string
+}
+
+func (w *Worker) Do() {
+	fmt.Println("worker do")
 }
 
 type Boss struct {
 	gone.Flag // Goner标志，匿名内嵌`gone.Flag`表示该结构体为一个Goner
 
-	seller *Worker `gone:"*"` //匿名注入，如果有存在多个Worker，则注入其中一个，通常是第一个
+	seller *Worker `gone:"*"` //注入Worker
+}
+
+func (b *Boss) Do() {
+	fmt.Println("boss do")
+	b.seller.Do()
 }
 
 func main() {
-	gone.Run(func(cemetery gone.Cemetery) error {
-		cemetery.Bury(&Boss{})
-		cemetery.Bury(&Worker{Name: "小王"})
-		cemetery.Bury(&Worker{Name: "小张"})
-		return nil
-	})
+	gone.
+		Prepare(func(cemetery gone.Cemetery) error {
+			cemetery.
+				Bury(&Boss{}).
+				Bury(&Worker{})
+			return nil
+		}).
+		//AfterStart 是一个hook函数，关于hook函数请参考文档：https://goner.fun/zh/guide/hooks.html
+		AfterStart(func(in struct {
+			boss *Boss `gone:"*"` //注入Boss
+		}) {
+			in.boss.Do()
+		}).
+		Run()
 }

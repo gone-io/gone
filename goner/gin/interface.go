@@ -5,19 +5,25 @@ import (
 	"github.com/gone-io/gone"
 )
 
-// RouterGroupName 路由分组名称
+//go:generate sh -c "mockgen -package=gin github.com/gin-gonic/gin ResponseWriter > gin_ResponseWriter_mock_test.go"
+//go:generate sh -c "mockgen -package=gin net Listener > net_Listener_mock_test.go"
+//go:generate sh -c "mockgen -package=gin -source=../cmux/interface.go -mock_names=Server=CumxServer -destination=cumx_Server_mock_test.go"
+//go:generate sh -c "mockgen -package=gin -source=../../gin_interface.go IRouter|gone mock -o gone_gin_mock_test.go"
+//go:generate sh -c "mockgen -package=gin -self_package=github.com/gone-io/gone/goner/gin -source=interface.go -destination=mock_test.go"
+
+// RouterGroupName Router group name
 type RouterGroupName string
 
-// Context `gone`框架基于`gin`封装的上下文
+// Context The `gone` framework encapsulated context based on `gin`
 // Deprecated use `gone.Context` instead
 type Context = gone.Context
 
-// HandlerFunc `gone`框架的路由处理函数
+// HandlerFunc The `gone` framework route handler function
 type HandlerFunc = gone.HandlerFunc
 
-// IRoutes `gone`框架基于`gin`封装的路由，用于定义处理特定请求的函数
-// 注入默认的路由使用Id: gone-gin-router (`gone.IdGoneGinRouter`)
-// 给对象`inject`路由依赖：
+// IRoutes Routes encapsulated by the `gone` framework based on `gin`, used to define functions that handle specific requests
+// Inject default routes using Id: gone-gin-router (`gone.IdGoneGinRouter`)
+// To inject route dependencies into an object:
 // ```go
 //
 //	func NewDependOnIRoutes() *DependOnIRoutes {
@@ -26,18 +32,18 @@ type HandlerFunc = gone.HandlerFunc
 //
 //
 //	type DependOnIRoutes struct {
-//		TheRoutes gone.IRoutes `gone:"gone-gin-router"` //依赖注入系统路由
+//		TheRoutes gone.IRoutes `gone:"gone-gin-router"` // Dependency injection system routes
 //	}
 //
-//	func (*DependOnIRoutes)DoSomething()  {
-//		//对路由进行操作
+//	func (*DependOnIRoutes) DoSomething()  {
+//		// Operate on the routes
 //		//...
 //	}
 //
 // ```
 //
 //	type IRoutes interface {
-//		// Use 在路由上应用`gin`中间件
+//		// Use Apply `gin` middleware on the route
 //		Use(...HandlerFunc) IRoutes
 //
 //		Handle(string, string, ...HandlerFunc) IRoutes
@@ -52,80 +58,68 @@ type HandlerFunc = gone.HandlerFunc
 //	}
 type IRoutes = gone.IRoutes
 
-// IRouter `gone`框架基于`gin`封装的"路由器"
-// 注入默认的路由器使用Id: gone-gin-router (`gone.IdGoneGinRouter`)
+// IRouter The `gone` framework encapsulated "router" based on `gin`
+// Inject default router using Id: gone-gin-router (`gone.IdGoneGinRouter`)
 //
 //	type IRouter interface {
-//		// IRoutes 1. 组合了`gone.IRoutes`，可以定义路由
+//		// IRoutes 1. Composes `gone.IRoutes`, can define routes
 //		IRoutes
 //
-//		// GetGinRouter 2. 可以获取被封装的ginRouter对象，用于操作原始的gin路由
+//		// GetGinRouter 2. Can get the encapsulated ginRouter object, used to operate the original gin routes
 //		GetGinRouter() gin.IRouter
 //
-//		// Group 3.定义路由分组
+//		// Group 3. Define route groups
 //		Group(string, ...HandlerFunc) RouteGroup
 //
 //		LoadHTMLGlob(pattern string)
 //	}
 type IRouter = gone.IRouter
 
-// RouteGroup 路由分组
-// 注入默认的路由分组使用Id: gone-gin-router (`gone.IdGoneGinRouter`)
+// RouteGroup Route group
+// Inject default route group using Id: gone-gin-router (`gone.IdGoneGinRouter`)
 //
 //	type RouteGroup interface {
 //		IRouter
 //	}
 type RouteGroup = gone.RouteGroup
 
-// Controller 控制器接口，由业务代码编码实现，用于挂载和处理路由
-// 使用方式参考 [示例代码](https://gitlab.openviewtech.com/gone/gone-example/-/tree/master/gone-app)
+// Controller interface, implemented by business code, used to mount and handle routes
+// For usage reference [example code](https://gitlab.openviewtech.com/gone/gone-example/-/tree/master/gone-app)
 type Controller interface {
-	// Mount   路由挂载接口，改接口会在服务启动前被调用，该函数的实现通常情况应该返回`nil`
+	// Mount Route mount interface, this interface will be called before the service starts, the implementation of this function should usually return `nil`
 	Mount() MountError
 }
 
-// MountError `gin.Controller#Mount`返回的类型，用于识别 `gin.Controller` 的实现，避免被错误的调用到
+// MountError The type returned by `gin.Controller#Mount`, used to identify the implementation of `gin.Controller` to avoid being called incorrectly
 type MountError = gone.GinMountError
 
-// ## 错误处理
-// 我们定义两种错误接口，3种具体的错误
-
-// HandleProxyToGin 代理器，提供一个proxy函数将`gin.HandlerFunc`转成`gin.HandlerFunc`
-// 注入`gin.HandleProxyToGin`使用Id：sys-gone-proxy (`gin.SystemGoneProxy`)
+// HandleProxyToGin Proxy, provides a proxy function to convert `gone.HandlerFunc` to `gin.HandlerFunc`
+// Inject `gin.HandleProxyToGin` using Id: sys-gone-proxy (`gin.SystemGoneProxy`)
 type HandleProxyToGin interface {
 	Proxy(handler ...HandlerFunc) []gin.HandlerFunc
 	ProxyForMiddleware(handlers ...HandlerFunc) (arr []gin.HandlerFunc)
 }
 
-type jsonWriter interface {
+type XContext interface {
 	JSON(code int, obj any)
+	String(code int, format string, values ...any)
 }
 
 type WrappedDataFunc func(code int, msg string, data any) any
 
-// Responser 响应处理器
-// 注入默认的响应处理器使用Id: gone-gin-responser (`gone.IdGoneGinResponser`)
+// Responser Response handler
+// Inject default response handler using Id: gone-gin-responser (`gone.IdGoneGinResponser`)
 type Responser interface {
-	gone.Goner
-	Success(ctx *gin.Context, data any)
-	Failed(ctx *gin.Context, err error)
+	Success(ctx XContext, data any)
+	Failed(ctx XContext, err error)
+	ProcessResults(context XContext, writer gin.ResponseWriter, last bool, funcName string, results ...any)
 }
 
-type Close func()
-
-// Server `gone`服务，可以代表一个`gone`应用
-// 注入`gin.Server`使用Id：gone-gin (`gone.IdGoneGin`)
-type Server interface {
-	gone.Angel
-
-	// Serve 启动http服务，返回的函数可以用于"服务优雅停机"
-	Serve() (close Close)
-}
-
-// BusinessError
-// 2. BusinessError，业务错误
-// 业务错误是业务上的特殊情况，需要在不同的业务场景返回不同的数据类型；本质上不算错误，是为了便于业务编写做的一种抽象，
-// 让同一个接口拥有在特殊情况返回不同业务代码和业务数据的能力
+// BusinessError business error
+// Business errors are special cases in business scenarios that need to return different data types in different business contexts; essentially not considered errors, but an abstraction to facilitate business writing,
+// allowing the same interface to have the ability to return different business codes and business data in special cases
 type BusinessError = gone.BusinessError
 
-type R map[string]any
+type keepContext interface {
+	SetContext(context *Context) (any, error)
+}

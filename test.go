@@ -1,6 +1,8 @@
 package gone
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type TestHeaven[T Goner] interface {
 	Heaven
@@ -96,4 +98,26 @@ func Test[T Goner](fn func(T), priests ...Priest) {
 // TestAt 用于编写测试用例，测试某个特定ID的Goner
 func TestAt[T Goner](id GonerId, fn func(T), priests ...Priest) {
 	TestKit(fn).WithId(id).WithPriest(priests...).Run()
+}
+
+type BuryMockCemetery struct {
+	Cemetery
+	m map[GonerId]Goner
+}
+
+func (c *BuryMockCemetery) Bury(g Goner, ids ...GonerId) Cemetery {
+	if len(ids) > 0 {
+		c.m[ids[0]] = g
+	}
+	return c
+}
+
+func (c *BuryMockCemetery) GetTomById(id GonerId) Tomb {
+	return NewTomb(c.m[id])
+}
+
+func NewBuryMockCemeteryForTest() Cemetery {
+	c := BuryMockCemetery{}
+	c.m = make(map[GonerId]Goner)
+	return &c
 }

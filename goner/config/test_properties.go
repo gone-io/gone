@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/gone-io/gone"
 	"github.com/magiconair/properties"
 	"os"
 	"path"
@@ -18,11 +19,7 @@ func GetTestProperties() (props *properties.Properties, err error) {
 	var configDir string
 	configDir, err = lookupConfigDir("")
 	props, err = buildTestProps(configDir)
-
-	if err != nil {
-		return
-	}
-	return props, fixVariableConfig(props)
+	return props, gone.ToError(err)
 }
 
 func lookupConfigDir(begin string) (configDir string, err error) {

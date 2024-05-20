@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -45,14 +46,20 @@ func NewBusinessError(msg string, ext ...any) BusinessError {
 }
 
 // ToError 将 golang 提供的 error 转为一个 `gone.Error`
-func ToError(err error) Error {
-	if err == nil {
+func ToError(input any) Error {
+	if input == nil {
 		return nil
 	}
-	if iErr, ok := err.(Error); ok {
-		return iErr
+	switch input.(type) {
+	case Error:
+		return input.(Error)
+	case error:
+		return NewInnerError(input.(error).Error(), http.StatusInternalServerError)
+	case string:
+		return NewInnerError(input.(string), http.StatusInternalServerError)
+	default:
+		return NewInnerError(fmt.Sprintf("%v", input), http.StatusInternalServerError)
 	}
-	return NewInnerError(err.Error(), http.StatusInternalServerError)
 }
 
 // BError 业务错误
