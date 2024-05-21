@@ -9,7 +9,7 @@ import (
 	"reflect"
 )
 
-type ClientRegister struct {
+type clientRegister struct {
 	gone.Flag
 	gone.Logger `gone:"gone-logger"`
 	connections map[string]*grpc.ClientConn
@@ -19,10 +19,10 @@ type ClientRegister struct {
 
 //go:gone
 func NewRegister() gone.Goner {
-	return &ClientRegister{connections: make(map[string]*grpc.ClientConn)}
+	return &clientRegister{connections: make(map[string]*grpc.ClientConn)}
 }
 
-func (s *ClientRegister) traceInterceptor(
+func (s *clientRegister) traceInterceptor(
 	ctx context.Context,
 	method string,
 	req, reply interface{},
@@ -34,10 +34,11 @@ func (s *ClientRegister) traceInterceptor(
 	return invoker(ctx, method, req, reply, cc)
 }
 
-func (s *ClientRegister) register(client Client) error {
+func (s *clientRegister) register(client Client) error {
 	conn, ok := s.connections[client.Address()]
 	if !ok {
-		c, err := grpc.Dial(client.Address(),
+		c, err := grpc.Dial(
+			client.Address(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithChainUnaryInterceptor(s.traceInterceptor),
 		)
@@ -53,7 +54,7 @@ func (s *ClientRegister) register(client Client) error {
 	return nil
 }
 
-func (s *ClientRegister) Start(gone.Cemetery) error {
+func (s *clientRegister) Start(gone.Cemetery) error {
 	for _, c := range s.clients {
 		s.Infof("register gRPC client %v on address %v\n", reflect.ValueOf(c).Type().String(), c.Address())
 		if err := s.register(c); err != nil {
@@ -64,7 +65,7 @@ func (s *ClientRegister) Start(gone.Cemetery) error {
 	return nil
 }
 
-func (s *ClientRegister) Stop(gone.Cemetery) error {
+func (s *clientRegister) Stop(gone.Cemetery) error {
 	for _, conn := range s.connections {
 		err := conn.Close()
 		if err != nil {
