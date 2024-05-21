@@ -101,10 +101,10 @@ func Test_server_error(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-//func Test_createListener(t *testing.T) {
-//	err := createListener(&server{})
-//	assert.Nil(t, err)
-//}
+func Test_createListener(t *testing.T) {
+	err := createListener(&server{})
+	assert.Nil(t, err)
+}
 
 func Test_server_initListener(t *testing.T) {
 	t.Run("use cMuxServer", func(t *testing.T) {

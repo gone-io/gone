@@ -19,10 +19,10 @@ func (s *server) Warnf(format string, args ...any)  {}
 func (s *server) Infof(format string, args ...any)  {}
 func (s *server) Go(fn func())                      {}
 
-//func Test_createListener(t *testing.T) {
-//	err := createListener(&server{})
-//	assert.Nil(t, err)
-//}
+func Test_createListener(t *testing.T) {
+	err := createListener(&server{})
+	assert.Nil(t, err)
+}
 
 func Test_server_initListener(t *testing.T) {
 	t.Run("use cMuxServer", func(t *testing.T) {
