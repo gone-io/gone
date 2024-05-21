@@ -10,11 +10,11 @@ import (
 	"testing"
 )
 
-func (l *server) Go(fn func()) {
+func (s *server) Go(fn func()) {
 	go fn()
 }
-func (l *server) Errorf(format string, args ...any) {}
-func (l *server) Warnf(format string, args ...any)  {}
+func (s *server) Errorf(format string, args ...any) {}
+func (s *server) Warnf(format string, args ...any)  {}
 
 func Test_cumx(t *testing.T) {
 	controller := gomock.NewController(t)

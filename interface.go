@@ -1,6 +1,8 @@
 package gone
 
 import (
+	"github.com/soheilhy/cmux"
+	"net"
 	"reflect"
 	"xorm.io/xorm"
 )
@@ -205,4 +207,12 @@ type XormEngine interface {
 	Transaction(fn func(session xorm.Interface) error) error
 	Sqlx(sql string, args ...any) *xorm.Session
 	GetOriginEngine() xorm.EngineInterface
+}
+
+//-----------
+
+// Server cumx 服务，用于复用同一端口监听多种协议，参考文档：https://pkg.go.dev/github.com/soheilhy/cmux
+type CMuxServer interface {
+	Match(matcher ...cmux.Matcher) net.Listener
+	GetAddress() string
 }
