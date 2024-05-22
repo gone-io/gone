@@ -45,7 +45,7 @@ func (t *tracer) Recover() {
 
 func (t *tracer) RecoverSetTraceId(traceId string, fn func()) {
 	t.SetTraceId(traceId, func() {
-		t.Recover()
+		defer t.Recover()
 		fn()
 	})
 }
