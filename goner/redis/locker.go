@@ -3,10 +3,7 @@ package redis
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/gomodule/redigo/redis"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/tracer"
 	"github.com/google/uuid"
 	"time"
 )
@@ -24,16 +21,9 @@ func NewRedisLocker() (gone.Goner, gone.GonerId) {
 }
 
 type locker struct {
-	tracer tracer.Tracer `gone:"gone-tracer"`
+	tracer gone.Tracer `gone:"gone-tracer"`
 	*inner `gone:"gone-redis-inner"`
-}
-
-func (r *locker) getConn() redis.Conn {
-	return r.pool.Get()
-}
-
-func (r *locker) buildKey(key string) string {
-	return fmt.Sprintf("%s#%s", r.cachePrefix, key)
+	k      Key `gone:"gone-redis-key"`
 }
 
 type Unlock func()
@@ -56,31 +46,18 @@ func (r *locker) TryLock(key string, expiresIn time.Duration) (unlock Unlock, er
 	}
 
 	return func() {
-		err := r.releaseLock(key, v)
-		if err != nil {
-			r.Error("lock.Release() err:", err)
-		}
+		r.releaseLock(key, v)
 	}, nil
 }
 
-func (r *locker) releaseLock(key, value string) error {
+func (r *locker) releaseLock(key, value string) {
 	conn := r.getConn()
 	defer r.close(conn)
 
 	_, err := conn.Do("EVAL", unlockLua, 1, key, value)
 	if err != nil {
-		return err
+		r.Errorf("release lock error for key=%s", key)
 	}
-
-	return nil
-}
-
-func (r *locker) Renewal(key string, ttl time.Duration) error {
-	conn := r.getConn()
-	defer r.close(conn)
-
-	key = r.buildKey(key)
-	return conn.Send("PEXPIRE", key, int64(ttl/time.Millisecond))
 }
 
 func (r *locker) LockAndDo(key string, fn func(), lockTime, checkPeriod time.Duration) (err error) {
@@ -101,9 +78,8 @@ func (r *locker) LockAndDo(key string, fn func(), lockTime, checkPeriod time.Dur
 				r.Debugf("lock watch end")
 				return
 
-			default:
-				time.Sleep(checkPeriod)
-				err := r.Renewal(key, lockTime)
+			case <-time.After(checkPeriod):
+				err = r.k.Expire(key, lockTime)
 				if err != nil {
 					r.Errorf("对 key=%s 续期失败", key)
 				}
