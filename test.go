@@ -108,6 +108,9 @@ type BuryMockCemetery struct {
 func (c *BuryMockCemetery) Bury(g Goner, ids ...GonerId) Cemetery {
 	if len(ids) > 0 {
 		c.m[ids[0]] = g
+	} else {
+		id := GetGoneDefaultId(g)
+		c.m[id] = g
 	}
 	return c
 }
@@ -120,12 +123,21 @@ func (c *BuryMockCemetery) GetTomById(id GonerId) Tomb {
 	return NewTomb(goner)
 }
 
-func (c *BuryMockCemetery) GetTomByType(reflect.Type) []Tomb {
-	return nil
+func (c *BuryMockCemetery) GetTomByType(t reflect.Type) (list []Tomb) {
+	for _, g := range c.m {
+		if reflect.TypeOf(g).Elem() == t {
+			list = append(list, NewTomb(g))
+		}
+	}
+	return list
 }
 
 func NewBuryMockCemeteryForTest() Cemetery {
 	c := BuryMockCemetery{}
 	c.m = make(map[GonerId]Goner)
 	return &c
+}
+
+func (p *Preparer) Test(fn any) {
+	p.AfterStart(fn).Run()
 }
