@@ -25,24 +25,46 @@ import (
 //		c.Get(key, &value)//fetch value from redis
 //	}
 type Cache interface {
+	// Put store value to redis, alias of Set
 	Put(key string, value any, ttl ...time.Duration) error
+
+	// Set store value to redis
 	Set(key string, value any, ttl ...time.Duration) error
+
+	// Get fetch value from redis
 	Get(key string, value any) error
+
+	// Remove Del delete value from redis
 	Remove(key string) (err error)
 
-	Keys(key string) ([]string, error)
+	// Keys get all keys by pattern
+	Keys(pattern string) ([]string, error)
 
 	//Prefix get key prefix in redis
 	Prefix() string
 }
 
 type Key interface {
+	//Expire Set the expiration time of a key, key will expire after ttl
 	Expire(key string, ttl time.Duration) error
+
+	//ExpireAt Set the expiration time of a key，key will expire at time
 	ExpireAt(key string, time time.Time) error
+
+	//Ttl Get the remaining time of a key, return redis.ErrNotExpire if key is not expire
+	// return redis.ErrNil if key is not exist
 	Ttl(key string) (time.Duration, error)
+
+	//Del Delete a key
 	Del(key string) (err error)
+
+	//Incr Increment the integer value of a key
 	Incr(field string, increment int64) (int64, error)
-	Keys(key string) ([]string, error)
+
+	//Keys Scan all keys by pattern
+	Keys(pattern string) ([]string, error)
+
+	//Prefix get key prefix in redis
 	Prefix() string
 }
 
@@ -58,14 +80,20 @@ type Hash interface {
 
 // Locker redis Distributed lock
 type Locker interface {
+	//TryLock try to lock a key for ttl duration, return Unlock if success for unlock
 	TryLock(key string, ttl time.Duration) (unlock Unlock, err error)
+
+	//LockAndDo try to lock a key and execute fn,renew the lock time for key before fn end, auto unlock after fn end
 	LockAndDo(key string, fn func(), lockTime, checkPeriod time.Duration) (err error)
 }
 
 type Conn = redis.Conn
 
 type Pool interface {
+	//Get a redis connection
 	Get() Conn
+
+	//Close a redis connection
 	Close(conn redis.Conn)
 }
 

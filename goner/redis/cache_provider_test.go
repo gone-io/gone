@@ -103,7 +103,7 @@ func TestCacheProvider(t *testing.T) {
 
 				_, err = in.locker.TryLock("xx", 1*time.Second)
 				assert.Error(t, err)
-			})
+			}).Run()
 	})
 }
 

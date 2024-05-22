@@ -3,7 +3,6 @@ package redis
 import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/logrus"
 	"sync"
 )
 
@@ -14,12 +13,12 @@ func NewRedisPool() (gone.Angel, gone.GonerId) {
 type pool struct {
 	gone.Flag
 	*redis.Pool
-	logrus.Logger `gone:"gone-logger"`
-	server        string `gone:"config,redis.server"`
-	password      string `gone:"config,redis.password"`
-	maxIdle       int    `gone:"config,redis.max-idle,default=2"`
-	maxActive     int    `gone:"config,redis.max-active,default=10"`
-	dbIndex       int    `gone:"config,redis.db,default=0"`
+	gone.Logger `gone:"gone-logger"`
+	server      string `gone:"config,redis.server"`
+	password    string `gone:"config,redis.password"`
+	maxIdle     int    `gone:"config,redis.max-idle,default=2"`
+	maxActive   int    `gone:"config,redis.max-active,default=10"`
+	dbIndex     int    `gone:"config,redis.db,default=0"`
 
 	once sync.Once
 }
