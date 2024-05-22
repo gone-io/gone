@@ -3,6 +3,7 @@ package gone
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -228,4 +229,26 @@ func Test_testHeaven_installAngelHook(t *testing.T) {
 		return nil
 	})
 	assert.True(t, executed)
+}
+
+func TestPreparer_Test(t *testing.T) {
+	Prepare().Test(func(in struct {
+		cemetery Cemetery `gone:"gone-cemetery"`
+	}) {
+		assert.NotNil(t, in.cemetery)
+	})
+}
+
+func TestBuryMockCemetery_Bury(t *testing.T) {
+	cemetery := NewBuryMockCemeteryForTest()
+	point, id := &Point{}, "point-x"
+	cemetery.Bury(point, GonerId(id))
+
+	cemetery.Bury(&Point{x: 100})
+
+	tomb := cemetery.GetTomById(GonerId(id))
+	assert.Equal(t, point, tomb.GetGoner())
+
+	tombs := cemetery.GetTomByType(reflect.TypeOf(*point))
+	assert.Equal(t, point, tombs[0].GetGoner())
 }
