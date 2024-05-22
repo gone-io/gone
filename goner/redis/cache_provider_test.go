@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"github.com/gomodule/redigo/redis"
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/config"
+	"github.com/gone-io/gone/goner/logrus"
+	"github.com/gone-io/gone/goner/tracer"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
+	"time"
 )
 
 type ErrorUseCacheProvider struct {
@@ -85,6 +89,21 @@ func TestCacheProvider(t *testing.T) {
 			cemetery.Bury(new(UseCacheProvider))
 			return nil
 		}, Priest)
+	})
+
+	t.Run("lockerType", func(t *testing.T) {
+		gone.
+			Prepare(tracer.Priest, logrus.Priest, config.Priest, Priest).
+			AfterStart(func(in struct {
+				locker Locker `gone:"gone-redis-provider,test"`
+			}) {
+				unlock, err := in.locker.TryLock("xx", 1*time.Second)
+				assert.Nil(t, err)
+				defer unlock()
+
+				_, err = in.locker.TryLock("xx", 1*time.Second)
+				assert.Error(t, err)
+			})
 	})
 }
 
