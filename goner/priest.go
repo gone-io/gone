@@ -4,6 +4,7 @@ import (
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/goner/gin"
+	gone_grpc "github.com/gone-io/gone/goner/grpc"
 	"github.com/gone-io/gone/goner/logrus"
 	"github.com/gone-io/gone/goner/redis"
 	"github.com/gone-io/gone/goner/schedule"
@@ -41,4 +42,12 @@ func SchedulePriest(cemetery gone.Cemetery) error {
 
 func UrllibPriest(cemetery gone.Cemetery) error {
 	return urllib.Priest(cemetery)
+}
+
+func GrpcServerPriest(cemetery gone.Cemetery) error {
+	return gone_grpc.ServerPriest(cemetery)
+}
+
+func GrpcClientPriest(cemetery gone.Cemetery) error {
+	return gone_grpc.ClientRegisterPriest(cemetery)
 }

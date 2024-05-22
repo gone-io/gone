@@ -113,7 +113,15 @@ func (c *BuryMockCemetery) Bury(g Goner, ids ...GonerId) Cemetery {
 }
 
 func (c *BuryMockCemetery) GetTomById(id GonerId) Tomb {
-	return NewTomb(c.m[id])
+	goner := c.m[id]
+	if goner == nil {
+		return nil
+	}
+	return NewTomb(goner)
+}
+
+func (c *BuryMockCemetery) GetTomByType(reflect.Type) []Tomb {
+	return nil
 }
 
 func NewBuryMockCemeteryForTest() Cemetery {

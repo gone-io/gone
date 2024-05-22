@@ -19,6 +19,8 @@ type JobName string
 // @Param lockTtl 锁定时长
 type RunFuncOnceAt func(spec string, jobName JobName, fn func())
 
+//go:generate sh -c "mockgen -package=schedule -self_package=github.com/gone-io/gone/goner/schedule -source=interface.go|gone mock -o mock_test.go"
+
 type Scheduler interface {
 
 	//Cron use: Cron(run facility.RunFuncOnceAt)

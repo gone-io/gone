@@ -1,20 +1,26 @@
 <p align="left">
    English&nbsp ｜&nbsp <a href="README_CN.md">中文</a>
 </p>
-<img src="docs/assert/logo.png" width = "250" alt="logo" align=center />
-
-- [💡Concepts](#concepts)
-- [🌰 More Examples:](#-more-examples)
-- [🪜🧰🛠️ Component Library (👉🏻 More components are under development... 💪🏻 ヾ(◍°∇°◍)ﾉﾞ 🖖🏻)](#️-component-library--more-components-are-under-development--ヾﾉﾞ-)
-- [📚Full Documentation](#full-documentation)
-
-
-# Gone
 
 [![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE) [![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gone-io/gone)](https://goreportcard.com/report/github.com/gone-io/gone)
 [![codecov](https://codecov.io/gh/gone-io/gone/graph/badge.svg?token=H3CROTTDZ1)](https://codecov.io/gh/gone-io/gone)
-[![Build and Test](https://github.com/go-kod/kod/actions/workflows/go.yml/badge.svg)](https://github.com/go-kod/kod/actions/workflows/go.yml)
+[![Build and Test](https://github.com/gone-io/gone/actions/workflows/go.yml/badge.svg)](https://github.com/go-kod/kod/actions/workflows/go.yml)
+[![Release](https://img.shields.io/github/release/gone-io/gone.svg?style=flat-square)](https://github.com/gone-io/gone/releases)
+
+<img src="docs/assert/logo.png" width = "150" alt="logo" align=center />
+
+
+- [Gone](#gone)
+	- [🌐Web Service](#web-service)
+	- [💡Concepts](#concepts)
+	- [🌰 More Examples:](#-more-examples)
+	- [🪜🧰🛠️ Component Library (👉🏻 More components are under development... 💪🏻 ヾ(◍°∇°◍)ﾉﾞ 🖖🏻)](#️-component-library--more-components-are-under-development--ヾﾉﾞ-)
+	- [📚Full Documentation](#full-documentation)
+
+
+# Gone
+
 
 First and foremost, Gone is a lightweight, Golang-based dependency injection framework inspired by the Spring Framework in Java. Secondly, the Gone framework includes a series of built-in components that provide a complete set of web development solutions through these components, offering services configuration, logging, tracing, service calls, database access, message middleware, and other commonly used microservice capabilities.
 

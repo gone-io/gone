@@ -2,9 +2,9 @@ package gin
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/cmux"
 	Cmux "github.com/soheilhy/cmux"
 	"net"
 	"net/http"
@@ -12,8 +12,15 @@ import (
 )
 
 func NewGinServer() (gone.Goner, gone.GonerId) {
-	s := server{}
+	s := server{
+		createListener: createListener,
+	}
 	return &s, gone.IdGoneGin
+}
+
+func createListener(s *server) (err error) {
+	s.listener, err = net.Listen("tcp", s.address)
+	return
 }
 
 type server struct {
@@ -23,37 +30,55 @@ type server struct {
 	http.Handler `gone:"gone-gin-router"`
 	gone.Tracer  `gone:"gone-tracer"`
 
-	net         cmux.Server  `gone:"gone-cumx"`
-	mode        string       `gone:"config,server.mode,default=release"`
 	controllers []Controller `gone:"*"`
 
-	l        net.Listener
+	address  string
 	stopFlag bool
 	lock     sync.Mutex
+
+	listener net.Listener
+	port     int    `gone:"config,server.port=8080"`
+	host     string `gone:"config,server.host,default=0.0.0.0"`
+	mode     string `gone:"config,server.mode,default=release"`
+
+	createListener func(*server) error
 }
 
-func (s *server) Start(gone.Cemetery) error {
+func (s *server) Start(cemetery gone.Cemetery) error {
 	err := s.mount()
 	if err != nil {
 		return err
 	}
-	s.setServer()
+	err = s.initListener(cemetery)
+	if err != nil {
+		return err
+	}
 
-	s.Infof("Server Listen At %s", s.net.GetAddress())
-	s.Go(s.serve)
-	return nil
-}
-func (s *server) setServer() {
 	s.stopFlag = false
 	gin.SetMode(s.mode) //设置模式
-	s.l = s.net.Match(Cmux.HTTP1Fast(http.MethodPatch))
 	s.httpServer = &http.Server{
 		Handler: s,
 	}
+
+	s.Infof("Server Listen At %s", s.address)
+	s.Go(s.serve)
+	return nil
+}
+
+func (s *server) initListener(cemetery gone.Cemetery) error {
+	tomb := cemetery.GetTomById(gone.IdGoneCMux)
+	if tomb != nil {
+		cMux := tomb.GetGoner().(gone.CMuxServer)
+		s.listener = cMux.Match(Cmux.HTTP1Fast(http.MethodPatch))
+		s.address = cMux.GetAddress()
+		return nil
+	}
+	s.address = fmt.Sprintf("%s:%d", s.host, s.port)
+	return s.createListener(s)
 }
 
 func (s *server) serve() {
-	if err := s.httpServer.Serve(s.l); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := s.httpServer.Serve(s.listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.processServeError(err)
 	}
 }
@@ -78,7 +103,7 @@ func (s *server) Stop(gone.Cemetery) (err error) {
 	s.stopFlag = true
 	s.lock.Unlock()
 
-	err = s.l.Close()
+	err = s.listener.Close()
 	if err != nil {
 		s.Errorf("err:%v", err)
 	}

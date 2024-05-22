@@ -22,8 +22,8 @@ const (
 	// IdGoneLogger 日志 Goner 的ID，用于日志打印
 	IdGoneLogger = "gone-logger"
 
-	//IdGoneCumx [cmux Goner](/goner/cmux#Server) ID
-	IdGoneCumx = "gone-cumx"
+	//IdGoneCMux [cmux Goner](/goner/cmux#Server) ID
+	IdGoneCMux = "gone-cmux"
 
 	//IdGoneGin Gin相关的组件ID，可以使用 [goner.GinPriest](goner#GinPriest) 牧师函数批量安葬
 	IdGoneGin          = "gone-gin"

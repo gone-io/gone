@@ -2,6 +2,8 @@ package urllib
 
 import "github.com/imroc/req/v3"
 
+//go:generate sh -c "mockgen -package=urllib github.com/imroc/req/v3 RoundTripper > req_RoundTripper_mock_test.go"
+
 type Client interface {
 	R() *req.Request
 }

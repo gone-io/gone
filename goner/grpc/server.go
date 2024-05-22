@@ -5,106 +5,120 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/logrus"
-	"github.com/gone-io/gone/goner/tracer"
+	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"net"
 	"reflect"
-	"runtime/debug"
 )
 
 const XTraceId = "x-trace-id"
 
-type Service interface {
-	RegisterGrpcServer(server *grpc.Server)
+func createListener(s *server) (err error) {
+	s.listener, err = net.Listen("tcp", s.address)
+	return
 }
 
-type Server struct {
-	gone.Goner
-	logrus.Logger `gone:"gone-logger"`
+type server struct {
+	gone.Flag
+	gone.Logger `gone:"gone-logger"`
 
-	port int `gone:"config,grpc.server.port"`
+	port int    `gone:"config,server.grpc.port=9090"`
+	host string `gone:"config,server.grpc.host,default=0.0.0.0"`
 
-	grpcServices  []Service `gone:"*"`
-	grpcServer    *grpc.Server
-	tracer.Tracer `gone:"gone-tracer"`
+	grpcServer *grpc.Server
+	listener   net.Listener
+
+	grpcServices []Service `gone:"*"`
+	gone.Tracer  `gone:"gone-tracer"`
+
+	address string
+
+	createListener func(*server) error
 }
 
-func NewServer() *Server {
-	return &Server{}
+func NewServer() gone.Goner {
+	return &server{
+		createListener: createListener,
+	}
 }
 
-func (g Server) Start(gone.Cemetery) error {
-	if len(g.grpcServices) == 0 {
-		g.Warnf("No gRPC service found, gRPC server will not start")
+func (s *server) initListener(cemetery gone.Cemetery) error {
+	tomb := cemetery.GetTomById(gone.IdGoneCMux)
+	if tomb != nil {
+		cMux := tomb.GetGoner().(gone.CMuxServer)
+		s.listener = cMux.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+		s.address = cMux.GetAddress()
 		return nil
 	}
+	s.address = fmt.Sprintf("%s:%d", s.host, s.port)
+	return s.createListener(s)
+}
 
-	if g.port == 0 {
-		g.port = 9090
+func (s *server) Start(cemetery gone.Cemetery) error {
+	if len(s.grpcServices) == 0 {
+		return errors.New("no gRPC service found, gRPC server will not start")
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", g.port))
+	err := s.initListener(cemetery)
 	if err != nil {
-		return fmt.Errorf("failed to listen: %v", err)
+		return err
 	}
 
-	g.grpcServer = grpc.NewServer(
+	s.grpcServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			g.TraceInterceptor(),
-			g.RecoveryInterceptor(),
+			s.traceInterceptor,
+			s.recoveryInterceptor,
 		),
 	)
 
-	for _, grpcService := range g.grpcServices {
-		g.Infof("Register gRPC service %v", reflect.ValueOf(grpcService).Type().String())
-		grpcService.RegisterGrpcServer(g.grpcServer)
+	for _, grpcService := range s.grpcServices {
+		s.Infof("Register gRPC service %v", reflect.ValueOf(grpcService).Type().String())
+		grpcService.RegisterGrpcServer(s.grpcServer)
 	}
 
-	go func() {
-		g.Infof("gRPC server now listen at %d", g.port)
-		if err := g.grpcServer.Serve(lis); err != nil {
-			g.Errorf("failed to serve: %v", err)
-		}
-	}()
+	s.Infof("gRPC server now listen at %d", s.address)
+	s.Go(s.server)
 
 	return nil
 }
 
-func (g Server) Stop(gone.Cemetery) error {
-	g.grpcServer.Stop()
+func (s *server) server() {
+	if err := s.grpcServer.Serve(s.listener); err != nil {
+		s.Errorf("failed to serve: %v", err)
+	}
+}
+
+func (s *server) Stop(gone.Cemetery) error {
+	s.grpcServer.Stop()
 	return nil
 }
 
-func (g Server) TraceInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		var traceId string
-		traceIdV := metadata.ValueFromIncomingContext(ctx, XTraceId)
-		if len(traceIdV) > 0 {
-			traceId = traceIdV[0]
-		}
-
-		g.SetTraceId(traceId, func() {
-			resp, err = handler(ctx, req)
-		})
-
-		return
+func (s *server) traceInterceptor(
+	ctx context.Context,
+	req interface{},
+	_ *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (resp interface{}, err error) {
+	var traceId string
+	traceIdV := metadata.ValueFromIncomingContext(ctx, XTraceId)
+	if len(traceIdV) > 0 {
+		traceId = traceIdV[0]
 	}
+
+	s.SetTraceId(traceId, func() {
+		resp, err = handler(ctx, req)
+	})
+
+	return
 }
 
-func (g Server) RecoveryInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				g.Errorf("Panic occurred: %v, \n%v", r, debug.Stack())
-				if er, ok := r.(error); ok {
-					err = er
-				}
-				err = errors.New("gRPC panic occurred")
-			}
-		}()
-
-		return handler(ctx, req)
-	}
+func (s *server) recoveryInterceptor(
+	ctx context.Context,
+	req interface{},
+	_ *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (resp interface{}, err error) {
+	defer s.Recover()
+	return handler(ctx, req)
 }

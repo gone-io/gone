@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+//go:generate sh -c "mockgen -package=redis github.com/gomodule/redigo/redis Conn > redis_Conn_mock_test.go"
+//go:generate sh -c "mockgen -package=redis -self_package=github.com/gone-io/gone/goner/redis -source=interface.go -destination=mock_test.go"
+
 // Cache redis cache, which use redis string to store value(encoded to json)
 // HOW TO USE
 //

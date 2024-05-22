@@ -3,45 +3,44 @@ package gone_grpc
 import (
 	"context"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/logrus"
-	"github.com/gone-io/gone/goner/tracer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"reflect"
 )
 
-type Client interface {
-	Address() string
-	Stub(conn *grpc.ClientConn)
-}
-
-type ClientRegister struct {
-	gone.Goner
-	logrus.Logger `gone:"gone-logger"`
-	connections   map[string]*grpc.ClientConn
-	clients       []Client `gone:"*"`
-	tracer.Tracer `gone:"gone-tracer"`
+type clientRegister struct {
+	gone.Flag
+	gone.Logger `gone:"gone-logger"`
+	connections map[string]*grpc.ClientConn
+	clients     []Client    `gone:"*"`
+	tracer      gone.Tracer `gone:"gone-tracer"`
 }
 
 //go:gone
 func NewRegister() gone.Goner {
-	return &ClientRegister{connections: make(map[string]*grpc.ClientConn)}
+	return &clientRegister{connections: make(map[string]*grpc.ClientConn)}
 }
 
-func (s *ClientRegister) TraceInterceptor() grpc.UnaryClientInterceptor {
-	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		ctx = metadata.AppendToOutgoingContext(ctx, XTraceId, tracer.GetTraceId())
-		return invoker(ctx, method, req, reply, cc)
-	}
+func (s *clientRegister) traceInterceptor(
+	ctx context.Context,
+	method string,
+	req, reply interface{},
+	cc *grpc.ClientConn,
+	invoker grpc.UnaryInvoker,
+	_ ...grpc.CallOption,
+) error {
+	ctx = metadata.AppendToOutgoingContext(ctx, XTraceId, s.tracer.GetTraceId())
+	return invoker(ctx, method, req, reply, cc)
 }
 
-func (s *ClientRegister) register(client Client) error {
+func (s *clientRegister) register(client Client) error {
 	conn, ok := s.connections[client.Address()]
 	if !ok {
-		c, err := grpc.Dial(client.Address(),
+		c, err := grpc.Dial(
+			client.Address(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithChainUnaryInterceptor(s.TraceInterceptor()),
+			grpc.WithChainUnaryInterceptor(s.traceInterceptor),
 		)
 		if err != nil {
 			return err
@@ -55,7 +54,7 @@ func (s *ClientRegister) register(client Client) error {
 	return nil
 }
 
-func (s *ClientRegister) Start(gone.Cemetery) error {
+func (s *clientRegister) Start(gone.Cemetery) error {
 	for _, c := range s.clients {
 		s.Infof("register gRPC client %v on address %v\n", reflect.ValueOf(c).Type().String(), c.Address())
 		if err := s.register(c); err != nil {
@@ -66,9 +65,12 @@ func (s *ClientRegister) Start(gone.Cemetery) error {
 	return nil
 }
 
-func (s *ClientRegister) Stop(gone.Cemetery) error {
+func (s *clientRegister) Stop(gone.Cemetery) error {
 	for _, conn := range s.connections {
-		conn.Close()
+		err := conn.Close()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

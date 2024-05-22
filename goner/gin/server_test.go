@@ -8,10 +8,10 @@ import (
 	"testing"
 )
 
-func (r *server) Errorf(format string, args ...any) {}
-func (r *server) Warnf(format string, args ...any)  {}
-func (r *server) Infof(format string, args ...any)  {}
-func (r *server) Go(func())                         {}
+func (s *server) Errorf(format string, args ...any) {}
+func (s *server) Warnf(format string, args ...any)  {}
+func (s *server) Infof(format string, args ...any)  {}
+func (s *server) Go(func())                         {}
 
 type testController struct {
 }
@@ -31,14 +31,9 @@ func Test_server(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 
-	cumxServer := NewCumxServer(controller)
-	cumxServer.EXPECT().Match(gomock.Any()).Return(nil)
-
 	s := server{
-		net:         cumxServer,
 		controllers: []Controller{&testController{}},
 	}
-	s.setServer()
 	s.stopFlag = true
 	s.processServeError(errors.New("error"))
 
@@ -56,15 +51,15 @@ func Test_server_start_stop(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 
-	cumxServer := NewCumxServer(controller)
 	listener := NewMockListener(controller)
 	listener.EXPECT().Close().Return(errors.New("error"))
 
-	cumxServer.EXPECT().GetAddress().Return(":8080")
-	cumxServer.EXPECT().Match(gomock.Any()).Return(listener)
 	s := server{
-		net:         cumxServer,
 		controllers: []Controller{&testController{}},
+		createListener: func(s *server) error {
+			s.listener = listener
+			return nil
+		},
 	}
 
 	cemetery := gone.NewBuryMockCemeteryForTest()
@@ -78,15 +73,14 @@ func Test_server_start_stop(t *testing.T) {
 func Test_server_error(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
-
-	cumxServer := NewCumxServer(controller)
 	listener := NewMockListener(controller)
-	cumxServer.EXPECT().Match(gomock.Any()).Return(listener)
-	cumxServer.EXPECT().GetAddress().Return(":8080")
 
 	s := server{
-		net:         cumxServer,
 		controllers: []Controller{&testController{}, &errController{}},
+		createListener: func(s *server) error {
+			s.listener = listener
+			return nil
+		},
 	}
 	cemetery := gone.NewBuryMockCemeteryForTest()
 
@@ -97,9 +91,68 @@ func Test_server_error(t *testing.T) {
 	assert.Error(t, err)
 
 	s = server{
-		net: cumxServer,
+		createListener: func(s *server) error {
+			s.listener = listener
+			return nil
+		},
 	}
 
 	err = s.Start(cemetery)
 	assert.Nil(t, err)
+}
+
+func Test_createListener(t *testing.T) {
+	err := createListener(&server{})
+	assert.Nil(t, err)
+}
+
+func Test_server_initListener(t *testing.T) {
+	t.Run("use cMuxServer", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+
+		cMuxServer := NewCmuxServer(controller)
+		listener := NewMockListener(controller)
+		cMuxServer.EXPECT().Match(gomock.Any()).Return(listener)
+		cMuxServer.EXPECT().GetAddress().Return("")
+
+		cemetery := gone.NewBuryMockCemeteryForTest()
+		cemetery.Bury(cMuxServer, gone.IdGoneCMux)
+
+		s := server{}
+		err := s.initListener(cemetery)
+		assert.Nil(t, err)
+	})
+
+	t.Run("use tcpListener", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+		listener := NewMockListener(controller)
+
+		s := server{
+			createListener: func(s *server) error {
+				s.listener = listener
+				return nil
+			},
+		}
+		cemetery := gone.NewBuryMockCemeteryForTest()
+		err := s.initListener(cemetery)
+		assert.Nil(t, err)
+	})
+
+	t.Run("use tcpListener error", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+		listener := NewMockListener(controller)
+
+		s := server{
+			createListener: func(s *server) error {
+				s.listener = listener
+				return errors.New("error")
+			},
+		}
+		cemetery := gone.NewBuryMockCemeteryForTest()
+		err := s.initListener(cemetery)
+		assert.Error(t, err)
+	})
 }
