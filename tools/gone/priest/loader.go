@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -30,7 +30,7 @@ func ScanDir(dir, moduleName, moduleDir string) ([]*Pkg, error) {
 
 func scanDir(dir, moduleName, moduleDir string) (*Pkg, error) {
 	defer TimeStat("scanDir:" + dir)()
-	dirs, _ := ioutil.ReadDir(dir)
+	dirs, _ := os.ReadDir(dir)
 
 	var pkg Pkg
 	for i := range dirs {
@@ -63,7 +63,7 @@ func scanDir(dir, moduleName, moduleDir string) (*Pkg, error) {
 func scanChildrenDir(dir, moduleName, moduleDir string) ([]*Pkg, error) {
 	pkgs := make([]*Pkg, 0)
 
-	dirs, _ := ioutil.ReadDir(dir)
+	dirs, _ := os.ReadDir(dir)
 	for i := range dirs {
 		if dirs[i].IsDir() && dirs[i].Name() != ".git" {
 			list, err := ScanDir(path.Join(dir, dirs[i].Name()), moduleName, moduleDir)
@@ -73,7 +73,6 @@ func scanChildrenDir(dir, moduleName, moduleDir string) ([]*Pkg, error) {
 			pkgs = append(pkgs, list...)
 		}
 	}
-
 	return pkgs, nil
 }
 
@@ -164,7 +163,7 @@ func (loader *autoload) generate(outputFile string) {
 	}
 
 	content := loader.genFileContent(pkgs, loader.functionName, loader.packageName)
-	err := ioutil.WriteFile(outputFile, []byte(content), 0666)
+	err := os.WriteFile(outputFile, []byte(content), 0666)
 	if err != nil {
 		log.Error("write file error:", err)
 	}

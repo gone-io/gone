@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"io"
 	"os"
@@ -44,7 +45,12 @@ func action(ctx *cli.Context) error {
 		return err
 	}
 
-	defer outFile.Close()
+	defer func(outFile *os.File) {
+		err := outFile.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}(outFile)
 
 	if isInputFromPipe() {
 		return patchMock(os.Stdin, outFile)
@@ -53,7 +59,12 @@ func action(ctx *cli.Context) error {
 		if e != nil {
 			return e
 		}
-		defer file.Close()
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				log.Error(err)
+			}
+		}(file)
 		return patchMock(file, outFile)
 	}
 }
@@ -108,7 +119,6 @@ func patchMock(r io.Reader, w io.Writer) error {
 				return err
 			}
 		}
-		//fmt.Printf("%s\n", line)
 
 		if preMatchReg.Match(line) {
 			preMatchFlag = true

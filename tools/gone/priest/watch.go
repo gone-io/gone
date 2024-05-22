@@ -22,7 +22,12 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 	if err != nil {
 		log.Error(err)
 	}
-	defer watcher.Close()
+	defer func(watcher *fsnotify.Watcher) {
+		err := watcher.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}(watcher)
 
 	done := make(chan bool)
 	go func() {

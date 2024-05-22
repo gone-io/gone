@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/tools/go/packages"
 	"io"
 	"io/ioutil"
@@ -56,7 +57,12 @@ func goFileParse(goFilepath string) (*parseResult, error) {
 		return nil, err
 	}
 
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Errorf("close file %s error: %s\n", goFilepath, err.Error())
+		}
+	}(file)
 
 	reader := bufio.NewReader(file)
 	var PkgName string
@@ -76,15 +82,12 @@ func goFileParse(goFilepath string) (*parseResult, error) {
 		} else {
 			if injectReg.Match(line) {
 				line, _, err := reader.ReadLine()
-				//fmt.Printf("line:%s\n", line)
-
 				if err == io.EOF {
 					return nil, errors.New("file unexpected end")
 				}
 				match := funcReg.FindSubmatch(line)
 				if len(match) == 3 {
 					paramStr := strings.TrimSpace(string(match[2]))
-					//fmt.Printf("paramStr:%s\n", paramStr)
 
 					if paramStr == "" {
 						InjectFns = append(InjectFns, Fn{

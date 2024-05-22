@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 )
 
-//for generate Priest function
-
 var flags = []cli.Flag{
 	&cli.StringSliceFlag{
 		Name:     "s",

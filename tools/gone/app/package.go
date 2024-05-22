@@ -2,10 +2,11 @@ package app
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"github.com/gone-io/gone/templates"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"io/fs"
 	"os"
 	"path"
 	"strings"
@@ -30,8 +31,8 @@ var flags = []cli.Flag{
 
 var f = templates.F
 
-func copyToAndReplace(source, target string, mode fs.FileMode, replace map[string]string) error {
-	err := os.MkdirAll(target, mode)
+func copyAndReplace(f embed.FS, source, target string, replacement map[string]string) error {
+	err := os.MkdirAll(target, 0766)
 	if err != nil {
 		return err
 	}
@@ -42,19 +43,15 @@ func copyToAndReplace(source, target string, mode fs.FileMode, replace map[strin
 	}
 
 	for _, entry := range dir {
-		if err != nil {
-			return err
-		}
-
 		from := path.Join(source, entry.Name())
 		to := path.Join(target, strings.TrimSuffix(entry.Name(), ".tpl"))
 
 		if entry.IsDir() {
-			err = copyToAndReplace(
+			err = copyAndReplace(
+				f,
 				from,
 				to,
-				0766,
-				replace,
+				replacement,
 			)
 			if err != nil {
 				return err
@@ -64,14 +61,19 @@ func copyToAndReplace(source, target string, mode fs.FileMode, replace map[strin
 			if err != nil {
 				return err
 			}
-			defer file.Close()
+			defer func(file *os.File) {
+				err := file.Close()
+				if err != nil {
+					log.Error(err)
+				}
+			}(file)
 
 			data, err := f.ReadFile(from)
 			if err != nil {
 				return err
 			}
 
-			for k, v := range replace {
+			for k, v := range replacement {
 				data = bytes.ReplaceAll(data, []byte(k), []byte(v))
 			}
 
@@ -81,16 +83,14 @@ func copyToAndReplace(source, target string, mode fs.FileMode, replace map[strin
 			}
 		}
 	}
-
 	return nil
 }
 
-func action(c *cli.Context) error {
+func paramsProcess(template, appName, modName string) (string, string, string, error) {
 	if template != "web" && template != "web+mysql" {
-		return fmt.Errorf("only support web、web+mysql, more will be supported in the future")
+		return "", "", "", fmt.Errorf("only support web、web+mysql, more will be supported in the future")
 	}
 
-	appName = c.Args().Get(0)
 	if appName == "" {
 		appName = "demo"
 	}
@@ -98,23 +98,15 @@ func action(c *cli.Context) error {
 	if modName == "" {
 		modName = appName
 	}
-
-	return copyToAndReplace(
-		path.Join(".", template),
-		appName,
-		0766,
-		map[string]string{
-			"${{appName}}":   appName,
-			"demo-structure": modName,
-		},
-	)
+	return template, appName, modName, nil
 }
 
-var Command = &cli.Command{
-	Name:        "create",
-	Usage:       "[-t ${template} [-m ${modName}]] ${appName}",
-	Description: "create a gone app",
-
-	Flags:  flags,
-	Action: action,
+func action(c *cli.Context) error {
+	tplName, app, mod, err := paramsProcess(template, c.Args().Get(0), modName)
+	if err != nil {
+		return err
+	}
+	return copyAndReplace(f, path.Join(".", tplName), app, map[string]string{"${{appName}}": app, "demo-structure": mod})
 }
+
+var Command = &cli.Command{Name: "create", Usage: "[-t ${template} [-m ${modName}]] ${appName}", Description: "create a gone app", Flags: flags, Action: action}
