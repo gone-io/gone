@@ -79,7 +79,7 @@ func (r *locker) LockAndDo(key string, fn func(), lockTime, checkPeriod time.Dur
 				return
 
 			case <-time.After(checkPeriod):
-				err = r.k.Expire(key, lockTime)
+				err := r.k.Expire(key, lockTime)
 				if err != nil {
 					r.Errorf("对 key=%s 续期失败", key)
 				}

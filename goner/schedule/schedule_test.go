@@ -8,6 +8,7 @@ import (
 	"github.com/gone-io/gone/goner/redis"
 	"github.com/gone-io/gone/goner/tracer"
 	"github.com/stretchr/testify/assert"
+	"sync"
 	"testing"
 	"time"
 )
@@ -32,13 +33,15 @@ func (l *locker) LockAndDo(key string, fn func(), lockTime, checkPeriod time.Dur
 func Test_schedule_Start(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
-
+	var mu sync.Mutex
 	i := 0
 	scheduler := NewMockScheduler(controller)
 	scheduler.EXPECT().Cron(gomock.Any()).Do(func(run RunFuncOnceAt) {
 		run("0/1 * * * * *", "test", func() {
 			println("test")
+			mu.Lock()
 			i++
+			mu.Unlock()
 		})
 	})
 
@@ -51,7 +54,9 @@ func Test_schedule_Start(t *testing.T) {
 		s schedule `gone:"*"`
 	}) {
 		time.Sleep(2 * time.Second)
-	}).AfterStop(func() {
-		assert.Equal(t, 2, i)
 	}).Run()
+
+	mu.Lock()
+	assert.Equal(t, 2, i)
+	mu.Unlock()
 }
