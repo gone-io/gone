@@ -4,14 +4,13 @@ import (
 	"embed"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 func deleteFilesInDirectory(dir string) error {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read directory: %v", err)
 	}
@@ -31,10 +30,8 @@ func deleteFilesInDirectory(dir string) error {
 var testF embed.FS
 
 func Test_copyAndReplace(t *testing.T) {
-	err := deleteFilesInDirectory("testdata/to/")
-	assert.Nil(t, err)
-
-	err = copyAndReplace(testF, "testdata/from", "testdata/to/", map[string]string{
+	_ = deleteFilesInDirectory("testdata/to/")
+	err := copyAndReplace(testF, "testdata/from", "testdata/to/", map[string]string{
 		"test": "x-test",
 	})
 	assert.Nil(t, err)
