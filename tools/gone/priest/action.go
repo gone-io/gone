@@ -9,47 +9,7 @@ import (
 	"path/filepath"
 )
 
-var flags = []cli.Flag{
-	&cli.StringSliceFlag{
-		Name:     "s",
-		Usage:    "scan package dir",
-		Required: true,
-	},
-
-	&cli.StringFlag{
-		Name:     "p",
-		Value:    "",
-		Usage:    "package name",
-		Required: true,
-	},
-
-	&cli.StringFlag{
-		Name:     "f",
-		Value:    "",
-		Usage:    "function name",
-		Required: true,
-	},
-
-	&cli.StringFlag{
-		Name:     "o",
-		Value:    "",
-		Usage:    "output filepath",
-		Required: true,
-	},
-
-	&cli.BoolFlag{
-		Name:  "stat",
-		Value: false,
-		Usage: "stat process time",
-	},
-	&cli.BoolFlag{
-		Name:  "w",
-		Value: false,
-		Usage: "watch files change",
-	},
-}
-
-func action(c *cli.Context) error {
+func Action(c *cli.Context) error {
 	dirs := c.StringSlice("s")
 	wd, err := os.Getwd()
 	if err != nil {
@@ -101,12 +61,4 @@ func action(c *cli.Context) error {
 	}
 
 	return nil
-}
-
-var Command = &cli.Command{
-	Name:        "priest",
-	Usage:       "-s ${scanPackageDir} -p ${pkgName} -f ${funcName} -o ${outputFilePath} [-w]",
-	Description: "generate gone priest function",
-	Flags:       flags,
-	Action:      action,
 }

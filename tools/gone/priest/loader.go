@@ -111,6 +111,18 @@ func (p *Pkg) genImportContent() string {
 	}
 }
 
+type autoload struct {
+	scanDir      []string
+	packageName  string
+	functionName string
+	outputFile   string
+
+	moduleName string
+	moduleDir  string
+
+	pkgsMap map[string]*Pkg
+}
+
 func (loader *autoload) genFileContent(pkgs []*Pkg, funcName string, pkgName string) string {
 	imports := make([]string, 0)
 	funcContents := make([]string, 0)
@@ -142,27 +154,15 @@ func (loader *autoload) genFileContent(pkgs []*Pkg, funcName string, pkgName str
 	return b.String()
 }
 
-type autoload struct {
-	scanDir      []string
-	packageName  string
-	functionName string
-	outputFile   string
-
-	moduleName string
-	moduleDir  string
-
-	pkgsMap map[string]*Pkg
-}
-
 func (loader *autoload) generate(outputFile string) {
 	l := len(loader.pkgsMap)
-	pkgs := make([]*Pkg, 0, l)
+	packages := make([]*Pkg, 0, l)
 
 	for _, v := range loader.pkgsMap {
-		pkgs = append(pkgs, v)
+		packages = append(packages, v)
 	}
 
-	content := loader.genFileContent(pkgs, loader.functionName, loader.packageName)
+	content := loader.genFileContent(packages, loader.functionName, loader.packageName)
 	err := os.WriteFile(outputFile, []byte(content), 0666)
 	if err != nil {
 		log.Error("write file error:", err)
@@ -180,17 +180,17 @@ func (loader *autoload) fillModuleInfo() error {
 }
 
 func (loader *autoload) firstGenerate() error {
-	pkgs := make([]*Pkg, 0)
+	packages := make([]*Pkg, 0)
 	for _, dir := range loader.scanDir {
 		pkgList, err := ScanDir(dir, loader.moduleName, loader.moduleDir)
 		if err != nil {
 			return err
 		}
-		pkgs = append(pkgs, pkgList...)
+		packages = append(packages, pkgList...)
 	}
 
 	loader.pkgsMap = make(map[string]*Pkg)
-	for _, pkg := range pkgs {
+	for _, pkg := range packages {
 		loader.pkgsMap[pkg.ID] = pkg
 	}
 
