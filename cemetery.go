@@ -87,6 +87,9 @@ func (c *cemetery) ReplaceBury(goner Goner, id GonerId) (err error) {
 
 	c.tombs = append(c.tombs, replaceTomb)
 	_, err = c.reviveOneFromTomb(replaceTomb)
+	if err != nil {
+		return err
+	}
 	return c.replaceTombsGonerField(id, goner, oldGoner, buried)
 }
 
