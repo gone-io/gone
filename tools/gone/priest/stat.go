@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-var showStat = false
+var gShowstat bool
 
 func TimeStat(processName string) func() {
-	if showStat {
+	if gShowstat {
 		beginTime := time.Now()
 		return func() {
 			log.Infof("stat <%s> process use time:%v\n", processName, time.Now().Sub(beginTime))
