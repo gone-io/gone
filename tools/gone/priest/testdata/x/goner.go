@@ -18,3 +18,4 @@ func Priest(cemetery gone.Cemetery) error {
 }
 
 //test//test//test//test//test//test//test//test//test
+//test//test//test//test

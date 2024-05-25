@@ -27,6 +27,7 @@ func TestAction(t *testing.T) {
 			},
 		}
 
+		ch := getWatchDoneChannel()
 		go func() {
 			time.Sleep(1 * time.Second)
 			file, _ := os.OpenFile("testdata/x/goner.go", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -34,7 +35,7 @@ func TestAction(t *testing.T) {
 			_, _ = file.WriteString("//test")
 
 			time.Sleep(1 * time.Second)
-			close(getWatchDoneChannel())
+			close(ch)
 		}()
 
 		err := app.Run([]string{"", "priest",
