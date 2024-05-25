@@ -35,12 +35,7 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 	if err != nil {
 		log.Error(err)
 	}
-	defer func(watcher *fsnotify.Watcher) {
-		err := watcher.Close()
-		if err != nil {
-			log.Error(err)
-		}
-	}(watcher)
+	defer watcher.Close()
 
 	go func() {
 		for {
@@ -50,13 +45,11 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 					return
 				}
 				fn(event)
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Error("error:", err)
-			case <-getWatchDoneChannel():
-				return
+				//case err, ok := <-watcher.Errors:
+				//	if !ok {
+				//		return
+				//	}
+				//	log.Error("error:", err)
 			}
 		}
 	}()
