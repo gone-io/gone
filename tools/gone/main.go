@@ -127,6 +127,5 @@ func run(args ...string) int {
 }
 
 func main() {
-	code := run(os.Args...)
-	os.Exit(code)
+	os.Exit(run(os.Args...))
 }
