@@ -112,7 +112,7 @@ func doAction(
 	}
 
 	if isWatch {
-		done = make(chan any)
+		done = getWatchDoneChannel()
 		log.Println("watch mode...")
 		doWatch(loader.reGenerate, dirs)
 		<-done

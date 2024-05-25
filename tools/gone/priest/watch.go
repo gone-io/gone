@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 func doWatch(fn func(string, string, fsnotify.Op), scanDirs []string) {
@@ -18,6 +19,16 @@ func doWatch(fn func(string, string, fsnotify.Op), scanDirs []string) {
 }
 
 var done chan any
+var mutex sync.Mutex
+
+func getWatchDoneChannel() chan any {
+	mutex.Lock()
+	if done == nil {
+		done = make(chan any)
+	}
+	mutex.Unlock()
+	return done
+}
 
 func watch(fn func(event fsnotify.Event), dirs []string) {
 	watcher, err := fsnotify.NewWatcher()
@@ -44,7 +55,7 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 					return
 				}
 				log.Error("error:", err)
-			case <-done:
+			case <-getWatchDoneChannel():
 				return
 			}
 		}

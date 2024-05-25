@@ -34,7 +34,7 @@ func TestAction(t *testing.T) {
 			_, _ = file.WriteString("//test")
 
 			time.Sleep(1 * time.Second)
-			close(done)
+			close(getWatchDoneChannel())
 		}()
 
 		err := app.Run([]string{"", "priest",
