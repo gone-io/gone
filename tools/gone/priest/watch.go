@@ -3,7 +3,7 @@ package priest
 import (
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 )
 
@@ -17,6 +17,8 @@ func doWatch(fn func(string, string, fsnotify.Op), scanDirs []string) {
 	}, scanDirs)
 }
 
+var done chan any
+
 func watch(fn func(event fsnotify.Event), dirs []string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -29,7 +31,6 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 		}
 	}(watcher)
 
-	done := make(chan bool)
 	go func() {
 		for {
 			select {
@@ -43,6 +44,8 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 					return
 				}
 				log.Error("error:", err)
+			case <-done:
+				return
 			}
 		}
 	}()
@@ -50,7 +53,6 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 	for _, dir := range dirs {
 		watchRecursively(watcher, dir)
 	}
-	<-done
 }
 
 func watchRecursively(watcher *fsnotify.Watcher, dir string) {
@@ -61,7 +63,7 @@ func watchRecursively(watcher *fsnotify.Watcher, dir string) {
 		return
 	}
 
-	dirs, _ := ioutil.ReadDir(dir)
+	dirs, _ := os.ReadDir(dir)
 	for i := range dirs {
 		if dirs[i].IsDir() {
 			watchRecursively(watcher, filepath.Join(dir, dirs[i].Name()))
