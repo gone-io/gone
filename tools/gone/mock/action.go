@@ -1,7 +1,6 @@
 package mock
 
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"os"
 	"path/filepath"
@@ -42,12 +41,7 @@ func doAction(fromfile, outfile string) error {
 		return err
 	}
 
-	defer func(outFile *os.File) {
-		err := outFile.Close()
-		if err != nil {
-			log.Error(err)
-		}
-	}(outFile)
+	defer outFile.Close()
 
 	if isInputFromPipe() {
 		return patchMock(os.Stdin, outFile)
