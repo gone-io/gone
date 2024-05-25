@@ -17,5 +17,4 @@ func Priest(cemetery gone.Cemetery) error {
 	return nil
 }
 
-//test//test//test//test//test//test//test//test//test
-//test//test//test//test
+//test//test//test//test//test

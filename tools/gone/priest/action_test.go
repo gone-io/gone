@@ -31,11 +31,12 @@ func TestAction(t *testing.T) {
 		go func() {
 			time.Sleep(1 * time.Second)
 			file, _ := os.OpenFile("testdata/x/goner.go", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-
+			defer func() {
+				_ = file.Close()
+				time.Sleep(1 * time.Second)
+				close(ch)
+			}()
 			_, _ = file.WriteString("//test")
-
-			time.Sleep(1 * time.Second)
-			close(ch)
 		}()
 
 		err := app.Run([]string{"", "priest",

@@ -94,6 +94,10 @@ func doAction(
 		dirs = append(dirs, wd)
 	}
 
+	if !filepath.IsAbs(outputFile) {
+		outputFile = path.Join(wd, outputFile)
+	}
+
 	loader := autoload{
 		scanDir:      dirs,
 		packageName:  packageName,
@@ -112,10 +116,8 @@ func doAction(
 	}
 
 	if isWatch {
-		done = getWatchDoneChannel()
 		log.Println("watch mode...")
-		doWatch(loader.reGenerate, dirs)
-		<-done
+		doWatch(loader.reGenerate, dirs, outputFile)
 	}
 	return nil
 }
