@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/tools/go/packages"
 	"io"
 	"os"
@@ -28,10 +27,10 @@ func (f Fn) Gen(pkgName string) string {
 	switch f.Kind {
 	case PriestFn:
 		return fmt.Sprintf("%s%s(cemetery)", pkgName, f.Name)
-	case NewGonerFn:
+	//case NewGonerFn:
+	default:
 		return fmt.Sprintf("cemetery.Bury(%s%s())", pkgName, f.Name)
 	}
-	return ""
 }
 
 type parseResult struct {
@@ -55,12 +54,7 @@ func goFileParse(goFilepath string) (*parseResult, error) {
 		return nil, err
 	}
 
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			log.Errorf("close file %s error: %s\n", goFilepath, err.Error())
-		}
-	}(file)
+	defer file.Close()
 
 	reader := bufio.NewReader(file)
 	var PkgName string
@@ -127,17 +121,17 @@ func goModuleInfo(dir string) (moduleName string, moduleAbsPath string, err erro
 		Dir:   dir,
 		Tests: false,
 	}
-	pkgs, err := packages.Load(cfg, "")
+	packageList, err := packages.Load(cfg, "")
 
 	if err != nil {
 		return "", "", err
 	}
 
-	if len(pkgs) == 0 {
+	if len(packageList) == 0 {
 		return "", "", errors.New("not found go module")
 	}
 
-	p := pkgs[0]
+	p := packageList[0]
 
 	if p.Module == nil {
 		file, _ := os.ReadDir(dir)

@@ -10,3 +10,9 @@ func New() gone.Goner {
 type goner struct {
 	gone.Flag
 }
+
+//go:gone
+func Priest(cemetery gone.Cemetery) error {
+	//todo
+	return nil
+}
