@@ -60,7 +60,7 @@ func (s *server) Start(gone.Cemetery) error {
 	s.stopFlag = false
 	var err error
 	s.Go(func() {
-		err = s.cMux.Serve()
+		err := s.cMux.Serve()
 		s.processStartError(err)
 	})
 	<-time.After(10 * time.Millisecond)
