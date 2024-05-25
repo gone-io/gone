@@ -4,7 +4,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"os"
-	"path"
 	"path/filepath"
 )
 
@@ -79,23 +78,17 @@ func doAction(
 ) error {
 	gShowstat = showStat
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	for i := range dirs {
-		if !filepath.IsAbs(dirs[i]) {
-			dirs[i] = path.Join(wd, dirs[i])
-		}
-	}
-
 	if len(dirs) == 0 {
+		wd, _ := os.Getwd()
 		dirs = append(dirs, wd)
 	}
 
+	for i := range dirs {
+		dirs[i], _ = filepath.Abs(dirs[i])
+	}
+
 	if !filepath.IsAbs(outputFile) {
-		outputFile = path.Join(wd, outputFile)
+		outputFile, _ = filepath.Abs(outputFile)
 	}
 
 	loader := autoload{
@@ -104,7 +97,7 @@ func doAction(
 		functionName: functionName,
 		outputFile:   outputFile,
 	}
-	err = loader.fillModuleInfo()
+	err := loader.fillModuleInfo()
 	if err != nil {
 		log.Fatalf("loader.fillModuleInfo() err:%v", err)
 		return err

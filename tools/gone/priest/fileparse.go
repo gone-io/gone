@@ -102,10 +102,8 @@ func goFileParse(goFilepath string) (*parseResult, error) {
 	if PkgName == "" || len(InjectFns) == 0 {
 		return nil, nil
 	}
-	absPath, err := filepath.Abs(goFilepath)
-	if err != nil {
-		return nil, err
-	}
+	absPath, _ := filepath.Abs(goFilepath)
+
 	return &parseResult{
 		Path:        filepath.Dir(absPath),
 		PkgName:     PkgName,
@@ -125,10 +123,6 @@ func goModuleInfo(dir string) (moduleName string, moduleAbsPath string, err erro
 
 	if err != nil {
 		return "", "", err
-	}
-
-	if len(packageList) == 0 {
-		return "", "", errors.New("not found go module")
 	}
 
 	p := packageList[0]
