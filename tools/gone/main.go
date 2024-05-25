@@ -106,9 +106,8 @@ func createAppCommand() *cli.Command {
 
 func create() *cli.App {
 	return &cli.App{
-		Name:           "gone",
-		Description:    "generate gone code or generate gone app",
-		DefaultCommand: "priest",
+		Name:        "gone",
+		Description: "generate gone code or generate gone app",
 		Commands: []*cli.Command{
 			createPriestCommand(),
 			createMockCommand(),

@@ -40,7 +40,6 @@ func Test_copyAndReplace(t *testing.T) {
 func Test_paramsProcess(t *testing.T) {
 	tpl, m, app, err := paramsProcess("", "", "")
 	assert.Error(t, err)
-	template = "web"
 
 	tpl, m, app, err = paramsProcess("web", "", "")
 	assert.Nil(t, err)
