@@ -25,7 +25,7 @@ func TestAction(t *testing.T) {
 			},
 		}
 
-		err := app.Run([]string{"", "priest", "-s", "testdata/x", "-p", "x", "-f", "priest", "-o", "testdata/x/priest.go"})
+		err := app.Run([]string{"", "priest", "-s", "testdata/x", "-p", "x", "-f", "priest", "-o", "testdata/x/priest.go", "--stat"})
 		assert.Nil(t, err)
 	})
 }
