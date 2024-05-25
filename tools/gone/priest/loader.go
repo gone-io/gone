@@ -12,25 +12,28 @@ import (
 )
 
 func ScanDir(dir, moduleName, moduleDir string) ([]*Pkg, error) {
-	pkgs := make([]*Pkg, 0)
+	packageList := make([]*Pkg, 0)
 	pkg, err := scanDir(dir, moduleName, moduleDir)
 	if err != nil {
 		return nil, err
 	}
 	if pkg != nil {
-		pkgs = append(pkgs, pkg)
+		packageList = append(packageList, pkg)
 	}
-	childrenPkgs, err := scanChildrenDir(dir, moduleName, moduleDir)
+	children, err := scanChildrenDir(dir, moduleName, moduleDir)
 	if err != nil {
 		return nil, err
 	}
-	pkgs = append(pkgs, childrenPkgs...)
-	return pkgs, nil
+	packageList = append(packageList, children...)
+	return packageList, nil
 }
 
 func scanDir(dir, moduleName, moduleDir string) (*Pkg, error) {
 	defer TimeStat("scanDir:" + dir)()
-	dirs, _ := os.ReadDir(dir)
+	dirs, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
 
 	var pkg Pkg
 	for i := range dirs {
@@ -61,19 +64,22 @@ func scanDir(dir, moduleName, moduleDir string) (*Pkg, error) {
 }
 
 func scanChildrenDir(dir, moduleName, moduleDir string) ([]*Pkg, error) {
-	pkgs := make([]*Pkg, 0)
+	packageList := make([]*Pkg, 0)
 
-	dirs, _ := os.ReadDir(dir)
+	dirs, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
 	for i := range dirs {
 		if dirs[i].IsDir() && dirs[i].Name() != ".git" {
 			list, err := ScanDir(path.Join(dir, dirs[i].Name()), moduleName, moduleDir)
 			if err != nil {
 				return nil, err
 			}
-			pkgs = append(pkgs, list...)
+			packageList = append(packageList, list...)
 		}
 	}
-	return pkgs, nil
+	return packageList, nil
 }
 
 type Pkg struct {
@@ -214,10 +220,6 @@ func (loader *autoload) reGenerate(dir string, filename string, op fsnotify.Op) 
 }
 
 func (loader *autoload) inSelfModule(v *Pkg) bool {
-	abs, err := filepath.Abs(loader.outputFile)
-
-	if err != nil {
-		panic(err)
-	}
+	abs, _ := filepath.Abs(loader.outputFile)
 	return filepath.Dir(abs) == v.ID
 }
