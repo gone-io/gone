@@ -7,5 +7,5 @@ import (
 func Test_run(t *testing.T) {
 	run("-h")
 
-	run("priest", "-h")
+	run("", "priest")
 }

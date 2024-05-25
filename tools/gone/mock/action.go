@@ -56,12 +56,7 @@ func doAction(fromfile, outfile string) error {
 		if e != nil {
 			return e
 		}
-		defer func(file *os.File) {
-			err := file.Close()
-			if err != nil {
-				log.Error(err)
-			}
-		}(file)
+		defer file.Close()
 		return patchMock(file, outFile)
 	}
 }

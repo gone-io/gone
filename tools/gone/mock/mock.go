@@ -2,7 +2,6 @@ package mock
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/pkg/errors"
 	"io"
 	"os"
@@ -20,16 +19,13 @@ func getFile(filepath string) (*os.File, error) {
 		return nil, errors.New("please input a file")
 	}
 
-	if existed, err := fileExists(filepath); existed && err != nil {
-		return nil, errors.New("the file provided does not exist")
+	if fileInfo, err := os.Stat(filepath); err != nil {
+		return nil, err
+	} else if fileInfo.IsDir() {
+		return nil, errors.New("the file provided is a directory")
 	}
 
-	file, e := os.Open(filepath)
-
-	if e != nil {
-		return nil, errors.Wrapf(e, "unable to read the file %s", filepath)
-	}
-	return file, nil
+	return os.Open(filepath)
 }
 
 var preMatchReg = regexp.MustCompile("is a mock of .+? interface.")
@@ -73,25 +69,5 @@ func patchMock(r io.Reader, w io.Writer) error {
 			preMatchFlag = false
 		}
 	}
-
-	scanner := bufio.NewScanner(bufio.NewReader(r))
-	for scanner.Scan() {
-		_, e := fmt.Fprintln(w, strings.ToUpper(scanner.Text()))
-		if e != nil {
-			return e
-		}
-	}
 	return nil
-}
-
-func fileExists(filepath string) (bool, error) {
-	fileInfo, err := os.Stat(filepath)
-	if err != nil {
-		return false, err
-	}
-	if fileInfo.IsDir() {
-		return false, nil
-	} else {
-		return true, nil
-	}
 }
