@@ -3,18 +3,32 @@ package priest
 import (
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"os"
 	"path/filepath"
+	"sync"
 )
 
-func doWatch(fn func(string, string, fsnotify.Op), scanDirs []string) {
+func doWatch(fn func(string, string, fsnotify.Op), scanDirs []string, exclude string) {
 	watch(func(event fsnotify.Event) {
 		if event.Op&fsnotify.Write == fsnotify.Write || event.Op == fsnotify.Remove {
-			if filepath.Ext(event.Name) == ".go" {
+			if exclude != event.Name && filepath.Ext(event.Name) == ".go" {
+				log.Infof("watch file(%s) changed", event.Name)
 				fn(filepath.Dir(event.Name), event.Name, event.Op)
 			}
 		}
 	}, scanDirs)
+}
+
+var done chan any
+var mutex sync.Mutex
+
+func getWatchDoneChannel() chan any {
+	mutex.Lock()
+	if done == nil {
+		done = make(chan any)
+	}
+	mutex.Unlock()
+	return done
 }
 
 func watch(fn func(event fsnotify.Event), dirs []string) {
@@ -24,7 +38,6 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 	}
 	defer watcher.Close()
 
-	done := make(chan bool)
 	go func() {
 		for {
 			select {
@@ -33,11 +46,11 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 					return
 				}
 				fn(event)
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Error("error:", err)
+				//case err, ok := <-watcher.Errors:
+				//	if !ok {
+				//		return
+				//	}
+				//	log.Error("error:", err)
 			}
 		}
 	}()
@@ -45,7 +58,8 @@ func watch(fn func(event fsnotify.Event), dirs []string) {
 	for _, dir := range dirs {
 		watchRecursively(watcher, dir)
 	}
-	<-done
+
+	<-getWatchDoneChannel()
 }
 
 func watchRecursively(watcher *fsnotify.Watcher, dir string) {
@@ -56,7 +70,7 @@ func watchRecursively(watcher *fsnotify.Watcher, dir string) {
 		return
 	}
 
-	dirs, _ := ioutil.ReadDir(dir)
+	dirs, _ := os.ReadDir(dir)
 	for i := range dirs {
 		if dirs[i].IsDir() {
 			watchRecursively(watcher, filepath.Join(dir, dirs[i].Name()))

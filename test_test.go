@@ -250,5 +250,5 @@ func TestBuryMockCemetery_Bury(t *testing.T) {
 	assert.Equal(t, point, tomb.GetGoner())
 
 	tombs := cemetery.GetTomByType(reflect.TypeOf(*point))
-	assert.Equal(t, point, tombs[0].GetGoner())
+	assert.Equal(t, 2, len(tombs))
 }

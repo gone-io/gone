@@ -390,3 +390,15 @@ func Test_cemetery_bury(t *testing.T) {
 		assert.True(t, executed)
 	})
 }
+
+func Test_parseGoneTagId(t *testing.T) {
+	id, _ := parseGoneTagId("")
+	assert.Equal(t, string(id), "")
+
+	id, _ = parseGoneTagId("xxx")
+	assert.Equal(t, string(id), "xxx")
+
+	id, ext := parseGoneTagId("xxx,2222,2222333")
+	assert.Equal(t, string(id), "xxx")
+	assert.Equal(t, "2222,2222333", ext)
+}

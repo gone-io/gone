@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"golang.org/x/tools/go/packages"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -28,10 +27,10 @@ func (f Fn) Gen(pkgName string) string {
 	switch f.Kind {
 	case PriestFn:
 		return fmt.Sprintf("%s%s(cemetery)", pkgName, f.Name)
-	case NewGonerFn:
+	//case NewGonerFn:
+	default:
 		return fmt.Sprintf("cemetery.Bury(%s%s())", pkgName, f.Name)
 	}
-	return ""
 }
 
 type parseResult struct {
@@ -45,7 +44,6 @@ const InjectTag = "gone"
 var packageReg = regexp.MustCompile("^package ([a-zA-Z][a-zA-Z0-9_]*)")
 var injectReg = regexp.MustCompile(fmt.Sprintf("^//go:%s(\\s+.*|$)", InjectTag))
 var funcReg = regexp.MustCompile("^func\\s+([A-Z][a-zA-Z0-9_]*)\\s*\\((.*?)\\)")
-
 var priestParamReg = regexp.MustCompile("^([a-zA-Z0-9_]*)\\s*gone\\.Cemetery$")
 
 type FnKind int
@@ -76,15 +74,12 @@ func goFileParse(goFilepath string) (*parseResult, error) {
 		} else {
 			if injectReg.Match(line) {
 				line, _, err := reader.ReadLine()
-				//fmt.Printf("line:%s\n", line)
-
 				if err == io.EOF {
 					return nil, errors.New("file unexpected end")
 				}
 				match := funcReg.FindSubmatch(line)
 				if len(match) == 3 {
 					paramStr := strings.TrimSpace(string(match[2]))
-					//fmt.Printf("paramStr:%s\n", paramStr)
 
 					if paramStr == "" {
 						InjectFns = append(InjectFns, Fn{
@@ -107,10 +102,8 @@ func goFileParse(goFilepath string) (*parseResult, error) {
 	if PkgName == "" || len(InjectFns) == 0 {
 		return nil, nil
 	}
-	absPath, err := filepath.Abs(goFilepath)
-	if err != nil {
-		return nil, err
-	}
+	absPath, _ := filepath.Abs(goFilepath)
+
 	return &parseResult{
 		Path:        filepath.Dir(absPath),
 		PkgName:     PkgName,
@@ -126,20 +119,16 @@ func goModuleInfo(dir string) (moduleName string, moduleAbsPath string, err erro
 		Dir:   dir,
 		Tests: false,
 	}
-	pkgs, err := packages.Load(cfg, "")
+	packageList, err := packages.Load(cfg, "")
 
 	if err != nil {
 		return "", "", err
 	}
 
-	if len(pkgs) == 0 {
-		return "", "", errors.New("not found go module")
-	}
-
-	p := pkgs[0]
+	p := packageList[0]
 
 	if p.Module == nil {
-		file, _ := ioutil.ReadDir(dir)
+		file, _ := os.ReadDir(dir)
 		if len(file) == 0 {
 			err = errors.New("do not found .go file")
 			return

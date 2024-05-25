@@ -1,7 +1,6 @@
 package gone
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -88,11 +87,13 @@ func (c *cemetery) ReplaceBury(goner Goner, id GonerId) (err error) {
 
 	c.tombs = append(c.tombs, replaceTomb)
 	_, err = c.reviveOneFromTomb(replaceTomb)
-	c.replaceTombsGonerField(id, goner, oldGoner, buried)
-	return
+	if err != nil {
+		return err
+	}
+	return c.replaceTombsGonerField(id, goner, oldGoner, buried)
 }
 
-func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, buried bool) {
+func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, buried bool) error {
 	for _, tomb := range c.tombs {
 		goner := tomb.GetGoner()
 
@@ -120,15 +121,12 @@ func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, 
 			if oldId == id {
 				_, _, err := c.reviveFieldById(tag, field, v)
 				if err != nil {
-					var iErr InnerError
-					if errors.As(err, &iErr) {
-						c.Errorf("inner Error: %s(code=%d)\n%s", iErr.Msg(), iErr.Code(), iErr.Stack())
-					}
-					panic(err)
+					return err
 				}
 			}
 		}
 	}
+	return nil
 }
 
 const goneTag = "gone"

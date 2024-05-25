@@ -59,8 +59,11 @@ func (s *server) GetAddress() string {
 func (s *server) Start(gone.Cemetery) error {
 	s.stopFlag = false
 	var err error
+	var mutex sync.Mutex
 	s.Go(func() {
+		mutex.Lock()
 		err = s.cMux.Serve()
+		mutex.Unlock()
 		s.processStartError(err)
 	})
 	<-time.After(10 * time.Millisecond)

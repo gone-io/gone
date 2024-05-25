@@ -5,32 +5,35 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
 )
 
 func ScanDir(dir, moduleName, moduleDir string) ([]*Pkg, error) {
-	pkgs := make([]*Pkg, 0)
+	packageList := make([]*Pkg, 0)
 	pkg, err := scanDir(dir, moduleName, moduleDir)
 	if err != nil {
 		return nil, err
 	}
 	if pkg != nil {
-		pkgs = append(pkgs, pkg)
+		packageList = append(packageList, pkg)
 	}
-	childrenPkgs, err := scanChildrenDir(dir, moduleName, moduleDir)
+	children, err := scanChildrenDir(dir, moduleName, moduleDir)
 	if err != nil {
 		return nil, err
 	}
-	pkgs = append(pkgs, childrenPkgs...)
-	return pkgs, nil
+	packageList = append(packageList, children...)
+	return packageList, nil
 }
 
 func scanDir(dir, moduleName, moduleDir string) (*Pkg, error) {
 	defer TimeStat("scanDir:" + dir)()
-	dirs, _ := ioutil.ReadDir(dir)
+	dirs, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
 
 	var pkg Pkg
 	for i := range dirs {
@@ -61,20 +64,22 @@ func scanDir(dir, moduleName, moduleDir string) (*Pkg, error) {
 }
 
 func scanChildrenDir(dir, moduleName, moduleDir string) ([]*Pkg, error) {
-	pkgs := make([]*Pkg, 0)
+	packageList := make([]*Pkg, 0)
 
-	dirs, _ := ioutil.ReadDir(dir)
+	dirs, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
 	for i := range dirs {
 		if dirs[i].IsDir() && dirs[i].Name() != ".git" {
 			list, err := ScanDir(path.Join(dir, dirs[i].Name()), moduleName, moduleDir)
 			if err != nil {
 				return nil, err
 			}
-			pkgs = append(pkgs, list...)
+			packageList = append(packageList, list...)
 		}
 	}
-
-	return pkgs, nil
+	return packageList, nil
 }
 
 type Pkg struct {
@@ -112,6 +117,18 @@ func (p *Pkg) genImportContent() string {
 	}
 }
 
+type autoload struct {
+	scanDir      []string
+	packageName  string
+	functionName string
+	outputFile   string
+
+	moduleName string
+	moduleDir  string
+
+	pkgsMap map[string]*Pkg
+}
+
 func (loader *autoload) genFileContent(pkgs []*Pkg, funcName string, pkgName string) string {
 	imports := make([]string, 0)
 	funcContents := make([]string, 0)
@@ -143,28 +160,16 @@ func (loader *autoload) genFileContent(pkgs []*Pkg, funcName string, pkgName str
 	return b.String()
 }
 
-type autoload struct {
-	scanDir      []string
-	packageName  string
-	functionName string
-	outputFile   string
-
-	moduleName string
-	moduleDir  string
-
-	pkgsMap map[string]*Pkg
-}
-
 func (loader *autoload) generate(outputFile string) {
 	l := len(loader.pkgsMap)
-	pkgs := make([]*Pkg, 0, l)
+	packages := make([]*Pkg, 0, l)
 
 	for _, v := range loader.pkgsMap {
-		pkgs = append(pkgs, v)
+		packages = append(packages, v)
 	}
 
-	content := loader.genFileContent(pkgs, loader.functionName, loader.packageName)
-	err := ioutil.WriteFile(outputFile, []byte(content), 0666)
+	content := loader.genFileContent(packages, loader.functionName, loader.packageName)
+	err := os.WriteFile(outputFile, []byte(content), 0666)
 	if err != nil {
 		log.Error("write file error:", err)
 	}
@@ -181,17 +186,17 @@ func (loader *autoload) fillModuleInfo() error {
 }
 
 func (loader *autoload) firstGenerate() error {
-	pkgs := make([]*Pkg, 0)
+	packages := make([]*Pkg, 0)
 	for _, dir := range loader.scanDir {
 		pkgList, err := ScanDir(dir, loader.moduleName, loader.moduleDir)
 		if err != nil {
 			return err
 		}
-		pkgs = append(pkgs, pkgList...)
+		packages = append(packages, pkgList...)
 	}
 
 	loader.pkgsMap = make(map[string]*Pkg)
-	for _, pkg := range pkgs {
+	for _, pkg := range packages {
 		loader.pkgsMap[pkg.ID] = pkg
 	}
 
@@ -215,10 +220,6 @@ func (loader *autoload) reGenerate(dir string, filename string, op fsnotify.Op) 
 }
 
 func (loader *autoload) inSelfModule(v *Pkg) bool {
-	abs, err := filepath.Abs(loader.outputFile)
-
-	if err != nil {
-		panic(err)
-	}
+	abs, _ := filepath.Abs(loader.outputFile)
 	return filepath.Dir(abs) == v.ID
 }

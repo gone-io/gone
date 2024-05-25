@@ -1,6 +1,6 @@
 package testdata
 
-//go:generate sh -c "mockgen -package=mock -source=$GOFILE | ../../bin/gone mock -o mock/$GOFILE"
+//go:generate sh -c "mockgen -source=interface.go -package=testdata  -destination=testInterface.go"
 type TestInterface interface {
 	GetSomeThing() error
 	DoSomeThing(bool bool) (string, error)

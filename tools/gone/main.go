@@ -9,20 +9,28 @@ import (
 	"os"
 )
 
-func main() {
-	App := &cli.App{
-		Name:           "gone",
-		Description:    "generate gone code or generate gone app",
-		DefaultCommand: "priest",
+func create() *cli.App {
+	return &cli.App{
+		Name:        "gone",
+		Description: "generate gone code or generate gone app",
 		Commands: []*cli.Command{
-			priest.Command,
-			mock.Command,
-			app.Command,
+			priest.CreateCommand(),
+			mock.CreateCommand(),
+			app.CreateCommand(),
 		},
 	}
+}
 
-	err := App.Run(os.Args)
+func run(args ...string) int {
+	tool := create()
+	err := tool.Run(args)
 	if err != nil {
-		log.Fatalln("err:", err)
+		log.Println(err.Error())
+		return 1
 	}
+	return 0
+}
+
+func main() {
+	os.Exit(run(os.Args...))
 }
