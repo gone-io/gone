@@ -7,6 +7,10 @@ import (
 	"xorm.io/xorm"
 )
 
+type Flag struct{}
+
+func (g *Flag) goneFlag() {}
+
 // Goner which is an abstraction of injectable objects: can inject other Goner, can be injected by other Goner.
 type Goner interface {
 	goneFlag()
@@ -211,8 +215,9 @@ type XormEngine interface {
 
 //-----------
 
-// Server cumx 服务，用于复用同一端口监听多种协议，参考文档：https://pkg.go.dev/github.com/soheilhy/cmux
+// CMuxServer cMux 服务，用于复用同一端口监听多种协议，参考文档：https://pkg.go.dev/github.com/soheilhy/cmux
 type CMuxServer interface {
 	Match(matcher ...cmux.Matcher) net.Listener
+	MatchWithWriters(matcher ...cmux.MatchWriter) net.Listener
 	GetAddress() string
 }

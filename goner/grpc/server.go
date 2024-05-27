@@ -23,7 +23,7 @@ type server struct {
 	gone.Flag
 	gone.Logger `gone:"gone-logger"`
 
-	port int    `gone:"config,server.grpc.port=9090"`
+	port int    `gone:"config,server.grpc.port,default=9090"`
 	host string `gone:"config,server.grpc.host,default=0.0.0.0"`
 
 	grpcServer *grpc.Server
@@ -47,7 +47,15 @@ func (s *server) initListener(cemetery gone.Cemetery) error {
 	tomb := cemetery.GetTomById(gone.IdGoneCMux)
 	if tomb != nil {
 		cMux := tomb.GetGoner().(gone.CMuxServer)
-		s.listener = cMux.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+		//s.listener = cMux.Match(
+		//	cmux.HTTP2HeaderField("content-type", "application/grpc"),
+		//	cmux.HTTP1HeaderField("content-type", "application/grpc"),
+		//)
+
+		s.listener = cMux.MatchWithWriters(
+			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+		)
+
 		s.address = cMux.GetAddress()
 		return nil
 	}
@@ -77,7 +85,7 @@ func (s *server) Start(cemetery gone.Cemetery) error {
 		grpcService.RegisterGrpcServer(s.grpcServer)
 	}
 
-	s.Infof("gRPC server now listen at %d", s.address)
+	s.Infof("gRPC server now listen at %s", s.address)
 	s.Go(s.server)
 
 	return nil

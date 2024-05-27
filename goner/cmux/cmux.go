@@ -52,6 +52,10 @@ func (s *server) Match(matcher ...cmux.Matcher) net.Listener {
 	return s.cMux.Match(matcher...)
 }
 
+func (s *server) MatchWithWriters(matcher ...cmux.MatchWriter) net.Listener {
+	return s.cMux.MatchWithWriters(matcher...)
+}
+
 func (s *server) GetAddress() string {
 	return s.address
 }

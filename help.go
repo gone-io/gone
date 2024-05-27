@@ -126,6 +126,6 @@ func WrapNormalFnToProcess(fn any) Process {
 
 func CheckAndBury(cemetery Cemetery, goner Goner, goneId GonerId) {
 	if nil == cemetery.GetTomById(goneId) {
-		cemetery.Bury(goner)
+		cemetery.Bury(goner, goneId)
 	}
 }
