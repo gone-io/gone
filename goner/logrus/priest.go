@@ -8,14 +8,14 @@ import (
 func Priest(cemetery gone.Cemetery) error {
 	_ = tracer.Priest(cemetery)
 	if nil == cemetery.GetTomById(gone.IdGoneLogger) {
-		logger, id := NewLogger()
-		cemetery.Bury(logger, id)
+		theLogger, id, option := NewLogger()
+		cemetery.Bury(theLogger, id, option)
 
 		tombs := cemetery.GetTomByType(gone.GetInterfaceType(new(gone.DefaultLogger)))
 		for _, tomb := range tombs {
 			goner := tomb.GetGoner()
 			log := goner.(gone.DefaultLogger)
-			_ = log.SetLogger(logger.(gone.SimpleLogger))
+			_ = log.SetLogger(theLogger.(gone.SimpleLogger))
 		}
 	}
 	return nil

@@ -6,8 +6,8 @@ import (
 	"sync"
 )
 
-func NewRedisPool() (gone.Angel, gone.GonerId) {
-	return &pool{}, gone.IdGoneRedisPool
+func NewRedisPool() (gone.Angel, gone.GonerId, gone.GonerOption) {
+	return &pool{}, gone.IdGoneRedisPool, gone.IsDefault(true)
 }
 
 type pool struct {

@@ -8,12 +8,12 @@ import (
 	"os"
 )
 
-func NewLogger() (gone.Goner, gone.GonerId) {
+func NewLogger() (gone.Goner, gone.GonerId, gone.GonerOption) {
 	log := &logger{
 		Logger: logrus.StandardLogger(),
 	}
 	log.ResetLog()
-	return log, gone.IdGoneLogger
+	return log, gone.IdGoneLogger, gone.IsDefault(true)
 }
 
 type logger struct {

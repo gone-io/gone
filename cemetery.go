@@ -36,30 +36,54 @@ func GetGoneDefaultId(goner Goner) GonerId {
 	return GonerId(fmt.Sprintf("%s#%d", pkgName, reflect.ValueOf(goner).Elem().UnsafeAddr()))
 }
 
-func (c *cemetery) bury(goner Goner, ids ...GonerId) Tomb {
+func (c *cemetery) bury(goner Goner, options ...GonerOption) Tomb {
 	t := NewTomb(goner)
 	var id GonerId
-	if len(ids) > 0 {
-		id = ids[0]
+
+	for _, option := range options {
+		switch option.(type) {
+		case GonerId:
+			id = option.(GonerId)
+		case IsDefault:
+			t.SetDefault(true)
+		}
 	}
+
 	if id == "" {
 		id = GetGoneDefaultId(goner)
 	}
 
-	if id != "" {
-		_, ok := c.tombMap[id]
-		if ok {
-			panic(GonerIdIsExistedError(id))
-		}
-
-		c.tombMap[id] = t.SetId(id)
+	_, ok := c.tombMap[id]
+	if ok {
+		panic(GonerIdIsExistedError(id))
 	}
+
+	c.tombMap[id] = t.SetId(id)
 	c.tombs = append(c.tombs, t)
 	return t
 }
 
-func (c *cemetery) Bury(goner Goner, ids ...GonerId) Cemetery {
-	c.bury(goner, ids...)
+func (c *cemetery) Bury(goner Goner, options ...GonerOption) Cemetery {
+	c.bury(goner, options...)
+	return c
+}
+
+func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
+	var id GonerId
+
+	for _, option := range options {
+		switch option.(type) {
+		case GonerId:
+			id = option.(GonerId)
+		}
+	}
+	if id == "" {
+		panic(NewInnerError("GonerId is empty, must have gonerId option", MustHaveGonerId))
+	}
+
+	if nil == c.GetTomById(id) {
+		c.Bury(goner, options...)
+	}
 	return c
 }
 
@@ -218,19 +242,30 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 	return
 }
 
-func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
+func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool, err error) {
 	tombs := c.GetTomByType(field.Type)
 	if len(tombs) > 0 {
-		if len(tombs) > 1 {
-			c.Warnf("more than one goner was found, use first one!")
+		var container Tomb
+
+		for _, t := range tombs {
+			if t.IsDefault() {
+				container = t
+				break
+			}
 		}
-		tomb := tombs[0]
-		err = c.setFieldValue(v, tomb.GetGoner())
+		if container == nil {
+			container = tombs[0]
+			if len(tombs) > 1 {
+				c.Warnf(fmt.Sprintf("inject %s.%s more than one goner was found and no default, used the first!", goneTypeName, field.Name))
+			}
+		}
+
+		err = c.setFieldValue(v, container.GetGoner())
 		if err != nil {
 			return
 		}
 		suc = true
-		deps = append(deps, tomb)
+		deps = append(deps, container)
 	}
 	return
 }
@@ -361,7 +396,7 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 		}
 
 		// 根据类型匹配
-		if tmpDeps, suc, err = c.reviveFieldByType(field, v); err != nil {
+		if tmpDeps, suc, err = c.reviveFieldByType(field, v, goneTypeName); err != nil {
 			return
 		} else if suc {
 			deps = append(deps, tmpDeps...)

@@ -105,13 +105,15 @@ type BuryMockCemetery struct {
 	m map[GonerId]Goner
 }
 
-func (c *BuryMockCemetery) Bury(g Goner, ids ...GonerId) Cemetery {
-	if len(ids) > 0 {
-		c.m[ids[0]] = g
-	} else {
-		id := GetGoneDefaultId(g)
-		c.m[id] = g
+func (c *BuryMockCemetery) Bury(g Goner, options ...GonerOption) Cemetery {
+	for _, option := range options {
+		if id, ok := option.(GonerId); ok {
+			c.m[id] = g
+			return c
+		}
 	}
+	id := GetGoneDefaultId(g)
+	c.m[id] = g
 	return c
 }
 
@@ -130,6 +132,25 @@ func (c *BuryMockCemetery) GetTomByType(t reflect.Type) (list []Tomb) {
 		}
 	}
 	return list
+}
+
+func (c *BuryMockCemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
+	var id GonerId
+
+	for _, option := range options {
+		switch option.(type) {
+		case GonerId:
+			id = option.(GonerId)
+		}
+	}
+	if id == "" {
+		panic(NewInnerError("GonerId is empty, must have gonerId option", MustHaveGonerId))
+	}
+
+	if nil == c.GetTomById(id) {
+		c.Bury(goner, options...)
+	}
+	return c
 }
 
 func NewBuryMockCemeteryForTest() Cemetery {

@@ -44,9 +44,9 @@ func TestInjectWrapFn(t *testing.T) {
 	heaven :=
 		New(func(cemetery Cemetery) error {
 			cemetery.
-				Bury(&Point{Index: 1}, "point-a").
-				Bury(&Point{Index: 2}, "point-b").
-				Bury(&Point{Index: 3}, "point-c")
+				Bury(&Point{Index: 1}, GonerId("point-a")).
+				Bury(&Point{Index: 2}, GonerId("point-b")).
+				Bury(&Point{Index: 3}, GonerId("point-c"))
 
 			return nil
 		})

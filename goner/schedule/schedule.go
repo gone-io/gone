@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func NewSchedule() (gone.Goner, gone.GonerId) {
-	return &schedule{}, gone.IdGoneSchedule
+func NewSchedule() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &schedule{}, gone.IdGoneSchedule, gone.IsDefault(true)
 }
 
 type schedule struct {

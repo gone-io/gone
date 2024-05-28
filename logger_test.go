@@ -7,7 +7,7 @@ import (
 
 func Test_defaultLogger_Tracef(t *testing.T) {
 	logger, id := NewSimpleLogger()
-	assert.Equal(t, IdGoneLogger, string(id))
+	assert.Equal(t, IdGoneLogger, id)
 	l := logger.(*defaultLogger)
 
 	l.Tracef("trace")

@@ -7,8 +7,8 @@ import (
 )
 
 // NewGinRouter 用于创建系统根路由
-func NewGinRouter() (gone.Goner, gone.GonerId) {
-	return &router{id: incr}, gone.IdGoneGinRouter
+func NewGinRouter() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &router{id: incr}, gone.IdGoneGinRouter, gone.IsDefault(true)
 }
 
 var incr = 0

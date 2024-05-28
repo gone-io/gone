@@ -13,9 +13,9 @@ func TestPrepare(t *testing.T) {
 		Prepare(func(cemetery gone.Cemetery) error {
 			cemetery.
 				Bury(&Triangle{}).
-				Bury(&gone.Point{Index: 1}, "point-a").
-				Bury(&gone.Point{Index: 2}, "point-b").
-				Bury(&gone.Point{Index: 3}, "point-c")
+				Bury(&gone.Point{Index: 1}, gone.GonerId("point-a")).
+				Bury(&gone.Point{Index: 2}, gone.GonerId("point-b")).
+				Bury(&gone.Point{Index: 3}, gone.GonerId("point-c"))
 
 			return nil
 		}).

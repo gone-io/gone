@@ -11,8 +11,7 @@ func Priest(cemetery gone.Cemetery) error {
 	_ = tracer.Priest(cemetery)
 	_ = logrus.Priest(cemetery)
 	_ = redis.Priest(cemetery)
-	if nil == cemetery.GetTomById(gone.IdGoneSchedule) {
-		cemetery.Bury(NewSchedule())
-	}
+
+	cemetery.BuryOnce(NewSchedule())
 	return nil
 }

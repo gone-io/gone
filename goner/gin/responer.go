@@ -12,10 +12,10 @@ import (
 
 // NewGinResponser 新建系统默认的响应处理器
 // 注入的ID为：gone-gin-responser (`gone.IdGoneGinResponser`)
-func NewGinResponser() (gone.Goner, gone.GonerId) {
+func NewGinResponser() (gone.Goner, gone.GonerId, gone.GonerOption) {
 	return &responser{
 		wrappedDataFunc: wrapFunc,
-	}, gone.IdGoneGinResponser
+	}, gone.IdGoneGinResponser, gone.IsDefault(true)
 }
 
 type res[T any] struct {

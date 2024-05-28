@@ -18,7 +18,7 @@ func NewDemoController() gone.Goner {
 type demoController struct {
 	gone.Flag
 	demoSvc     service.IDemo `gone:"*"`
-	gone.Logger `gone:"gone-logger"`
+	gone.Logger `gone:"*"`
 
 	authRouter gone.IRouter `gone:"router-auth"`
 	pubRouter  gone.IRouter `gone:"router-pub"`

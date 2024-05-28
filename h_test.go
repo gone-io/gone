@@ -17,9 +17,9 @@ func TestRun(t *testing.T) {
 	gone.Run(func(cemetery gone.Cemetery) error {
 		cemetery.
 			Bury(&Triangle{}).
-			Bury(&gone.Point{Index: 1}, "point-a").
-			Bury(&gone.Point{Index: 2}, "point-b").
-			Bury(&gone.Point{Index: 3}, "point-c")
+			Bury(&gone.Point{Index: 1}, gone.GonerId("point-a")).
+			Bury(&gone.Point{Index: 2}, gone.GonerId("point-b")).
+			Bury(&gone.Point{Index: 3}, gone.GonerId("point-c"))
 
 		return nil
 	})
@@ -28,15 +28,15 @@ func TestRun(t *testing.T) {
 func TestNew(t *testing.T) {
 	var sort []int
 
-	const gonerId = "Triangle"
+	const gonerId gone.GonerId = "Triangle"
 
 	heaven := gone.
 		New(func(cemetery gone.Cemetery) error {
 			cemetery.
 				Bury(&Triangle{}, gonerId).
-				Bury(&gone.Point{Index: 1}, "point-a").
-				Bury(&gone.Point{Index: 2}, "point-b").
-				Bury(&gone.Point{Index: 3}, "point-c")
+				Bury(&gone.Point{Index: 1}, gone.GonerId("point-a")).
+				Bury(&gone.Point{Index: 2}, gone.GonerId("point-b")).
+				Bury(&gone.Point{Index: 3}, gone.GonerId("point-c"))
 
 			return nil
 		})

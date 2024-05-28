@@ -5,8 +5,6 @@ import (
 )
 
 func Priest(cemetery gone.Cemetery) error {
-	if nil == cemetery.GetTomById(gone.IdGoneTracer) {
-		cemetery.Bury(NewTracer())
-	}
+	cemetery.BuryOnce(NewTracer())
 	return nil
 }

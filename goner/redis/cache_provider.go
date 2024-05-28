@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-func NewCacheProvider() (gone.Vampire, gone.GonerId) {
-	return &cacheProvider{}, gone.IdGoneRedisProvider
+func NewCacheProvider() (gone.Vampire, gone.GonerId, gone.GonerOption) {
+	return &cacheProvider{}, gone.IdGoneRedisProvider, gone.IsDefault(true)
 }
 
 type cacheProvider struct {

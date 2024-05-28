@@ -181,14 +181,14 @@ func Test_injectHttp(t *testing.T) {
 }
 
 func Test_proxy_ProxyForMiddleware(t *testing.T) {
-	ginProxy, _ := NewGinProxy()
+	ginProxy, _, _ := NewGinProxy()
 	p := ginProxy.(HandleProxyToGin)
 	funcs := p.ProxyForMiddleware(func(ctx *gin.Context) {}, func() {})
 	assert.Equal(t, 2, len(funcs))
 }
 
 func Test_proxy_Proxy(t *testing.T) {
-	ginProxy, _ := NewGinProxy()
+	ginProxy, _, _ := NewGinProxy()
 	p := ginProxy.(HandleProxyToGin)
 	funcs := p.Proxy(func(ctx *gin.Context) {}, func() {})
 	assert.Equal(t, 2, len(funcs))

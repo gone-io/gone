@@ -8,8 +8,8 @@ import (
 
 const IdGoneRedisInner = "gone-redis-inner"
 
-func NewInner() (gone.Goner, gone.GonerId) {
-	return &inner{}, IdGoneRedisInner
+func NewInner() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &inner{}, IdGoneRedisInner, gone.IsDefault(true)
 }
 
 type inner struct {

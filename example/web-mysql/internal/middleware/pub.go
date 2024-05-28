@@ -12,7 +12,7 @@ func NewPlantMiddleware() gone.Goner {
 // PubMiddleware 公共中间件
 type PubMiddleware struct {
 	gone.Flag
-	gone.Logger `gone:"gone-logger"`
+	gone.Logger `gone:"*"`
 }
 
 func (m *PubMiddleware) Next(ctx *gone.Context) (interface{}, error) {

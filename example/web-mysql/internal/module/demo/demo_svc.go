@@ -14,7 +14,7 @@ func NewDemoService() gone.Goner {
 
 type demoService struct {
 	gone.Flag
-	db iDb `gone:"*"`
+	db *db `gone:"*"`
 }
 
 func (svc *demoService) Show() (*domain.DemoEntity, error) {
