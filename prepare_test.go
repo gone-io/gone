@@ -80,3 +80,24 @@ func TestPreparer_Serve(t *testing.T) {
 		Serve()
 	assert.True(t, executed)
 }
+
+func TestPreparer_Run(t *testing.T) {
+	gone.Prepare().Run(func(in struct {
+		h gone.Heaven `gone:"*"`
+	}) {
+		assert.NotNil(t, in.h)
+	})
+}
+
+func TestPreparer_Serve1(t *testing.T) {
+	gone.AfterStopSignalWaitSecond = 0
+	gone.Prepare().Serve(func(in struct {
+		h gone.Heaven `gone:"*"`
+	}) {
+		assert.NotNil(t, in.h)
+		go func() {
+			time.Sleep(10 * time.Millisecond)
+			in.h.End()
+		}()
+	})
+}
