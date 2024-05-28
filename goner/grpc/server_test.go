@@ -29,9 +29,9 @@ func Test_server_initListener(t *testing.T) {
 		controller := gomock.NewController(t)
 		defer controller.Finish()
 
-		cMuxServer := NewCmuxServer(controller)
+		cMuxServer := NewMockCMuxServer(controller)
 		listener := NewMockListener(controller)
-		cMuxServer.EXPECT().Match(gomock.Any()).Return(listener)
+		cMuxServer.EXPECT().MatchWithWriters(gomock.Any()).Return(listener)
 		cMuxServer.EXPECT().GetAddress().Return("")
 
 		cemetery := gone.NewBuryMockCemeteryForTest()

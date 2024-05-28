@@ -9,7 +9,6 @@ import (
 func Priest(cemetery gone.Cemetery) error {
 	_ = logrus.Priest(cemetery)
 	_ = config.Priest(cemetery)
-	newServer, id := NewServer()
-	gone.CheckAndBury(cemetery, newServer, id)
+	cemetery.BuryOnce(NewServer())
 	return nil
 }

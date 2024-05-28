@@ -2,6 +2,7 @@ package gone
 
 import (
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -267,7 +268,7 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 			SimpleLogger: &defaultLogger{},
 			tombMap:      make(map[GonerId]Tomb),
 		}
-		const line = "the-line"
+		const line GonerId = "the-line"
 		type Line struct {
 			Flag
 			A XPoint `gone:"point-a"`
@@ -277,13 +278,13 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 
 		c.Bury(c, IdGoneCemetery).
 			Bury(&Line{}, line).
-			Bury(&Point{x: -1, y: -2}, "point-a").
-			Bury(&Point{x: 1, y: 2}, "point-b")
+			Bury(&Point{x: -1, y: -2}, GonerId("point-a")).
+			Bury(&Point{x: 1, y: 2}, GonerId("point-b"))
 
 		err := c.ReviveAllFromTombs()
 		assert.Nil(t, err)
 
-		err = c.ReplaceBury(&ZeroPoint{}, "point-a")
+		err = c.ReplaceBury(&ZeroPoint{}, GonerId("point-a"))
 		assert.Nil(t, err)
 
 		tomb := c.GetTomById(line)
@@ -304,7 +305,7 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 			SimpleLogger: &defaultLogger{},
 			tombMap:      make(map[GonerId]Tomb),
 		}
-		const line = "the-line"
+		const line GonerId = "the-line"
 		type Line struct {
 			Flag
 			A XPoint `gone:"point-a"`
@@ -317,8 +318,8 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 			Bury(&Line{
 				z: &Point{},
 			}, line).
-			Bury(&Point{x: -1, y: -2}, "point-a").
-			Bury(&Point{x: 1, y: 2}, "point-b")
+			Bury(&Point{x: -1, y: -2}, GonerId("point-a")).
+			Bury(&Point{x: 1, y: 2}, GonerId("point-b"))
 
 		err := c.ReviveAllFromTombs()
 		assert.Nil(t, err)
@@ -383,9 +384,9 @@ func Test_cemetery_bury(t *testing.T) {
 			}()
 
 			c := newCemetery()
-			c.Bury(&Point{x: 1, y: 2}, "point-a")
+			c.Bury(&Point{x: 1, y: 2}, GonerId("point-a"))
 			executed = true
-			c.Bury(&Point{x: 1, y: 2}, "point-a")
+			c.Bury(&Point{x: 1, y: 2}, GonerId("point-a"))
 		}()
 		assert.True(t, executed)
 	})
@@ -401,4 +402,44 @@ func Test_parseGoneTagId(t *testing.T) {
 	id, ext := parseGoneTagId("xxx,2222,2222333")
 	assert.Equal(t, string(id), "xxx")
 	assert.Equal(t, "2222,2222333", ext)
+}
+
+type vampire1 struct {
+	Flag
+}
+
+func (g *vampire1) Suck(conf string, v reflect.Value) SuckError {
+	v.SetString(conf)
+	return nil
+}
+
+type vampire2 struct {
+	Flag
+}
+
+func (g *vampire2) Suck(conf string, v reflect.Value, field reflect.StructField) error {
+	v.SetString(conf + ":" + field.Name)
+	return nil
+}
+
+func Test_cemetery_reviveFieldById(t *testing.T) {
+	Prepare(func(cemetery Cemetery) error {
+		cemetery.
+			BuryOnce(&vampire1{}, GonerId("v1")).
+			BuryOnce(&vampire1{}, GonerId("v1")).
+			BuryOnce(&vampire2{}, GonerId("v2")).
+			BuryOnce(&vampire2{}, GonerId("v2"))
+		return nil
+	}).AfterStart(func(in struct {
+		test1 string      `gone:"v1,xxxx"`
+		test2 string      `gone:"v2,xxxx"`
+		test3 []*vampire2 `gone:"*"`
+		test4 []*vampire1 `gone:"*"`
+	}) {
+		assert.Equal(t, "xxxx", in.test1)
+		assert.Equal(t, "xxxx:test2", in.test2)
+		assert.Equal(t, 1, len(in.test3))
+		assert.Equal(t, 1, len(in.test4))
+	}).Run()
+
 }

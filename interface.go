@@ -7,6 +7,8 @@ import (
 	"xorm.io/xorm"
 )
 
+//go:generate sh -c "mockgen -package=gone -self_package=github.com/gone-io/gone -source=interface.go -destination=mock_test.go"
+
 type Flag struct{}
 
 func (g *Flag) goneFlag() {}
@@ -20,8 +22,18 @@ type identity interface {
 	GetId() GonerId
 }
 
+type GonerOption interface {
+	option()
+}
+
 // GonerId Goner's id
 type GonerId string
+
+func (GonerId) option() {}
+
+type IsDefault bool
+
+func (IsDefault) option() {}
 
 // Tomb container of Goner
 type Tomb interface {
@@ -29,6 +41,9 @@ type Tomb interface {
 	GetId() GonerId
 	GetGoner() Goner
 	GonerIsRevive(flags ...bool) bool
+
+	IsDefault() bool
+	SetDefault(isDefault bool) Tomb
 }
 
 type SetLoggerError error
@@ -45,7 +60,10 @@ type Cemetery interface {
 	//bury(goner Goner, ids ...GonerId) Tomb
 
 	//Bury a Goner to the Cemetery
-	Bury(Goner, ...GonerId) Cemetery
+	Bury(Goner, ...GonerOption) Cemetery
+
+	//BuryOnce a Goner to the Cemetery, if the Goner is already in the Cemetery, it will be ignored
+	BuryOnce(goner Goner, options ...GonerOption) Cemetery
 
 	//ReplaceBury replace the Goner in the Cemetery with a new Goner
 	ReplaceBury(Goner, GonerId) error

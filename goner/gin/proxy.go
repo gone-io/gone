@@ -6,10 +6,10 @@ import (
 )
 
 // NewGinProxy 新建代理器
-func NewGinProxy() (gone.Goner, gone.GonerId) {
+func NewGinProxy() (gone.Goner, gone.GonerId, gone.GonerOption) {
 	return &proxy{
 		inject: injectHttp,
-	}, gone.IdGoneGinProxy
+	}, gone.IdGoneGinProxy, gone.IsDefault(true)
 }
 
 type proxy struct {

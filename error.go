@@ -67,6 +67,8 @@ const (
 	StopError
 
 	DbRollForPanic
+
+	MustHaveGonerId
 )
 
 func GonerIdIsExistedError(id GonerId) Error {

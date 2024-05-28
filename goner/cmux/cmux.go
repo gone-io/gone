@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-func NewServer() (gone.Angel, gone.GonerId) {
+func NewServer() (gone.Angel, gone.GonerId, gone.GonerOption) {
 	s := server{}
 	s.listen = net.Listen
-	return &s, gone.IdGoneCMux
+	return &s, gone.IdGoneCMux, gone.IsDefault(true)
 }
 
 type server struct {

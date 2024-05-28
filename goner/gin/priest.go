@@ -6,7 +6,7 @@ import (
 )
 
 func ginPriest(cemetery gone.Cemetery) error {
-	arr := []func() (gone.Goner, gone.GonerId){
+	arr := []func() (gone.Goner, gone.GonerId, gone.GonerOption){
 		NewGinProxy,
 		NewGinRouter,
 		NewGinProcessor,
@@ -16,8 +16,7 @@ func ginPriest(cemetery gone.Cemetery) error {
 	}
 
 	for _, f := range arr {
-		goner, id := f()
-		gone.CheckAndBury(cemetery, goner, id)
+		cemetery.BuryOnce(f())
 	}
 	return nil
 }

@@ -10,6 +10,8 @@ func TestBasePriest(t *testing.T) {
 	cemetery := gone.NewBuryMockCemeteryForTest()
 	err := BasePriest(cemetery)
 	assert.Nil(t, err)
+
+	gone.Prepare(BasePriest).Run()
 }
 
 func TestGinPriest(t *testing.T) {

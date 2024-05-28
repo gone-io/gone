@@ -7,6 +7,6 @@ import (
 
 func Priest(cemetery gone.Cemetery) error {
 	_ = tracer.Priest(cemetery)
-	cemetery.Bury(NewReq())
+	cemetery.BuryOnce(NewReq())
 	return nil
 }

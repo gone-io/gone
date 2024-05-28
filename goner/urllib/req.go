@@ -8,8 +8,8 @@ import (
 
 const TraceIdHeaderKey = "X-Trace-ID"
 
-func NewReq() (gone.Goner, gone.GonerId) {
-	return &r{}, gone.IdGoneReq
+func NewReq() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &r{}, gone.IdGoneReq, gone.IsDefault(true)
 }
 
 type r struct {

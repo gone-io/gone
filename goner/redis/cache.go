@@ -10,8 +10,12 @@ import (
 	"time"
 )
 
-func NewRedisCache() (gone.Goner, gone.GonerId) {
-	return &cache{}, gone.IdGoneRedisCache
+func NewRedisCache() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &cache{}, gone.IdGoneRedisCache, gone.IsDefault(true)
+}
+
+func NewRedisKey() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &cache{}, gone.IdGoneRedisKey, gone.IsDefault(true)
 }
 
 type cache struct {

@@ -13,8 +13,8 @@ import (
 
 var xMap sync.Map
 
-func NewHttInjector() (gone.Goner, gone.GonerId) {
-	return &httpInjector{}, "http"
+func NewHttInjector() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &httpInjector{}, gone.IdHttpInjector, gone.IsDefault(true)
 }
 
 type httpInjector struct {

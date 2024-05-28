@@ -24,15 +24,21 @@ func (p *Preparer) AfterStop(fn any) *Preparer {
 	return p
 }
 
-func (p *Preparer) Run() {
+func (p *Preparer) Run(fns ...any) {
 	AfterStopSignalWaitSecond = 0
+	for _, fn := range fns {
+		p.AfterStart(fn)
+	}
 	p.heaven.
 		Install().
 		Start().
 		Stop()
 }
 
-func (p *Preparer) Serve() {
+func (p *Preparer) Serve(fns ...any) {
+	for _, fn := range fns {
+		p.AfterStart(fn)
+	}
 	p.heaven.
 		Install().
 		Start().

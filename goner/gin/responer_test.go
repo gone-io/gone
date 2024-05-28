@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewGinResponser(t *testing.T) {
-	_, _ = NewGinResponser()
+	_, _, _ = NewGinResponser()
 }
 
 func (r *responser) Go(func())                         {}

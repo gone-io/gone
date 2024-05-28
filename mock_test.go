@@ -7,10 +7,12 @@ package gone
 import (
 	context "context"
 	sql "database/sql"
+	net "net"
 	reflect "reflect"
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+	cmux "github.com/soheilhy/cmux"
 	xorm "xorm.io/xorm"
 	caches "xorm.io/xorm/caches"
 	contexts "xorm.io/xorm/contexts"
@@ -92,6 +94,41 @@ func (mr *MockidentityMockRecorder) GetId() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetId", reflect.TypeOf((*Mockidentity)(nil).GetId))
 }
 
+// MockGonerOption is a mock of GonerOption interface.
+type MockGonerOption struct {
+	ctrl     *gomock.Controller
+	recorder *MockGonerOptionMockRecorder
+}
+
+// MockGonerOptionMockRecorder is the mock recorder for MockGonerOption.
+type MockGonerOptionMockRecorder struct {
+	mock *MockGonerOption
+}
+
+// NewMockGonerOption creates a new mock instance.
+func NewMockGonerOption(ctrl *gomock.Controller) *MockGonerOption {
+	mock := &MockGonerOption{ctrl: ctrl}
+	mock.recorder = &MockGonerOptionMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGonerOption) EXPECT() *MockGonerOptionMockRecorder {
+	return m.recorder
+}
+
+// option mocks base method.
+func (m *MockGonerOption) option() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "option")
+}
+
+// option indicates an expected call of option.
+func (mr *MockGonerOptionMockRecorder) option() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "option", reflect.TypeOf((*MockGonerOption)(nil).option))
+}
+
 // MockTomb is a mock of Tomb interface.
 type MockTomb struct {
 	ctrl     *gomock.Controller
@@ -159,6 +196,34 @@ func (m *MockTomb) GonerIsRevive(flags ...bool) bool {
 func (mr *MockTombMockRecorder) GonerIsRevive(flags ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GonerIsRevive", reflect.TypeOf((*MockTomb)(nil).GonerIsRevive), flags...)
+}
+
+// IsDefault mocks base method.
+func (m *MockTomb) IsDefault() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsDefault")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsDefault indicates an expected call of IsDefault.
+func (mr *MockTombMockRecorder) IsDefault() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDefault", reflect.TypeOf((*MockTomb)(nil).IsDefault))
+}
+
+// SetDefault mocks base method.
+func (m *MockTomb) SetDefault(isDefault bool) Tomb {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetDefault", isDefault)
+	ret0, _ := ret[0].(Tomb)
+	return ret0
+}
+
+// SetDefault indicates an expected call of SetDefault.
+func (mr *MockTombMockRecorder) SetDefault(isDefault interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDefault", reflect.TypeOf((*MockTomb)(nil).SetDefault), isDefault)
 }
 
 // SetId mocks base method.
@@ -236,7 +301,7 @@ func (m *MockCemetery) EXPECT() *MockCemeteryMockRecorder {
 }
 
 // Bury mocks base method.
-func (m *MockCemetery) Bury(arg0 Goner, arg1 ...GonerId) Cemetery {
+func (m *MockCemetery) Bury(arg0 Goner, arg1 ...GonerOption) Cemetery {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
@@ -252,6 +317,25 @@ func (mr *MockCemeteryMockRecorder) Bury(arg0 interface{}, arg1 ...interface{}) 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Bury", reflect.TypeOf((*MockCemetery)(nil).Bury), varargs...)
+}
+
+// BuryOnce mocks base method.
+func (m *MockCemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{goner}
+	for _, a := range options {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "BuryOnce", varargs...)
+	ret0, _ := ret[0].(Cemetery)
+	return ret0
+}
+
+// BuryOnce indicates an expected call of BuryOnce.
+func (mr *MockCemeteryMockRecorder) BuryOnce(goner interface{}, options ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{goner}, options...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuryOnce", reflect.TypeOf((*MockCemetery)(nil).BuryOnce), varargs...)
 }
 
 // GetTomById mocks base method.
@@ -2039,10 +2123,10 @@ func (mr *MockXormEngineMockRecorder) GetDefaultCacher() *gomock.Call {
 }
 
 // GetOriginEngine mocks base method.
-func (m *MockXormEngine) GetOriginEngine() *xorm.Engine {
+func (m *MockXormEngine) GetOriginEngine() xorm.EngineInterface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOriginEngine")
-	ret0, _ := ret[0].(*xorm.Engine)
+	ret0, _ := ret[0].(xorm.EngineInterface)
 	return ret0
 }
 
@@ -3082,4 +3166,77 @@ func (mr *MockXormEngineMockRecorder) Where(arg0 interface{}, arg1 ...interface{
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Where", reflect.TypeOf((*MockXormEngine)(nil).Where), varargs...)
+}
+
+// MockCMuxServer is a mock of CMuxServer interface.
+type MockCMuxServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockCMuxServerMockRecorder
+}
+
+// MockCMuxServerMockRecorder is the mock recorder for MockCMuxServer.
+type MockCMuxServerMockRecorder struct {
+	mock *MockCMuxServer
+}
+
+// NewMockCMuxServer creates a new mock instance.
+func NewMockCMuxServer(ctrl *gomock.Controller) *MockCMuxServer {
+	mock := &MockCMuxServer{ctrl: ctrl}
+	mock.recorder = &MockCMuxServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCMuxServer) EXPECT() *MockCMuxServerMockRecorder {
+	return m.recorder
+}
+
+// GetAddress mocks base method.
+func (m *MockCMuxServer) GetAddress() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAddress")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetAddress indicates an expected call of GetAddress.
+func (mr *MockCMuxServerMockRecorder) GetAddress() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAddress", reflect.TypeOf((*MockCMuxServer)(nil).GetAddress))
+}
+
+// Match mocks base method.
+func (m *MockCMuxServer) Match(matcher ...cmux.Matcher) net.Listener {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range matcher {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Match", varargs...)
+	ret0, _ := ret[0].(net.Listener)
+	return ret0
+}
+
+// Match indicates an expected call of Match.
+func (mr *MockCMuxServerMockRecorder) Match(matcher ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Match", reflect.TypeOf((*MockCMuxServer)(nil).Match), matcher...)
+}
+
+// MatchWithWriters mocks base method.
+func (m *MockCMuxServer) MatchWithWriters(matcher ...cmux.MatchWriter) net.Listener {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range matcher {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "MatchWithWriters", varargs...)
+	ret0, _ := ret[0].(net.Listener)
+	return ret0
+}
+
+// MatchWithWriters indicates an expected call of MatchWithWriters.
+func (mr *MockCMuxServerMockRecorder) MatchWithWriters(matcher ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MatchWithWriters", reflect.TypeOf((*MockCMuxServer)(nil).MatchWithWriters), matcher...)
 }

@@ -12,26 +12,12 @@ func Priest(cemetery gone.Cemetery) error {
 	_ = logrus.Priest(cemetery)
 	_ = tracer.Priest(cemetery)
 
-	if nil == cemetery.GetTomById(gone.IdGoneRedisPool) {
-		cemetery.Bury(NewRedisPool())
-	}
-
-	if nil == cemetery.GetTomById(IdGoneRedisInner) {
-		cemetery.Bury(NewInner())
-	}
-
-	if nil == cemetery.GetTomById(gone.IdGoneRedisCache) {
-		redisCache, id := NewRedisCache()
-		cemetery.Bury(redisCache, id)
-		cemetery.Bury(redisCache, gone.IdGoneRedisKey)
-	}
-
-	if nil == cemetery.GetTomById(gone.IdGoneRedisLocker) {
-		cemetery.Bury(NewRedisLocker())
-	}
-
-	if nil == cemetery.GetTomById(gone.IdGoneRedisProvider) {
-		cemetery.Bury(NewCacheProvider())
-	}
+	cemetery.
+		BuryOnce(NewRedisPool()).
+		BuryOnce(NewInner()).
+		BuryOnce(NewRedisCache()).
+		BuryOnce(NewRedisKey()).
+		BuryOnce(NewRedisLocker()).
+		BuryOnce(NewCacheProvider())
 	return nil
 }

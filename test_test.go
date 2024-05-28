@@ -33,8 +33,8 @@ func Test_Test(t *testing.T) {
 
 			executed = true
 		}, func(cemetery Cemetery) error {
-			cemetery.Bury(a, "point-a")
-			cemetery.Bury(b, "point-b")
+			cemetery.Bury(a, GonerId("point-a"))
+			cemetery.Bury(b, GonerId("point-b"))
 			cemetery.Bury(&Line{})
 			return nil
 		})
@@ -115,8 +115,8 @@ func Test_TestAt(t *testing.T) {
 
 			executed = true
 		}, func(cemetery Cemetery) error {
-			cemetery.Bury(a, "point-a")
-			cemetery.Bury(b, "point-b")
+			cemetery.Bury(a, GonerId("point-a"))
+			cemetery.Bury(b, GonerId("point-b"))
 			cemetery.Bury(&Line{})
 			return nil
 		})
@@ -155,7 +155,7 @@ func Test_TestAt(t *testing.T) {
 			TestAt("point-a", func(p *Point) {
 
 			}, func(cemetery Cemetery) error {
-				cemetery.Bury(&Line{}, "point-a")
+				cemetery.Bury(&Line{}, GonerId("point-a"))
 				return nil
 			})
 		}()
@@ -179,7 +179,7 @@ func Test_TestAt(t *testing.T) {
 
 			}, func(cemetery Cemetery) error {
 
-				cemetery.Bury(&Line{}, "point-a")
+				cemetery.Bury(&Line{}, GonerId("point-a"))
 				return nil
 			})
 		}()
