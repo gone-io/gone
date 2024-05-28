@@ -425,15 +425,21 @@ func (g *vampire2) Suck(conf string, v reflect.Value, field reflect.StructField)
 func Test_cemetery_reviveFieldById(t *testing.T) {
 	Prepare(func(cemetery Cemetery) error {
 		cemetery.
-			Bury(&vampire1{}, GonerId("v1")).
-			Bury(&vampire2{}, GonerId("v2"))
+			BuryOnce(&vampire1{}, GonerId("v1")).
+			BuryOnce(&vampire1{}, GonerId("v1")).
+			BuryOnce(&vampire2{}, GonerId("v2")).
+			BuryOnce(&vampire2{}, GonerId("v2"))
 		return nil
 	}).AfterStart(func(in struct {
-		test1 string `gone:"v1,xxxx"`
-		test2 string `gone:"v2,xxxx"`
+		test1 string      `gone:"v1,xxxx"`
+		test2 string      `gone:"v2,xxxx"`
+		test3 []*vampire2 `gone:"*"`
+		test4 []*vampire1 `gone:"*"`
 	}) {
 		assert.Equal(t, "xxxx", in.test1)
 		assert.Equal(t, "xxxx:test2", in.test2)
+		assert.Equal(t, 1, len(in.test3))
+		assert.Equal(t, 1, len(in.test4))
 	}).Run()
 
 }
