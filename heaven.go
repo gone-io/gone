@@ -57,8 +57,8 @@ func New(priests ...Priest) Heaven {
 
 	h.
 		cemetery.
-		Bury(&h, IdGoneHeaven).
-		Bury(cemetery, IdGoneCemetery)
+		Bury(&h, IdGoneHeaven, IsDefault(true)).
+		Bury(cemetery, IdGoneCemetery, IsDefault(true))
 	return &h
 }
 

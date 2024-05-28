@@ -45,7 +45,7 @@ func (c *cemetery) bury(goner Goner, options ...GonerOption) Tomb {
 		case GonerId:
 			id = option.(GonerId)
 		case IsDefault:
-			t.SetDefault(true)
+			t.SetDefault(bool(option.(IsDefault)))
 		}
 	}
 
@@ -212,34 +212,45 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 			return
 		}
 
-		//如果不兼容，检查Goner是否为Vampire；对Vampire启动吸血行为
-		if builder, ok := goner.(Vampire); ok {
-			if !tomb.GonerIsRevive() {
-				_, err = c.reviveOneAndItsDeps(tomb)
-				if err != nil {
-					return
-				}
-			}
-			err = builder.Suck(extConfig, v)
-			suc = err == nil
+		if suc, err = c.reviveByVampire(goner, tomb, extConfig, v); err != nil || suc {
 			return
 		}
 
-		if builder, ok := goner.(Vampire2); ok {
-			if !tomb.GonerIsRevive() {
-				_, err = c.reviveOneAndItsDeps(tomb)
-				if err != nil {
-					return
-				}
-			}
-			err = builder.Suck(extConfig, v, field)
-			suc = err == nil
+		if suc, err = c.reviveByVampire2(goner, tomb, extConfig, v, field); err != nil || suc {
 			return
 		}
 
 		err = NotCompatibleError(field.Type, reflect.TypeOf(goner).Elem())
 	}
 	return
+}
+
+func (c *cemetery) reviveByVampire(goner Goner, tomb Tomb, extConfig string, v reflect.Value) (suc bool, err error) {
+	if builder, ok := goner.(Vampire); ok {
+		if !tomb.GonerIsRevive() {
+			_, err = c.reviveOneAndItsDeps(tomb)
+			if err != nil {
+				return
+			}
+		}
+		err = builder.Suck(extConfig, v)
+		return err == nil, err
+	}
+	return false, nil
+}
+
+func (c *cemetery) reviveByVampire2(goner Goner, tomb Tomb, extConfig string, v reflect.Value, field reflect.StructField) (suc bool, err error) {
+	if builder, ok := goner.(Vampire2); ok {
+		if !tomb.GonerIsRevive() {
+			_, err = c.reviveOneAndItsDeps(tomb)
+			if err != nil {
+				return
+			}
+		}
+		err = builder.Suck(extConfig, v, field)
+		return err == nil, err
+	}
+	return false, nil
 }
 
 func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool, err error) {

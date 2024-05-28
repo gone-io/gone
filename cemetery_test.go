@@ -2,6 +2,7 @@ package gone
 
 import (
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -401,4 +402,38 @@ func Test_parseGoneTagId(t *testing.T) {
 	id, ext := parseGoneTagId("xxx,2222,2222333")
 	assert.Equal(t, string(id), "xxx")
 	assert.Equal(t, "2222,2222333", ext)
+}
+
+type vampire1 struct {
+	Flag
+}
+
+func (g *vampire1) Suck(conf string, v reflect.Value) SuckError {
+	v.SetString(conf)
+	return nil
+}
+
+type vampire2 struct {
+	Flag
+}
+
+func (g *vampire2) Suck(conf string, v reflect.Value, field reflect.StructField) error {
+	v.SetString(conf + ":" + field.Name)
+	return nil
+}
+
+func Test_cemetery_reviveFieldById(t *testing.T) {
+	Prepare(func(cemetery Cemetery) error {
+		cemetery.
+			Bury(&vampire1{}, GonerId("v1")).
+			Bury(&vampire2{}, GonerId("v2"))
+		return nil
+	}).AfterStart(func(in struct {
+		test1 string `gone:"v1,xxxx"`
+		test2 string `gone:"v2,xxxx"`
+	}) {
+		assert.Equal(t, "xxxx", in.test1)
+		assert.Equal(t, "xxxx:test2", in.test2)
+	}).Run()
+
 }
