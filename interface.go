@@ -112,8 +112,6 @@ type Heaven interface {
 
 	//AfterStop add a hook function which will execute after stop
 	AfterStop(Process) Heaven
-
-	//DefaultLogger
 }
 
 type AfterReviveError error
