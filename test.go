@@ -36,65 +36,19 @@ func TestAt[T Goner](id GonerId, fn func(goner T), priests ...Priest) {
 	})
 }
 
-type BuryMockCemetery struct {
-	Cemetery
-	m map[GonerId]Goner
-}
-
-func (c *BuryMockCemetery) Bury(g Goner, options ...GonerOption) Cemetery {
-	for _, option := range options {
-		if id, ok := option.(GonerId); ok {
-			c.m[id] = g
-			return c
-		}
-	}
-	id := GetGoneDefaultId(g)
-	c.m[id] = g
-	return c
-}
-
-func (c *BuryMockCemetery) GetTomById(id GonerId) Tomb {
-	goner := c.m[id]
-	if goner == nil {
-		return nil
-	}
-	return NewTomb(goner)
-}
-
-func (c *BuryMockCemetery) GetTomByType(t reflect.Type) (list []Tomb) {
-	for _, g := range c.m {
-		if reflect.TypeOf(g).Elem() == t {
-			list = append(list, NewTomb(g))
-		}
-	}
-	return list
-}
-
-func (c *BuryMockCemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
-	var id GonerId
-
-	for _, option := range options {
-		switch option.(type) {
-		case GonerId:
-			id = option.(GonerId)
-		}
-	}
-	if id == "" {
-		panic(NewInnerError("GonerId is empty, must have gonerId option", MustHaveGonerId))
-	}
-
-	if nil == c.GetTomById(id) {
-		c.Bury(goner, options...)
-	}
-	return c
-}
-
 func NewBuryMockCemeteryForTest() Cemetery {
-	c := BuryMockCemetery{}
-	c.m = make(map[GonerId]Goner)
-	return &c
+	return newCemetery()
 }
 
+// Test Use for writing test cases
+// example:
+//
+//	gone.Prepare(priests...).Test(func(in struct{
+//	    cemetery Cemetery `gone:"*"`
+//	}) {
+//
+//	  // test code
+//	})
 func (p *Preparer) Test(fn any) {
 	p.AfterStart(fn).Run()
 }
