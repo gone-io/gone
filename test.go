@@ -90,14 +90,44 @@ func TestKit[T Goner](fn func(T)) TestHeaven[T] {
 	return &testHeaven[T]{testFn: fn}
 }
 
-// Test 用于编写测试用例，参考[示例](https://github.com/gone-io/gone/blob/main/example/test/goner_test.go)
-func Test[T Goner](fn func(T), priests ...Priest) {
-	TestKit(fn).WithPriest(priests...).Run()
+//// Test 用于编写测试用例，参考[示例](https://github.com/gone-io/gone/blob/main/example/test/goner_test.go)
+//func Test[T Goner](fn func(T), priests ...Priest) {
+//	TestKit(fn).WithPriest(priests...).Run()
+//}
+//
+//// TestAt 用于编写测试用例，测试某个特定ID的Goner
+//func TestAt[T Goner](id GonerId, fn func(T), priests ...Priest) {
+//	TestKit(fn).WithId(id).WithPriest(priests...).Run()
+//}
+
+func Test[T Goner](fn func(goner T), priests ...Priest) {
+	Prepare(priests...).Run(func(in struct {
+		cemetery Cemetery `gone:"*"`
+	}) {
+		ft := reflect.TypeOf(fn)
+		t := ft.In(0).Elem()
+		theTombs := in.cemetery.GetTomByType(t)
+		if len(theTombs) == 0 {
+			panic(CannotFoundGonerByTypeError(t))
+		}
+		fn(theTombs[0].GetGoner().(T))
+	})
 }
 
-// TestAt 用于编写测试用例，测试某个特定ID的Goner
-func TestAt[T Goner](id GonerId, fn func(T), priests ...Priest) {
-	TestKit(fn).WithId(id).WithPriest(priests...).Run()
+func TestAt[T Goner](id GonerId, fn func(goner T), priests ...Priest) {
+	Prepare(priests...).Run(func(in struct {
+		cemetery Cemetery `gone:"*"`
+	}) {
+		theTomb := in.cemetery.GetTomById(id)
+		if theTomb == nil {
+			panic(CannotFoundGonerByIdError(id))
+		}
+		g, ok := theTomb.GetGoner().(T)
+		if !ok {
+			panic(NotCompatibleError(reflect.TypeOf(g).Elem(), reflect.TypeOf(theTomb.GetGoner()).Elem()))
+		}
+		fn(g)
+	})
 }
 
 type BuryMockCemetery struct {

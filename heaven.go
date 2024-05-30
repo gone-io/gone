@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"errors"
 	"os"
 	"os/signal"
 	"reflect"
@@ -96,9 +97,7 @@ func (h *heaven) GetHeavenStopSignal() <-chan struct{} {
 func (h *heaven) burial() {
 	for _, priest := range h.priests {
 		err := priest(h.cemetery)
-		if err != nil {
-			panic(err)
-		}
+		h.panicOnError(err)
 	}
 }
 
@@ -135,7 +134,8 @@ func (h *heaven) panicOnError(err error) {
 	if err == nil {
 		return
 	}
-	if iErr, ok := err.(InnerError); ok {
+	var iErr InnerError
+	if errors.As(err, &iErr) {
 		h.Errorf("%s\n", iErr.Error())
 	}
 	panic(err)
