@@ -53,11 +53,7 @@ type DefaultLogger interface {
 
 // Cemetery which is for burying and reviving Goner
 type Cemetery interface {
-	//DefaultLogger
-
 	Goner
-
-	//bury(goner Goner, ids ...GonerId) Tomb
 
 	//Bury a Goner to the Cemetery
 	Bury(Goner, ...GonerOption) Cemetery
@@ -73,9 +69,6 @@ type Cemetery interface {
 
 	//ReviveAllFromTombs Revive all Goner from the Cemetery
 	ReviveAllFromTombs() error
-
-	//reviveOneFromTomb(tomb Tomb) (deps []Tomb, err error)
-	reviveDependence(tomb Tomb) (deps []Tomb, err error)
 
 	//GetTomById return the Tomb by the GonerId
 	GetTomById(GonerId) Tomb
@@ -120,7 +113,7 @@ type Heaven interface {
 	//AfterStop add a hook function which will execute after stop
 	AfterStop(Process) Heaven
 
-	//DefaultLogger
+	SetAfterStopSignalWaitSecond(sec int)
 }
 
 type AfterReviveError error

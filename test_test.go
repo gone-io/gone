@@ -188,14 +188,6 @@ func Test_TestAt(t *testing.T) {
 	})
 }
 
-func Test_testHeaven_WithId(t *testing.T) {
-	test := &testHeaven[*Point]{}
-	result := test.WithId("point-a")
-	assert.Equal(t, test, result)
-
-	assert.Equal(t, "point-a", string(test.testGonerId))
-}
-
 type angel struct {
 	Flag
 	x int

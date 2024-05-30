@@ -183,7 +183,7 @@ func isCompatible(t reflect.Type, goner Goner) bool {
 	}
 }
 
-func (c *cemetery) setFieldValue(v reflect.Value, ref any) error {
+func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
 	t := v.Type()
 
 	switch t.Kind() {
@@ -192,7 +192,7 @@ func (c *cemetery) setFieldValue(v reflect.Value, ref any) error {
 	default:
 		v.Set(reflect.ValueOf(ref).Elem())
 	}
-	return nil
+	return
 }
 
 func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
@@ -207,8 +207,8 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 
 		goner := tomb.GetGoner()
 		if isCompatible(field.Type, goner) {
-			err = c.setFieldValue(v, goner)
-			suc = err == nil
+			c.setFieldValue(v, goner)
+			suc = true
 			return
 		}
 
@@ -225,14 +225,23 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 	return
 }
 
+func (c *cemetery) checkRevive(tomb Tomb) error {
+	if !tomb.GonerIsRevive() {
+		_, err := c.reviveOneAndItsDeps(tomb)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *cemetery) reviveByVampire(goner Goner, tomb Tomb, extConfig string, v reflect.Value) (suc bool, err error) {
 	if builder, ok := goner.(Vampire); ok {
-		if !tomb.GonerIsRevive() {
-			_, err = c.reviveOneAndItsDeps(tomb)
-			if err != nil {
-				return
-			}
+		err = c.checkRevive(tomb)
+		if err != nil {
+			return
 		}
+
 		err = builder.Suck(extConfig, v)
 		return err == nil, err
 	}
@@ -241,11 +250,9 @@ func (c *cemetery) reviveByVampire(goner Goner, tomb Tomb, extConfig string, v r
 
 func (c *cemetery) reviveByVampire2(goner Goner, tomb Tomb, extConfig string, v reflect.Value, field reflect.StructField) (suc bool, err error) {
 	if builder, ok := goner.(Vampire2); ok {
-		if !tomb.GonerIsRevive() {
-			_, err = c.reviveOneAndItsDeps(tomb)
-			if err != nil {
-				return
-			}
+		err = c.checkRevive(tomb)
+		if err != nil {
+			return
 		}
 		err = builder.Suck(extConfig, v, field)
 		return err == nil, err
@@ -271,10 +278,7 @@ func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value,
 			}
 		}
 
-		err = c.setFieldValue(v, container.GetGoner())
-		if err != nil {
-			return
-		}
+		c.setFieldValue(v, container.GetGoner())
 		suc = true
 		deps = append(deps, container)
 	}
@@ -316,18 +320,7 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 			v.Set(m)
 			suc = true
 		}
-	default:
 	}
-	return
-}
-
-func (c *cemetery) reviveDependence(tomb Tomb) (deps []Tomb, err error) {
-	deps, err = c.reviveOneAndItsDeps(tomb)
-	if err != nil {
-		return
-	}
-
-	err = c.prophesy(append(deps, tomb)...)
 	return
 }
 

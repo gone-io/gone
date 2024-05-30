@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"errors"
 	"os"
 	"os/signal"
 	"reflect"
@@ -8,51 +9,16 @@ import (
 	"time"
 )
 
-// Run 开始运行一个Gone程序；`gone.Run` 和 `gone.Serve` 的区别是：
-// 1. gone.Serve启动的程序，主协程会调用 Heaven.WaitEnd 挂起等待停机信号，可以用于服务程序的开发
-// 2. gone.Run启动的程序，主协程则不会挂起，运行完就结束，适合开发一致性运行的代码
-//
-//	    // 定义加载服务的Priest函数
-//		func LoadServer(c Cemetery) error {
-//			c.Bury(goneXorm.New())
-//			c.Bury(goneGin.New())
-//			return nil
-//		}
-//
-//	    // 加载组件的Priest函数
-//		func LoadComponent(c Cemetery) error {
-//			c.Bury(componentA.New())
-//			c.Bury(componentB.New())
-//		}
-//
-//
-//		gone.Run(LoadServer, LoadComponent)//开始运行
-func Run(priests ...Priest) {
-	AfterStopSignalWaitSecond = 0
-	New(priests...).
-		Install().
-		Start().
-		Stop()
-}
-
-// Serve 开始服务，参考[Run](#Run)
-func Serve(priests ...Priest) {
-	New(priests...).
-		Install().
-		Start().
-		WaitEnd().
-		Stop()
-}
-
 // New 新建Heaven; Heaven 代表了一个应用程序；
 func New(priests ...Priest) Heaven {
 	cemetery := newCemetery()
 	h := heaven{
-		SimpleLogger: &defaultLogger{},
-		cemetery:     cemetery,
-		priests:      priests,
-		signal:       make(chan os.Signal),
-		stopSignal:   make(chan struct{}),
+		SimpleLogger:              &defaultLogger{},
+		cemetery:                  cemetery,
+		priests:                   priests,
+		signal:                    make(chan os.Signal),
+		stopSignal:                make(chan struct{}),
+		afterStopSignalWaitSecond: AfterStopSignalWaitSecond,
 	}
 
 	h.
@@ -77,6 +43,12 @@ type heaven struct {
 
 	signal     chan os.Signal
 	stopSignal chan struct{}
+
+	afterStopSignalWaitSecond int
+}
+
+func (h *heaven) SetAfterStopSignalWaitSecond(sec int) {
+	h.afterStopSignalWaitSecond = sec
 }
 
 func getAngelType() reflect.Type {
@@ -96,9 +68,7 @@ func (h *heaven) GetHeavenStopSignal() <-chan struct{} {
 func (h *heaven) burial() {
 	for _, priest := range h.priests {
 		err := priest(h.cemetery)
-		if err != nil {
-			panic(err)
-		}
+		h.panicOnError(err)
 	}
 }
 
@@ -135,7 +105,8 @@ func (h *heaven) panicOnError(err error) {
 	if err == nil {
 		return
 	}
-	if iErr, ok := err.(InnerError); ok {
+	var iErr InnerError
+	if errors.As(err, &iErr) {
 		h.Errorf("%s\n", iErr.Error())
 	}
 	panic(err)
@@ -186,11 +157,11 @@ func (h *heaven) Stop() Heaven {
 	h.stopFlow()
 	close(h.stopSignal)
 
-	if AfterStopSignalWaitSecond > 0 {
-		h.Infof("WAIT %d SECOND TO STOP!!", AfterStopSignalWaitSecond)
+	if h.afterStopSignalWaitSecond > 0 {
+		h.Infof("WAIT %d SECOND TO STOP!!", h.afterStopSignalWaitSecond)
 	}
-	for i := 0; i < AfterStopSignalWaitSecond; i++ {
-		h.Infof("Stop in %d seconds.", AfterStopSignalWaitSecond-i)
+	for i := 0; i < h.afterStopSignalWaitSecond; i++ {
+		h.Infof("Stop in %d seconds.", h.afterStopSignalWaitSecond-i)
 		<-time.After(time.Second)
 	}
 	return h
