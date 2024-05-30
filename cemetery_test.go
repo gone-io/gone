@@ -443,3 +443,22 @@ func Test_cemetery_reviveFieldById(t *testing.T) {
 	}).Run()
 
 }
+
+func Test_cemetery_checkRevive(t *testing.T) {
+	type Line struct {
+		Flag
+		PointA *Point `gone:"point-a"`
+		PointB *Point `gone:"point-b"`
+	}
+
+	test := NewBuryMockCemeteryForTest()
+	test.
+		Bury(&Point{x: 1, y: 2, Index: 1}, GonerId("point-a")).
+		Bury(&Point{x: 1, y: 2, Index: 2}, GonerId("point-b")).
+		Bury(&Line{}, GonerId("line"))
+
+	theTomb := test.GetTomById(GonerId("line"))
+
+	err := test.(*cemetery).checkRevive(theTomb)
+	assert.Nil(t, err)
+}
