@@ -321,16 +321,6 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 	return
 }
 
-func (c *cemetery) reviveDependence(tomb Tomb) (deps []Tomb, err error) {
-	deps, err = c.reviveOneAndItsDeps(tomb)
-	if err != nil {
-		return
-	}
-
-	err = c.prophesy(append(deps, tomb)...)
-	return
-}
-
 func (c *cemetery) reviveOneAndItsDeps(tomb Tomb) (deps []Tomb, err error) {
 	deps, err = c.reviveOneFromTomb(tomb)
 	if err != nil {
