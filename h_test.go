@@ -76,7 +76,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestServe(t *testing.T) {
-	gone.AfterStopSignalWaitSecond = 0
+	gone.AfterStopSignalWaitSecond = 1
 	gone.Serve(func(cemetery gone.Cemetery) error {
 		go func() {
 			tom := cemetery.GetTomById(gone.IdGoneHeaven)

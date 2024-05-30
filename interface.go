@@ -112,6 +112,8 @@ type Heaven interface {
 
 	//AfterStop add a hook function which will execute after stop
 	AfterStop(Process) Heaven
+
+	SetAfterStopSignalWaitSecond(sec int)
 }
 
 type AfterReviveError error

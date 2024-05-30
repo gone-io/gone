@@ -24,8 +24,12 @@ func (p *Preparer) AfterStop(fn any) *Preparer {
 	return p
 }
 
+func (p *Preparer) SetAfterStopSignalWaitSecond(sec int) {
+	p.heaven.SetAfterStopSignalWaitSecond(sec)
+}
+
 func (p *Preparer) Run(fns ...any) {
-	AfterStopSignalWaitSecond = 0
+	p.SetAfterStopSignalWaitSecond(0)
 	for _, fn := range fns {
 		p.AfterStart(fn)
 	}
@@ -52,4 +56,16 @@ func Prepare(priests ...Priest) *Preparer {
 	return &Preparer{
 		heaven: h,
 	}
+}
+
+// Run 开始运行一个Gone程序；`gone.Run` 和 `gone.Serve` 的区别是：
+// 1. gone.Serve启动的程序，主协程会调用 Heaven.WaitEnd 挂起等待停机信号，可以用于服务程序的开发
+// 2. gone.Run启动的程序，主协程则不会挂起，运行完就结束，适合开发一致性运行的代码
+func Run(priests ...Priest) {
+	Prepare(priests...).Run()
+}
+
+// Serve 开始服务，参考[Run](#Run)
+func Serve(priests ...Priest) {
+	Prepare(priests...).Serve()
 }
