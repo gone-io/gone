@@ -120,6 +120,11 @@ type Responser interface {
 // allowing the same interface to have the ability to return different business codes and business data in special cases
 type BusinessError = gone.BusinessError
 
-type keepContext interface {
-	SetContext(context *Context) (any, error)
+//type keepContext interface {
+//SetContext(context *Context) (any, error)
+//}
+
+type HttInjector interface {
+	StartCollectBindFuncs()
+	CollectBindFuncs() []BindFunc
 }

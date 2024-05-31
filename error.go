@@ -69,6 +69,8 @@ const (
 	DbRollForPanic
 
 	MustHaveGonerId
+
+	InjectError
 )
 
 func GonerIdIsExistedError(id GonerId) Error {

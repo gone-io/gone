@@ -7,18 +7,16 @@ import (
 
 // NewGinProxy 新建代理器
 func NewGinProxy() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &proxy{
-		inject: injectHttp,
-	}, gone.IdGoneGinProxy, gone.IsDefault(true)
+	return &proxy{}, gone.IdGoneGinProxy, gone.IsDefault(true)
 }
 
 type proxy struct {
 	gone.Flag
-	gone.Logger `gone:"gone-logger"`
-	cemetery    gone.Cemetery `gone:"gone-cemetery"`
-	responser   Responser     `gone:"gone-gin-responser"`
-	tracer      gone.Tracer   `gone:"gone-tracer"`
-	inject      func(logger gone.Logger, cemetery gone.Cemetery, responser Responser, x HandlerFunc, context *gin.Context) (results []any)
+	gone.Logger `gone:"*"`
+	cemetery    gone.Cemetery `gone:"*"`
+	responser   Responser     `gone:"*"`
+	tracer      gone.Tracer   `gone:"*"`
+	injector    HttInjector   `gone:"*"`
 }
 
 func (p *proxy) Proxy(handlers ...HandlerFunc) (arr []gin.HandlerFunc) {
@@ -56,19 +54,24 @@ func (p *proxy) proxyOne(x HandlerFunc, last bool) gin.HandlerFunc {
 			x.(func(*Context))(&Context{Context: context})
 		}
 	default:
+		p.injector.StartCollectBindFuncs()
+		fn, err := gone.InjectWrapFn(p.cemetery, x)
+		if err != nil {
+			panic(err)
+		}
+		funcs := p.injector.CollectBindFuncs()
+
 		return func(context *gin.Context) {
-			results := p.inject(p.Logger, p.cemetery, p.responser, x, context)
+			for _, f := range funcs {
+				err := f(context)
+				if err != nil {
+					p.responser.Failed(context, err)
+					return
+				}
+			}
+
+			results := gone.ExecuteInjectWrapFn(fn)
 			p.responser.ProcessResults(context, context.Writer, last, gone.GetFuncName(x), results...)
 		}
 	}
-}
-
-func injectHttp(logger gone.Logger, cemetery gone.Cemetery, responser Responser, x HandlerFunc, context *gin.Context) (results []any) {
-	fn, err := gone.InjectWrapFn(cemetery, x)
-	if err != nil {
-		logger.Errorf("inject wrap fn failed, err: %v", err)
-		responser.Failed(context, err)
-		return
-	}
-	return gone.ExecuteInjectWrapFn(fn)
 }

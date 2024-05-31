@@ -23,12 +23,10 @@ func Test_sysProcessor_AfterRevive(t *testing.T) {
 
 	t.Run("ShowRequestTime", func(t *testing.T) {
 		iRouter := NewMockIRouter(controller)
-		inject := NewMockkeepContext(controller)
 		iRouter.EXPECT().Use(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		processor := sysProcessor{
 			router:          iRouter,
-			httpInjector:    inject,
 			ShowRequestTime: true,
 			ShowAccessLog:   true,
 		}
