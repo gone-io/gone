@@ -23,7 +23,7 @@ func Test_sysProcessor_AfterRevive(t *testing.T) {
 
 	t.Run("ShowRequestTime", func(t *testing.T) {
 		iRouter := NewMockIRouter(controller)
-		iRouter.EXPECT().Use(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		iRouter.EXPECT().Use(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		processor := sysProcessor{
 			router:          iRouter,

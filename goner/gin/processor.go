@@ -86,7 +86,7 @@ func (p *sysProcessor) recovery(context *Context) (any, error) {
 func (p *sysProcessor) recover(context *Context) {
 	if r := recover(); r != nil {
 		traceID := p.tracer.GetTraceId()
-		p.Errorf("[%s] handle panic: %v, %s", traceID, r, gone.PanicTrace(2))
+		p.Errorf("[%s] handle panic: %v, %s", traceID, r, gone.PanicTrace(2, 1))
 		err := gone.ToError(r)
 		p.resHandler.Failed(context.Context, err)
 		context.Abort()

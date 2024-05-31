@@ -169,32 +169,6 @@ func parseGoneTagId(tag string) (id GonerId, extend string) {
 	return
 }
 
-// 兼容：t类型可以装下goner
-func isCompatible(t reflect.Type, goner Goner) bool {
-	gonerType := reflect.TypeOf(goner)
-
-	switch t.Kind() {
-	case reflect.Interface:
-		return gonerType.Implements(t)
-	case reflect.Struct:
-		return gonerType.Elem() == t
-	default:
-		return gonerType == t
-	}
-}
-
-func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
-	t := v.Type()
-
-	switch t.Kind() {
-	case reflect.Interface, reflect.Pointer, reflect.Slice, reflect.Map:
-		v.Set(reflect.ValueOf(ref))
-	default:
-		v.Set(reflect.ValueOf(ref).Elem())
-	}
-	return
-}
-
 func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
 	id, extConfig := parseGoneTagId(tag)
 	if id != anonymous {
@@ -206,7 +180,7 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 		}
 
 		goner := tomb.GetGoner()
-		if isCompatible(field.Type, goner) {
+		if IsCompatible(field.Type, goner) {
 			c.setFieldValue(v, goner)
 			suc = true
 			return

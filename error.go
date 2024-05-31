@@ -43,7 +43,7 @@ func (e *iError) Stack() []byte {
 }
 
 func NewInnerError(msg string, code int) Error {
-	return &iError{defaultErr: &defaultErr{code: code, msg: msg}, trace: PanicTrace(2)}
+	return &iError{defaultErr: &defaultErr{code: code, msg: msg}, trace: PanicTrace(2, 1)}
 }
 
 // 错误代码：gone框架内部错误代码编码空间:1001~1999

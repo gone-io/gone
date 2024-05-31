@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/tracer"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -13,15 +12,15 @@ import (
 )
 
 func NewHttInjector() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &httpInjector{}, gone.IdHttpInjector, gone.IsDefault(true)
+	return &httpInjector{
+		bindFuncs: make([]BindFunc, 0),
+	}, gone.IdHttpInjector, gone.IsDefault(true)
 }
 
 type BindFunc func(context *gin.Context) error
 
 type httpInjector struct {
 	gone.Flag
-	tracer      tracer.Tracer `gone:"gone-tracer"`
-	gone.Logger `gone:"gone-logger"`
 
 	bindFuncs      []BindFunc
 	isInjectedBody bool
@@ -65,10 +64,16 @@ const keyQuery = "query"
 const keyCookie = "cookie"
 
 func unsupportedAttributeType(fieldName string) error {
-	return NewInnerError(fmt.Sprintf("cannot inject %s，unsupported attribute type; ref doc: https://goner.fun/en/references/http-inject.md", fieldName), gone.InjectError)
+	return NewInnerError(fmt.Sprintf("cannot inject %s，unsupported attribute type; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError)
 }
 func unsupportedKindConfigure(fieldName string) error {
-	return NewInnerError(fmt.Sprintf("cannot inject %s，unsupported kind configure; ref doc: https://goner.fun/en/references/http-inject.md", fieldName), gone.InjectError)
+	return NewInnerError(fmt.Sprintf("cannot inject %s，unsupported kind configure; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError)
+}
+
+func injectParseStringParameterError(k reflect.Kind, kind, key string, err error) gone.Error {
+	return NewParameterError(
+		fmt.Sprintf("%s parameter %s required %s;parse error: %s", kind, key, k.String(), err.Error()),
+	)
 }
 
 func cannotInjectBodyMoreThanOnce(fieldName string) error {
@@ -77,7 +82,7 @@ func cannotInjectBodyMoreThanOnce(fieldName string) error {
 
 func (s *httpInjector) inject(kind string, key string, v reflect.Value, fieldName string) (fn BindFunc, err error) {
 	if kind == "" {
-		return s.injectWithoutKind(v, fieldName)
+		return s.injectByType(v, fieldName)
 	}
 	return s.injectByKind(kind, key, v, fieldName)
 }
@@ -85,6 +90,10 @@ func (s *httpInjector) inject(kind string, key string, v reflect.Value, fieldNam
 var ctxPtr *gin.Context
 var ctxPointType = reflect.TypeOf(ctxPtr)
 var ctxType = ctxPointType.Elem()
+
+var goneContextPtr *gone.Context
+var goneContextPointType = reflect.TypeOf(goneContextPtr)
+var goneContextType = goneContextPointType.Elem()
 
 var requestPtr *http.Request
 var requestType = reflect.TypeOf(requestPtr)
@@ -97,10 +106,10 @@ var urlPointType = urlType.Elem()
 var header http.Header
 var headerType = reflect.TypeOf(header)
 
-var writerPtr gin.ResponseWriter
-var writerType = reflect.TypeOf(writerPtr)
+var writerPtr *gin.ResponseWriter
+var writerType = reflect.TypeOf(writerPtr).Elem()
 
-func (s *httpInjector) injectWithoutKind(v reflect.Value, fieldName string) (fn BindFunc, err error) {
+func (s *httpInjector) injectByType(v reflect.Value, fieldName string) (fn BindFunc, err error) {
 	t := v.Type()
 	switch t {
 	case ctxPointType:
@@ -112,6 +121,18 @@ func (s *httpInjector) injectWithoutKind(v reflect.Value, fieldName string) (fn 
 	case ctxType:
 		return func(ctx *gin.Context) error {
 			v.Set(reflect.ValueOf(ctx).Elem())
+			return nil
+		}, nil
+
+	case goneContextPointType:
+		return func(context *gin.Context) error {
+			v.Set(reflect.ValueOf(&gone.Context{Context: context}))
+			return nil
+		}, nil
+
+	case goneContextType:
+		return func(context *gin.Context) error {
+			v.Set(reflect.ValueOf(gone.Context{Context: context}))
 			return nil
 		}, nil
 
@@ -145,16 +166,13 @@ func (s *httpInjector) injectWithoutKind(v reflect.Value, fieldName string) (fn 
 			return nil
 		}, nil
 
+	case writerType:
+		return func(ctx *gin.Context) error {
+			v.Set(reflect.ValueOf(ctx.Writer))
+			return nil
+		}, nil
 	default:
-		if t.Kind() == reflect.Interface && writerType.Implements(t) {
-			return func(ctx *gin.Context) error {
-				v.Set(reflect.ValueOf(ctx.Writer))
-				return nil
-			}, nil
-		} else {
-			s.Errorf("inject field(%s) failed", fieldName)
-			return nil, unsupportedAttributeType(fieldName)
-		}
+		return nil, unsupportedAttributeType(fieldName)
 	}
 }
 
@@ -164,12 +182,18 @@ func (s *httpInjector) injectBody(v reflect.Value, fieldName string) (fn BindFun
 	}
 
 	t := v.Type()
-	if !(t.Kind() == reflect.Struct || t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct) {
-		s.Errorf("inject field(%s) failed", fieldName)
-		return nil, unsupportedAttributeType(fieldName)
-	}
+	switch t.Kind() {
+	case reflect.Struct, reflect.Map, reflect.Slice:
+		return func(ctx *gin.Context) error {
+			body := reflect.New(t).Interface()
 
-	if t.Kind() == reflect.Pointer {
+			if err := ctx.ShouldBind(body); err != nil {
+				return NewParameterError(err.Error())
+			}
+			v.Set(reflect.ValueOf(body).Elem())
+			return nil
+		}, nil
+	case reflect.Pointer:
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))
 		}
@@ -180,17 +204,36 @@ func (s *httpInjector) injectBody(v reflect.Value, fieldName string) (fn BindFun
 			}
 			return nil
 		}, nil
-	} else {
-		return func(ctx *gin.Context) error {
-			body := reflect.New(t).Interface()
-
-			if err := ctx.ShouldBind(body); err != nil {
-				return NewParameterError(err.Error())
-			}
-			v.Set(reflect.ValueOf(body).Elem())
-			return nil
-		}, nil
+	default:
+		return nil, unsupportedAttributeType(fieldName)
 	}
+
+	//if !(t.Kind() == reflect.Struct || t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct) {
+	//	return nil, unsupportedAttributeType(fieldName)
+	//}
+	//
+	//if t.Kind() == reflect.Pointer {
+	//	if v.IsNil() {
+	//		v.Set(reflect.New(v.Type().Elem()))
+	//	}
+	//
+	//	return func(ctx *gin.Context) error {
+	//		if err := ctx.ShouldBind(v.Interface()); err != nil {
+	//			return NewParameterError(err.Error())
+	//		}
+	//		return nil
+	//	}, nil
+	//} else {
+	//	return func(ctx *gin.Context) error {
+	//		body := reflect.New(t).Interface()
+	//
+	//		if err := ctx.ShouldBind(body); err != nil {
+	//			return NewParameterError(err.Error())
+	//		}
+	//		v.Set(reflect.ValueOf(body).Elem())
+	//		return nil
+	//	}, nil
+	//}
 }
 
 func (s *httpInjector) injectByKind(kind, key string, v reflect.Value, fieldName string) (fn BindFunc, err error) {
@@ -205,6 +248,8 @@ func (s *httpInjector) injectByKind(kind, key string, v reflect.Value, fieldName
 		return nil, unsupportedKindConfigure(fieldName)
 	}
 }
+
+var queryMapType = reflect.TypeOf(map[string]string{})
 
 func (s *httpInjector) injectQuery(v reflect.Value, fieldName string, key string) (fn BindFunc, err error) {
 	t := v.Type()
@@ -230,16 +275,30 @@ func (s *httpInjector) injectQuery(v reflect.Value, fieldName string, key string
 			}
 			return nil
 		}, nil
+
+	case reflect.Map:
+		if t == queryMapType {
+			return func(ctx *gin.Context) error {
+				dicts := ctx.QueryMap(key)
+				v.Set(reflect.ValueOf(dicts))
+				return nil
+			}, nil
+		}
+		return nil, unsupportedAttributeType(fieldName)
+
 	case reflect.Slice:
 		return s.injectQueryArray(key, v, fieldName)
+
 	default:
 		return s.parseStringValueAndInject(v, fieldName, keyQuery, key)
 	}
 }
 
 func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName string) (fn BindFunc, err error) {
-	kind := v.Type().Elem().Kind()
+	el := v.Type().Elem()
+	kind := el.Kind()
 
+	bits := bitSize(kind)
 	switch kind {
 	case reflect.String:
 		return func(ctx *gin.Context) error {
@@ -252,7 +311,7 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 		return func(ctx *gin.Context) error {
 			values := ctx.QueryArray(key)
 			for _, value := range values {
-				v.Set(reflect.Append(v, reflect.ValueOf(value != "")))
+				v.Set(reflect.Append(v, reflect.ValueOf(stringToBool(value))))
 			}
 			return nil
 		}, nil
@@ -261,23 +320,11 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 		return func(ctx *gin.Context) error {
 			values := ctx.QueryArray(key)
 			for _, value := range values {
-				def, err := strconv.ParseInt(value, 10, 64)
+				def, err := strconv.ParseInt(value, 10, bits)
 				if err != nil {
-					return NewParameterError(err.Error())
+					return injectParseStringParameterError(kind, keyQuery, key, err)
 				}
-
-				switch kind {
-				case reflect.Int:
-					v.Set(reflect.Append(v, reflect.ValueOf(int(def))))
-				case reflect.Int64:
-					v.Set(reflect.Append(v, reflect.ValueOf(def)))
-				case reflect.Int32:
-					v.Set(reflect.Append(v, reflect.ValueOf(int32(def))))
-				case reflect.Int16:
-					v.Set(reflect.Append(v, reflect.ValueOf(int16(def))))
-				case reflect.Int8:
-					v.Set(reflect.Append(v, reflect.ValueOf(int8(def))))
-				}
+				v.Set(reflect.Append(v, reflect.ValueOf(def).Convert(el)))
 			}
 			return nil
 		}, nil
@@ -286,22 +333,11 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 		return func(ctx *gin.Context) error {
 			values := ctx.QueryArray(key)
 			for _, value := range values {
-				def, err := strconv.ParseUint(value, 10, 64)
+				def, err := strconv.ParseUint(value, 10, bits)
 				if err != nil {
-					return NewParameterError(err.Error())
+					return injectParseStringParameterError(kind, keyQuery, key, err)
 				}
-				switch kind {
-				case reflect.Uint:
-					v.Set(reflect.Append(v, reflect.ValueOf(uint(def))))
-				case reflect.Uint64:
-					v.Set(reflect.Append(v, reflect.ValueOf(def)))
-				case reflect.Uint32:
-					v.Set(reflect.Append(v, reflect.ValueOf(uint32(def))))
-				case reflect.Uint16:
-					v.Set(reflect.Append(v, reflect.ValueOf(uint16(def))))
-				case reflect.Uint8:
-					v.Set(reflect.Append(v, reflect.ValueOf(uint8(def))))
-				}
+				v.Set(reflect.Append(v, reflect.ValueOf(def).Convert(el)))
 			}
 			return nil
 		}, nil
@@ -310,15 +346,11 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 		return func(ctx *gin.Context) error {
 			values := ctx.QueryArray(key)
 			for _, value := range values {
-				def, err := strconv.ParseFloat(value, 64)
+				def, err := strconv.ParseFloat(value, bits)
 				if err != nil {
-					return NewParameterError(err.Error())
+					return injectParseStringParameterError(kind, keyQuery, key, err)
 				}
-				if kind == reflect.Float64 {
-					v.Set(reflect.Append(v, reflect.ValueOf(def)))
-				} else {
-					v.Set(reflect.Append(v, reflect.ValueOf(float32(def))))
-				}
+				v.Set(reflect.Append(v, reflect.ValueOf(def).Convert(el)))
 			}
 			return nil
 		}, nil
@@ -329,6 +361,7 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 
 func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName string, kind string, key string) (fn BindFunc, err error) {
 	var parser func(context *gin.Context) (string, error)
+	t := v.Type()
 
 	switch kind {
 	case keyHeader:
@@ -341,7 +374,11 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 		}
 	case keyCookie:
 		parser = func(context *gin.Context) (string, error) {
-			return context.Cookie(key)
+			str, err := context.Cookie(key)
+			if err != nil {
+				return "", injectParseStringParameterError(t.Kind(), kind, key, err)
+			}
+			return str, nil
 		}
 	case keyQuery:
 		parser = func(context *gin.Context) (string, error) {
@@ -351,7 +388,8 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 		return nil, unsupportedKindConfigure(fieldName)
 	}
 
-	t := v.Type()
+	bits := bitSize(t.Kind())
+
 	switch t.Kind() {
 	case reflect.String:
 		return func(context *gin.Context) error {
@@ -369,7 +407,7 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 			if err != nil {
 				return err
 			}
-			v.Set(reflect.ValueOf(value != "" && value != "0" && value != "false"))
+			v.Set(reflect.ValueOf(stringToBool(value)))
 			return nil
 		}, nil
 	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
@@ -379,9 +417,9 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 				return err
 			}
 
-			def, err := strconv.ParseInt(value, 10, 64)
+			def, err := strconv.ParseInt(value, 10, bits)
 			if err != nil {
-				return NewParameterError(err.Error())
+				return injectParseStringParameterError(t.Kind(), kind, key, err)
 			}
 			v.SetInt(def)
 
@@ -395,9 +433,9 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 				return err
 			}
 
-			def, err := strconv.ParseUint(value, 10, 64)
+			def, err := strconv.ParseUint(value, 10, bits)
 			if err != nil {
-				return NewParameterError(err.Error())
+				return injectParseStringParameterError(t.Kind(), kind, key, err)
 			}
 			v.SetUint(def)
 
@@ -411,9 +449,9 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 				return err
 			}
 
-			def, err := strconv.ParseFloat(value, 64)
+			def, err := strconv.ParseFloat(value, bits)
 			if err != nil {
-				return NewParameterError(err.Error())
+				return injectParseStringParameterError(t.Kind(), kind, key, err)
 			}
 			v.SetFloat(def)
 
@@ -424,3 +462,31 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 		return nil, unsupportedAttributeType(fieldName)
 	}
 }
+
+func bitSize(kind reflect.Kind) int {
+	switch kind {
+	case reflect.Float64, reflect.Int64, reflect.Uint64:
+		return 64
+	case reflect.Float32, reflect.Int32, reflect.Uint32, reflect.Int, reflect.Uint:
+		return 32
+	case reflect.Int16, reflect.Uint16:
+		return 16
+	case reflect.Int8, reflect.Uint8:
+		return 8
+	default:
+		return 32
+	}
+}
+
+func stringToBool(value string) bool {
+	return value != "" && value != "0" && value != "false"
+}
+
+//
+//var m = map[reflect.Kind]func(number string) reflect.Value{
+//	reflect.Int:    reflect.ValueOf(int(0)).Convert,
+//}
+//
+//func xxx() func() reflect.Value {
+//
+//}

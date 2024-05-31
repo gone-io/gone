@@ -62,7 +62,7 @@ func (e *engine) Transaction(fn func(session Interface) error) error {
 			defer func() {
 				if info := recover(); info != nil {
 					e.Errorf("session rollback for panic: %s", info)
-					e.Errorf("%s", gone.PanicTrace(2))
+					e.Errorf("%s", gone.PanicTrace(2, 1))
 					if !isRollback {
 						rollback()
 						err = gone.NewInnerError(fmt.Sprintf("%s", info), gone.DbRollForPanic)

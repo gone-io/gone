@@ -9,25 +9,26 @@ import (
 )
 
 // PanicTrace 用于获取调用者的堆栈信息
-func PanicTrace(kb int) []byte {
-	e := []byte("\ngoroutine ")
-	line := []byte("\n")
+func PanicTrace(kb int, skip int) []byte {
 	stack := make([]byte, kb<<10) //4KB
 	length := runtime.Stack(stack, true)
 
-	_, filename, fileLine, ok := runtime.Caller(1)
+	_, filename, fileLine, ok := runtime.Caller(skip)
 	start := 0
 	if ok {
 		start = bytes.Index(stack, []byte(fmt.Sprintf("%s:%d", filename, fileLine)))
 		stack = stack[start:length]
 	}
 
+	line := []byte("\n")
 	start = bytes.Index(stack, line) + 1
 	stack = stack[start:]
 	end := bytes.LastIndex(stack, line)
 	if end != -1 {
 		stack = stack[:end]
 	}
+
+	e := []byte("\ngoroutine ")
 	end = bytes.Index(stack, e)
 	if end != -1 {
 		stack = stack[:end]
@@ -122,4 +123,30 @@ func WrapNormalFnToProcess(fn any) Process {
 		}
 		return nil
 	}
+}
+
+// IsCompatible t Type can put in goner
+func IsCompatible(t reflect.Type, goner Goner) bool {
+	gonerType := reflect.TypeOf(goner)
+
+	switch t.Kind() {
+	case reflect.Interface:
+		return gonerType.Implements(t)
+	case reflect.Struct:
+		return gonerType.Elem() == t
+	default:
+		return gonerType == t
+	}
+}
+
+func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
+	t := v.Type()
+
+	switch t.Kind() {
+	case reflect.Interface, reflect.Pointer, reflect.Slice, reflect.Map:
+		v.Set(reflect.ValueOf(ref))
+	default:
+		v.Set(reflect.ValueOf(ref).Elem())
+	}
+	return
 }

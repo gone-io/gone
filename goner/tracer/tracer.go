@@ -39,7 +39,7 @@ func (t *tracer) Go(cb func()) {
 
 func (t *tracer) Recover() {
 	if err := recover(); err != nil {
-		t.Errorf("handle panic: %v, %s", err, gone.PanicTrace(2))
+		t.Errorf("handle panic: %v, %s", err, gone.PanicTrace(2, 1))
 	}
 }
 
