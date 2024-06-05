@@ -3,6 +3,7 @@ package gin
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/gone-io/gone"
@@ -146,7 +147,7 @@ func Test_httpInjector_inject(t *testing.T) {
 		kind      string
 		key       string
 
-		wantFn  BindFunc
+		wantFn  BindFieldFunc
 		wantErr assert.ErrorAssertionFunc
 		ctx     *gin.Context
 		bindErr func(t assert.TestingT, err error)
@@ -1032,20 +1033,22 @@ func Test_httpInjector_inject(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		if tt.before != nil {
-			tt.before()
-		}
-		elem := reflect.ValueOf(req).Elem()
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.before != nil {
+				tt.before()
+			}
+			elemT := reflect.TypeOf(req).Elem()
+			ttx, b := elemT.FieldByName(tt.fieldName)
+			assert.True(t, b)
+			fmt.Printf("%v", ttx)
+
 			fn, err := injector.inject(
 				tt.kind,
 				tt.key,
-				elem.FieldByName(tt.fieldName),
-				tt.fieldName,
+				ttx,
 			)
-
 			if tt.wantErr(t, err) {
-				tt.bindErr(t, fn(tt.ctx))
+				tt.bindErr(t, fn(tt.ctx, reflect.ValueOf(req).Elem()))
 			}
 		})
 	}

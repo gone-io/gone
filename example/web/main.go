@@ -13,10 +13,19 @@ type controller struct {
 
 // Mount use for  mounting the router of gin framework
 func (ctr *controller) Mount() gin.MountError {
-	ctr.router.GET("/ping", func(c *gin.Context) (any, error) {
-		return "hello", nil
-	})
+	//ctr.router.GET("/ping", func(c *gin.Context) (any, error) {
+	//	return "hello", nil
+	//})
+	ctr.router.GET("/hello", ctr.hello)
 	return nil
+}
+
+func (ctr *controller) hello(in struct {
+	name string `gone:"http,query"`
+}) (any, error) {
+	defer gone.TimeStat("hello")()
+
+	return "hello, " + in.name, nil
 }
 
 func NewController() gone.Goner {

@@ -460,3 +460,66 @@ func (c *cemetery) GetTomById(id GonerId) Tomb {
 func (c *cemetery) GetTomByType(t reflect.Type) (tombs []Tomb) {
 	return Tombs(c.tombs).GetTomByType(t)
 }
+
+func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int, obj any)) (args []any, err error) {
+	ft := reflect.TypeOf(fn)
+	if ft.Kind() != reflect.Func {
+		return nil, NewInnerError("fn must be a function", NotCompatible)
+	}
+
+	in := ft.NumIn()
+
+	getOnlyOne := func(pt reflect.Type, i int) Goner {
+		tombs := c.GetTomByType(pt)
+		if len(tombs) > 0 {
+			var container Tomb
+
+			for _, t := range tombs {
+				if t.IsDefault() {
+					container = t
+					break
+				}
+			}
+			if container == nil {
+				container = tombs[0]
+				if len(tombs) > 1 {
+					c.Warnf(fmt.Sprintf("injected function %s %d parameter more than one goner was found and no default, used the first!", ft.Name(), i))
+				}
+			}
+			return container.GetGoner()
+		}
+		return nil
+	}
+
+	for i := 0; i < in; i++ {
+		pt := ft.In(0)
+		x := injectBefore(pt, i)
+		if x != nil {
+			args = append(args, x)
+			continue
+		}
+
+		x = getOnlyOne(pt, i+1)
+		if x != nil {
+			args = append(args, x)
+			continue
+		}
+
+		if pt.Kind() != reflect.Struct {
+			err = NewInnerError(fmt.Sprintf("injected function %s %d parameter must be a struct", ft.Name(), i), NotCompatible)
+			return
+		}
+
+		parameter := reflect.New(pt)
+		goner := parameter.Interface()
+		_, err = c.ReviveOne(goner)
+		if err != nil {
+			return
+		}
+		x = parameter.Elem().Interface()
+
+		args = append(args, x)
+		injectAfter(pt, i, x)
+	}
+	return
+}

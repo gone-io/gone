@@ -9,20 +9,19 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 func NewHttInjector() (gone.Goner, gone.GonerId, gone.GonerOption) {
 	return &httpInjector{
-		bindFuncs: make([]BindFunc, 0),
+		bindFuncs: make([]BindFieldFunc, 0),
 	}, gone.IdHttpInjector, gone.IsDefault(true)
 }
-
-type BindFunc func(context *gin.Context) error
 
 type httpInjector struct {
 	gone.Flag
 
-	bindFuncs      []BindFunc
+	bindFuncs      []BindFieldFunc
 	isInjectedBody bool
 }
 
@@ -36,12 +35,28 @@ func parseConfKeyValue(conf string) (key, value string) {
 }
 
 func (s *httpInjector) StartCollectBindFuncs() {
-	s.bindFuncs = make([]BindFunc, 0)
+	s.bindFuncs = make([]BindFieldFunc, 0)
 	s.isInjectedBody = false
 }
 
-func (s *httpInjector) CollectBindFuncs() []BindFunc {
+func (s *httpInjector) CollectBindFuncs() []BindFieldFunc {
 	return s.bindFuncs
+}
+
+func (s *httpInjector) BindFuncs() BindStructFunc {
+	funcs := s.CollectBindFuncs()
+	return func(context *gin.Context, arg any, T reflect.Type) (reflect.Value, error) {
+		v := reflect.ValueOf(&arg).Elem()
+		v = reflect.NewAt(T, unsafe.Pointer(v.UnsafeAddr())).Elem()
+
+		for _, fn := range funcs {
+			err := fn(context, v)
+			if err != nil {
+				return v, err
+			}
+		}
+		return v, nil
+	}
 }
 
 func (s *httpInjector) Suck(conf string, v reflect.Value, field reflect.StructField) error {
@@ -49,10 +64,12 @@ func (s *httpInjector) Suck(conf string, v reflect.Value, field reflect.StructFi
 	if key == "" {
 		key = field.Name
 	}
-	fn, err := s.inject(kind, key, v, field.Name)
+	fn, err := s.inject(kind, key, field)
 	if err != nil {
 		return err
 	}
+
+	//index := field.Index()
 	s.bindFuncs = append(s.bindFuncs, fn)
 	return nil
 }
@@ -80,20 +97,16 @@ func cannotInjectBodyMoreThanOnce(fieldName string) error {
 	return NewInnerError(fmt.Sprintf("cannot inject %s，http body inject only support inject once; ref doc: https://goner.fun/en/references/http-inject.md", fieldName), gone.InjectError)
 }
 
-func (s *httpInjector) inject(kind string, key string, v reflect.Value, fieldName string) (fn BindFunc, err error) {
+func (s *httpInjector) inject(kind string, key string, field reflect.StructField) (fn BindFieldFunc, err error) {
 	if kind == "" {
-		return s.injectByType(v, fieldName)
+		return s.injectByType(field)
 	}
-	return s.injectByKind(kind, key, v, fieldName)
+	return s.injectByKind(kind, key, field)
 }
 
-var ctxPtr *gin.Context
-var ctxPointType = reflect.TypeOf(ctxPtr)
-var ctxType = ctxPointType.Elem()
-
-var goneContextPtr *gone.Context
-var goneContextPointType = reflect.TypeOf(goneContextPtr)
-var goneContextType = goneContextPointType.Elem()
+//var ctxPtr *gin.Context
+//var ctxPointType = reflect.TypeOf(ctxPtr)
+//var ctxType = ctxPointType.Elem()
 
 var requestPtr *http.Request
 var requestType = reflect.TypeOf(requestPtr)
@@ -109,82 +122,93 @@ var headerType = reflect.TypeOf(header)
 var writerPtr *gin.ResponseWriter
 var writerType = reflect.TypeOf(writerPtr).Elem()
 
-func (s *httpInjector) injectByType(v reflect.Value, fieldName string) (fn BindFunc, err error) {
-	t := v.Type()
+func (s *httpInjector) injectByType(field reflect.StructField) (fn BindFieldFunc, err error) {
+	t := field.Type
 	switch t {
 	case ctxPointType:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			v.Set(reflect.ValueOf(ctx))
 			return nil
 		}, nil
 
 	case ctxType:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			v.Set(reflect.ValueOf(ctx).Elem())
 			return nil
 		}, nil
 
 	case goneContextPointType:
-		return func(context *gin.Context) error {
-			v.Set(reflect.ValueOf(&gone.Context{Context: context}))
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			v.Set(reflect.ValueOf(&gone.Context{Context: ctx}))
 			return nil
 		}, nil
 
 	case goneContextType:
-		return func(context *gin.Context) error {
-			v.Set(reflect.ValueOf(gone.Context{Context: context}))
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			v.Set(reflect.ValueOf(gone.Context{Context: ctx}))
 			return nil
 		}, nil
 
 	case requestType:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			v.Set(reflect.ValueOf(ctx.Request))
 			return nil
 		}, nil
 
 	case requestPointType:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			v.Set(reflect.ValueOf(ctx.Request).Elem())
 			return nil
 		}, nil
 
 	case urlType:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			v.Set(reflect.ValueOf(ctx.Request.URL))
 			return nil
 		}, nil
 
 	case urlPointType:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			v.Set(reflect.ValueOf(ctx.Request.URL).Elem())
 			return nil
 		}, nil
 
 	case headerType:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			v.Set(reflect.ValueOf(ctx.Request.Header))
 			return nil
 		}, nil
 
 	case writerType:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			v.Set(reflect.ValueOf(ctx.Writer))
 			return nil
 		}, nil
 	default:
-		return nil, unsupportedAttributeType(fieldName)
+		return nil, unsupportedAttributeType(field.Name)
 	}
 }
 
-func (s *httpInjector) injectBody(v reflect.Value, fieldName string) (fn BindFunc, err error) {
+func (s *httpInjector) injectBody(kind, key string, field reflect.StructField) (fn BindFieldFunc, err error) {
 	if s.isInjectedBody {
-		return nil, cannotInjectBodyMoreThanOnce(fieldName)
+		return nil, cannotInjectBodyMoreThanOnce(field.Name)
 	}
 
-	t := v.Type()
+	t := field.Type
 	switch t.Kind() {
 	case reflect.Struct, reflect.Map, reflect.Slice:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			body := reflect.New(t).Interface()
 
 			if err := ctx.ShouldBind(body); err != nil {
@@ -194,68 +218,42 @@ func (s *httpInjector) injectBody(v reflect.Value, fieldName string) (fn BindFun
 			return nil
 		}, nil
 	case reflect.Pointer:
-		if v.IsNil() {
-			v.Set(reflect.New(v.Type().Elem()))
-		}
-
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			if v.IsNil() {
+				v.Set(reflect.New(v.Type().Elem()))
+			}
 			if err := ctx.ShouldBind(v.Interface()); err != nil {
 				return NewParameterError(err.Error())
 			}
 			return nil
 		}, nil
 	default:
-		return nil, unsupportedAttributeType(fieldName)
+		return nil, unsupportedAttributeType(field.Name)
 	}
-
-	//if !(t.Kind() == reflect.Struct || t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct) {
-	//	return nil, unsupportedAttributeType(fieldName)
-	//}
-	//
-	//if t.Kind() == reflect.Pointer {
-	//	if v.IsNil() {
-	//		v.Set(reflect.New(v.Type().Elem()))
-	//	}
-	//
-	//	return func(ctx *gin.Context) error {
-	//		if err := ctx.ShouldBind(v.Interface()); err != nil {
-	//			return NewParameterError(err.Error())
-	//		}
-	//		return nil
-	//	}, nil
-	//} else {
-	//	return func(ctx *gin.Context) error {
-	//		body := reflect.New(t).Interface()
-	//
-	//		if err := ctx.ShouldBind(body); err != nil {
-	//			return NewParameterError(err.Error())
-	//		}
-	//		v.Set(reflect.ValueOf(body).Elem())
-	//		return nil
-	//	}, nil
-	//}
 }
 
-func (s *httpInjector) injectByKind(kind, key string, v reflect.Value, fieldName string) (fn BindFunc, err error) {
+func (s *httpInjector) injectByKind(kind, key string, field reflect.StructField) (fn BindFieldFunc, err error) {
 	switch kind {
 	case keyHeader, keyParam, keyCookie:
-		return s.parseStringValueAndInject(v, fieldName, kind, key)
+		return s.parseStringValueAndInject(kind, key, field)
 	case keyQuery:
-		return s.injectQuery(v, fieldName, key)
+		return s.injectQuery(kind, key, field)
 	case keyBody:
-		return s.injectBody(v, fieldName)
+		return s.injectBody(kind, key, field)
 	default:
-		return nil, unsupportedKindConfigure(fieldName)
+		return nil, unsupportedKindConfigure(field.Name)
 	}
 }
 
 var queryMapType = reflect.TypeOf(map[string]string{})
 
-func (s *httpInjector) injectQuery(v reflect.Value, fieldName string, key string) (fn BindFunc, err error) {
-	t := v.Type()
+func (s *httpInjector) injectQuery(kind, key string, field reflect.StructField) (fn BindFieldFunc, err error) {
+	t := field.Type
 	switch t.Kind() {
 	case reflect.Struct:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			body := reflect.New(t).Interface()
 			if err := ctx.ShouldBindQuery(body); err != nil {
 				return NewParameterError(err.Error())
@@ -265,11 +263,11 @@ func (s *httpInjector) injectQuery(v reflect.Value, fieldName string, key string
 		}, nil
 
 	case reflect.Pointer:
-		if v.IsNil() {
-			v.Set(reflect.New(v.Type().Elem()))
-		}
-
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			if v.IsNil() {
+				v.Set(reflect.New(v.Type().Elem()))
+			}
 			if err := ctx.ShouldBindQuery(v.Interface()); err != nil {
 				return NewParameterError(err.Error())
 			}
@@ -278,37 +276,41 @@ func (s *httpInjector) injectQuery(v reflect.Value, fieldName string, key string
 
 	case reflect.Map:
 		if t == queryMapType {
-			return func(ctx *gin.Context) error {
-				dicts := ctx.QueryMap(key)
-				v.Set(reflect.ValueOf(dicts))
+			return func(ctx *gin.Context, structVale reflect.Value) error {
+				v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+				dict := ctx.QueryMap(key)
+				v.Set(reflect.ValueOf(dict))
 				return nil
 			}, nil
 		}
-		return nil, unsupportedAttributeType(fieldName)
+		return nil, unsupportedAttributeType(field.Name)
 
 	case reflect.Slice:
-		return s.injectQueryArray(key, v, fieldName)
+		return s.injectQueryArray(kind, key, field)
 
 	default:
-		return s.parseStringValueAndInject(v, fieldName, keyQuery, key)
+		return s.parseStringValueAndInject(kind, key, field)
 	}
 }
 
-func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName string) (fn BindFunc, err error) {
-	el := v.Type().Elem()
+func (s *httpInjector) injectQueryArray(k, key string, field reflect.StructField) (fn BindFieldFunc, err error) {
+	el := field.Type.Elem()
+
 	kind := el.Kind()
 
 	bits := bitSize(kind)
 	switch kind {
 	case reflect.String:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			values := ctx.QueryArray(key)
 			v.Set(reflect.ValueOf(values))
 			return nil
 		}, nil
 
 	case reflect.Bool:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			values := ctx.QueryArray(key)
 			for _, value := range values {
 				v.Set(reflect.Append(v, reflect.ValueOf(stringToBool(value))))
@@ -317,7 +319,8 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 		}, nil
 
 	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			values := ctx.QueryArray(key)
 			for _, value := range values {
 				def, err := strconv.ParseInt(value, 10, bits)
@@ -330,7 +333,8 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 		}, nil
 
 	case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			values := ctx.QueryArray(key)
 			for _, value := range values {
 				def, err := strconv.ParseUint(value, 10, bits)
@@ -343,7 +347,8 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 		}, nil
 
 	case reflect.Float64, reflect.Float32:
-		return func(ctx *gin.Context) error {
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
 			values := ctx.QueryArray(key)
 			for _, value := range values {
 				def, err := strconv.ParseFloat(value, bits)
@@ -355,13 +360,13 @@ func (s *httpInjector) injectQueryArray(key string, v reflect.Value, fieldName s
 			return nil
 		}, nil
 	default:
-		return nil, unsupportedAttributeType(fieldName)
+		return nil, unsupportedAttributeType(field.Name)
 	}
 }
 
-func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName string, kind string, key string) (fn BindFunc, err error) {
+func (s *httpInjector) parseStringValueAndInject(kind, key string, field reflect.StructField) (fn BindFieldFunc, err error) {
 	var parser func(context *gin.Context) (string, error)
-	t := v.Type()
+	t := field.Type
 
 	switch kind {
 	case keyHeader:
@@ -385,15 +390,16 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 			return context.Query(key), nil
 		}
 	default:
-		return nil, unsupportedKindConfigure(fieldName)
+		return nil, unsupportedKindConfigure(field.Name)
 	}
 
 	bits := bitSize(t.Kind())
 
 	switch t.Kind() {
 	case reflect.String:
-		return func(context *gin.Context) error {
-			value, err := parser(context)
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			value, err := parser(ctx)
 			if err != nil {
 				return err
 			}
@@ -402,8 +408,9 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 		}, nil
 
 	case reflect.Bool:
-		return func(context *gin.Context) error {
-			value, err := parser(context)
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			value, err := parser(ctx)
 			if err != nil {
 				return err
 			}
@@ -411,8 +418,9 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 			return nil
 		}, nil
 	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
-		return func(context *gin.Context) error {
-			value, err := parser(context)
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			value, err := parser(ctx)
 			if err != nil {
 				return err
 			}
@@ -427,8 +435,9 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 		}, nil
 
 	case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
-		return func(context *gin.Context) error {
-			value, err := parser(context)
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			value, err := parser(ctx)
 			if err != nil {
 				return err
 			}
@@ -443,8 +452,9 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 		}, nil
 
 	case reflect.Float64, reflect.Float32:
-		return func(context *gin.Context) error {
-			value, err := parser(context)
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			value, err := parser(ctx)
 			if err != nil {
 				return err
 			}
@@ -459,7 +469,7 @@ func (s *httpInjector) parseStringValueAndInject(v reflect.Value, fieldName stri
 		}, nil
 
 	default:
-		return nil, unsupportedAttributeType(fieldName)
+		return nil, unsupportedAttributeType(field.Name)
 	}
 }
 
@@ -482,11 +492,12 @@ func stringToBool(value string) bool {
 	return value != "" && value != "0" && value != "false"
 }
 
-//
-//var m = map[reflect.Kind]func(number string) reflect.Value{
-//	reflect.Int:    reflect.ValueOf(int(0)).Convert,
-//}
-//
-//func xxx() func() reflect.Value {
-//
-//}
+func fieldByIndexFromStructValue(structValue reflect.Value, index []int, isExported bool, fieldType reflect.Type) reflect.Value {
+	v := structValue.FieldByIndex(index)
+
+	if !isExported {
+		//黑魔法：让非导出字段可以访问
+		v = reflect.NewAt(fieldType, unsafe.Pointer(v.UnsafeAddr())).Elem()
+	}
+	return v
+}

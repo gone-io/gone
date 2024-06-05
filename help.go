@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // PanicTrace 用于获取调用者的堆栈信息
@@ -39,15 +40,18 @@ func PanicTrace(kb int, skip int) []byte {
 
 // GetFuncName 获取某个函数的名字
 func GetFuncName(f any) string {
-	return strings.Trim(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
+	return strings.TrimSuffix(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
 }
 
 // GetInterfaceType 获取接口的类型
 func GetInterfaceType[T any](t *T) reflect.Type {
 	return reflect.TypeOf(t).Elem()
 }
-
 func InjectWrapFn(cemetery Cemetery, fn any) (*reflect.Value, error) {
+	return InjectWrapFnWithHook(cemetery, fn, nil, nil)
+}
+
+func InjectWrapFnWithHook(cemetery Cemetery, fn any, before func([]reflect.Value), after func([]reflect.Value)) (*reflect.Value, error) {
 	ft := reflect.TypeOf(fn)
 	fv := reflect.ValueOf(fn)
 	if ft.Kind() != reflect.Func {
@@ -88,7 +92,14 @@ func InjectWrapFn(cemetery Cemetery, fn any) (*reflect.Value, error) {
 	}
 
 	makeFunc := reflect.MakeFunc(reflect.FuncOf(nil, outList, false), func([]reflect.Value) (results []reflect.Value) {
-		return fv.Call(args)
+		if before != nil {
+			before(args)
+		}
+		results = fv.Call(args)
+		if after != nil {
+			after(results)
+		}
+		return
 	})
 	return &makeFunc, nil
 }
@@ -149,4 +160,11 @@ func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
 		v.Set(reflect.ValueOf(ref).Elem())
 	}
 	return
+}
+
+func TimeStat(name string) func() {
+	start := time.Now()
+	return func() {
+		fmt.Printf("%s use %v\n", name, time.Since(start))
+	}
 }
