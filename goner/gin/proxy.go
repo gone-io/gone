@@ -56,6 +56,7 @@ type BindStructFuncAndType struct {
 
 func (p *proxy) proxyOne(x HandlerFunc, last bool) gin.HandlerFunc {
 	funcName := gone.GetFuncName(x)
+
 	switch x.(type) {
 	case func(*Context) (any, error):
 		f := x.(func(*Context) (any, error))
@@ -108,6 +109,8 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 
 	fv := reflect.ValueOf(x)
 	return func(context *gin.Context) {
+		defer gone.TimeStat(funcName)()
+
 		parameters := make([]reflect.Value, 0, len(args))
 		for i, arg := range args {
 			if holder, ok := arg.(*placeholder); ok {

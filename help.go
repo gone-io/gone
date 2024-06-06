@@ -162,9 +162,23 @@ func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
 	return
 }
 
+type Record struct {
+	Count   int
+	UseTime time.Duration
+}
+
+var mapRecord = make(map[string]*Record)
+
 func TimeStat(name string) func() {
 	start := time.Now()
 	return func() {
-		fmt.Printf("%s use %v\n", name, time.Since(start))
+		since := time.Since(start)
+		if mapRecord[name] == nil {
+			mapRecord[name] = &Record{}
+		}
+		mapRecord[name].UseTime += since
+		mapRecord[name].Count++
+
+		fmt.Printf("%s count %v, use %v, avg: %v\n", name, mapRecord[name].Count, mapRecord[name].UseTime, mapRecord[name].UseTime/time.Duration(mapRecord[name].Count))
 	}
 }

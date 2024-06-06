@@ -483,7 +483,7 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 			if container == nil {
 				container = tombs[0]
 				if len(tombs) > 1 {
-					c.Warnf(fmt.Sprintf("injected function %s %d parameter more than one goner was found and no default, used the first!", ft.Name(), i))
+					c.Warnf(fmt.Sprintf("injected function %s %d parameter more than one goner was found and no default, used the first!", GetFuncName(fn), i))
 				}
 			}
 			return container.GetGoner()
@@ -492,7 +492,7 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 	}
 
 	for i := 0; i < in; i++ {
-		pt := ft.In(0)
+		pt := ft.In(i)
 		x := injectBefore(pt, i)
 		if x != nil {
 			args = append(args, x)
@@ -506,7 +506,7 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 		}
 
 		if pt.Kind() != reflect.Struct {
-			err = NewInnerError(fmt.Sprintf("injected function %s %d parameter must be a struct", ft.Name(), i), NotCompatible)
+			err = NewInnerError(fmt.Sprintf("injected function %s %d parameter must be a struct", GetFuncName(fn), i), NotCompatible)
 			return
 		}
 

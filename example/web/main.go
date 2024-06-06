@@ -22,9 +22,10 @@ func (ctr *controller) Mount() gin.MountError {
 
 func (ctr *controller) hello(in struct {
 	name string `gone:"http,query"`
-}) (any, error) {
+}, log gone.Logger) (any, error) {
 	defer gone.TimeStat("hello")()
 
+	//log.Infof("hello, %s", in.name)
 	return "hello, " + in.name, nil
 }
 
