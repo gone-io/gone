@@ -1,66 +1,171 @@
-package gin
+package gin_test
 
-//
-//func Test_proxy_proxyOne1(t *testing.T) {
-//	gone.
-//		Prepare(func(cemetery gone.Cemetery) error {
-//			_ = config.Priest(cemetery)
-//			_ = logrus.Priest(cemetery)
-//			_ = tracer.Priest(cemetery)
-//			cemetery.Bury(NewGinProxy())
-//			cemetery.Bury(NewHttInjector())
-//			cemetery.Bury(NewGinResponser())
-//			return nil
-//		}).
-//		Test(func(in struct {
-//			proxy HandleProxyToGin `gone:"*"`
-//		}) {
-//			controller := gomock.NewController(t)
-//			defer controller.Finish()
-//			writer := NewMockResponseWriter(controller)
-//			writer.EXPECT().Written().AnyTimes()
-//			writer.EXPECT().WriteHeader(gomock.Any()).AnyTimes()
-//			writer.EXPECT().Header().Return(http.Header{}).AnyTimes()
-//			writer.EXPECT().Write(gomock.Any()).AnyTimes()
-//
-//			Url, _ := url.Parse("https://goner.fun/zh/?page=1&pageSize=10&arr=1&arr=2&arr=3")
-//
-//			context := gin.Context{
-//				Writer: writer,
-//				Request: &http.Request{
-//					URL: Url,
-//				},
-//			}
-//
-//			t.Run("ctx inject", func(t *testing.T) {
-//				executedCounter := 0
-//				proxyFn := in.proxy.Proxy(func(in struct {
-//					ctx    gin.Context  `gone:"http"`
-//					ctxPtr *gin.Context `gone:"http"`
-//				}) {
-//					assert.Equal(t, in.ctxPtr, &context)
-//					assert.NotNil(t, in.ctx.Writer, context.Writer)
-//					executedCounter++
-//					return
-//				})[0]
-//				proxyFn(&context)
-//				assert.Equal(t, executedCounter, 1)
-//			})
-//
-//			t.Run("request inject", func(t *testing.T) {
-//				executedCounter := 0
-//				proxyFn := in.proxy.Proxy(func(in struct {
-//					req    http.Request  `gone:"http"`
-//					reqPtr *http.Request `gone:"http"`
-//				}) {
-//					assert.Equal(t, in.req.URL, context.Request.URL)
-//					assert.NotNil(t, in.reqPtr, context.Request)
-//					executedCounter++
-//					return
-//				})[0]
-//				proxyFn(&context)
-//				assert.Equal(t, executedCounter, 1)
-//			})
-//
-//		})
-//}
+import (
+	"github.com/golang/mock/gomock"
+	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/config"
+	"github.com/gone-io/gone/goner/gin"
+	"github.com/gone-io/gone/goner/logrus"
+	"github.com/gone-io/gone/goner/tracer"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"reflect"
+	"testing"
+)
+
+func Test_proxy_Proxy(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	responser := gin.NewMockResponser(controller)
+	injector := gin.NewMockHttInjector(controller)
+	responser.EXPECT().Success(gomock.Any(), gomock.Any()).AnyTimes()
+	responser.EXPECT().ProcessResults(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.All()).AnyTimes()
+
+	gone.
+		Prepare(config.Priest, tracer.Priest, logrus.Priest, func(cemetery gone.Cemetery) error {
+
+			cemetery.Bury(gin.NewGinProxy())
+			cemetery.Bury(responser)
+			cemetery.Bury(injector)
+			return nil
+		}).
+		Test(func(proxy gin.HandleProxyToGin, logger gone.Logger) {
+			i := 0
+			t.Run("Special funcs", func(t *testing.T) {
+				funcs := proxy.Proxy(
+					func(*gone.Context) (any, error) {
+						i++
+						return nil, nil
+					},
+					func(*gone.Context) error {
+						i++
+						return nil
+					},
+					func(*gone.Context) {
+						i++
+					},
+					func(*gin.OriginContent) (any, error) {
+						i++
+						return nil, nil
+					},
+					func(*gin.OriginContent) error {
+						i++
+						return nil
+					},
+					func(*gin.OriginContent) {
+						i++
+					},
+					func() {
+						i++
+					},
+					func() (any, error) {
+						i++
+						return nil, nil
+					},
+					func() error {
+						i++
+						return nil
+					},
+				)
+				for _, fn := range funcs {
+					fn(&gin.OriginContent{})
+				}
+
+				assert.Equal(t, 9, i)
+			})
+
+			t.Run("Inject funcs success", func(t *testing.T) {
+				i := 0
+
+				type One struct {
+					X1  string
+					log gone.Logger `gone:"*"`
+				}
+
+				type Two struct {
+					X2  string
+					log gone.Logger `gone:"*"`
+				}
+
+				injector.EXPECT().StartBindFuncs().MinTimes(3).MaxTimes(3)
+
+				injector.EXPECT().BindFuncs().Return(func(ctx *gin.OriginContent, obj any, T reflect.Type) (reflect.Value, error) {
+					one, ok := obj.(One)
+					assert.True(t, ok)
+					assert.Equal(t, logger, one.log)
+
+					one.X1 = "one"
+					return reflect.ValueOf(one), nil
+				})
+
+				fn2 := func(ctx *gin.OriginContent, obj any, arg reflect.Type) (reflect.Value, error) {
+					two, ok := obj.(Two)
+					assert.True(t, ok)
+					assert.Equal(t, logger, two.log)
+
+					two.X2 = "two"
+					return reflect.ValueOf(two), nil
+				}
+
+				injector.EXPECT().BindFuncs().Return(fn2)
+
+				funcs := proxy.ProxyForMiddleware(func(
+					one One,
+					two Two,
+					logger gone.Logger,
+
+					ctxPtr *gone.Context,
+					ctx gone.Context,
+					ginCtxPtr *gin.OriginContent,
+					ginCtx gin.OriginContent,
+				) {
+					assert.NotNil(t, logger)
+					assert.Equal(t, logger, one.log)
+					assert.Equal(t, logger, two.log)
+					assert.Equal(t, "one", one.X1)
+					assert.Equal(t, "two", two.X2)
+
+					assert.NotNil(t, ctxPtr)
+					assert.Equal(t, *ctxPtr, ctx)
+					assert.Equal(t, ctx.Context, ginCtxPtr)
+					assert.Equal(t, *ctx.Context, ginCtx)
+					i++
+				})
+				funcs[0](&gin.OriginContent{})
+				assert.Equal(t, 1, i)
+			})
+
+			t.Run("Inject Error", func(t *testing.T) {
+				defer func() {
+					err := recover()
+					assert.Error(t, err.(error))
+				}()
+
+				injector.EXPECT().StartBindFuncs()
+				proxy.ProxyForMiddleware(func(in struct {
+					x gone.Logger `gone:"xxx"`
+				}) {
+				})
+
+			})
+
+			t.Run("Bind Context Error", func(t *testing.T) {
+				bindErr := errors.New("bind error")
+
+				injector.EXPECT().StartBindFuncs()
+				injector.EXPECT().BindFuncs().Return(func(ctx *gin.OriginContent, obj any, T reflect.Type) (reflect.Value, error) {
+					return reflect.Value{}, bindErr
+				})
+
+				responser.EXPECT().Failed(gomock.Any(), gomock.Any()).Do(func(ctx any, err error) {
+					assert.Equal(t, bindErr, err)
+				})
+
+				arr := proxy.ProxyForMiddleware(func(in struct {
+					x gone.Logger `gone:"*"`
+				}) {
+				})
+				arr[0](&gin.OriginContent{})
+			})
+		})
+}

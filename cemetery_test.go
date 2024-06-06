@@ -464,11 +464,9 @@ func Test_cemetery_checkRevive(t *testing.T) {
 }
 
 func Test_cemetery_InjectFuncParameters(t *testing.T) {
-	Prepare().Test(func(in struct {
-		cemetery Cemetery `gone:"*"`
-	}) {
+	Prepare().Test(func(cemetery Cemetery) {
 		t.Run("fn is not a func", func(t *testing.T) {
-			_, err := in.cemetery.InjectFuncParameters("", nil, nil)
+			_, err := cemetery.InjectFuncParameters("", nil, nil)
 			assert.Error(t, err)
 			assert.Equal(t, err.(Error).Code(), NotCompatible)
 		})
@@ -484,7 +482,7 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 				executed = true
 			}
 
-			args, err := in.cemetery.InjectFuncParameters(fn, nil, nil)
+			args, err := cemetery.InjectFuncParameters(fn, nil, nil)
 			assert.Nil(t, err)
 
 			reflect.ValueOf(fn).
@@ -499,7 +497,7 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 
 		t.Run("fn parameter is not struct", func(t *testing.T) {
 			fn := func(int) {}
-			_, err := in.cemetery.InjectFuncParameters(fn, nil, nil)
+			_, err := cemetery.InjectFuncParameters(fn, nil, nil)
 			assert.Error(t, err)
 			assert.Equal(t, err.(Error).Code(), NotCompatible)
 		})
@@ -522,7 +520,7 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 				executed = true
 			}
 
-			args, err := in.cemetery.InjectFuncParameters(fn, func(pt reflect.Type, i int) any {
+			args, err := cemetery.InjectFuncParameters(fn, func(pt reflect.Type, i int) any {
 				if i == 2 {
 					return true
 				}
@@ -546,5 +544,14 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 			assert.True(t, executed)
 		})
 
+		t.Run("Revive Failed", func(t *testing.T) {
+			fn := func(in struct {
+				cemetery Cemetery `gone:"xxxxx"`
+			}) {
+			}
+			_, err := cemetery.InjectFuncParameters(fn, nil, nil)
+			assert.Error(t, err)
+			assert.Equal(t, CannotFoundGonerById, err.(Error).Code())
+		})
 	})
 }

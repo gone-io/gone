@@ -47,88 +47,22 @@ func GetFuncName(f any) string {
 func GetInterfaceType[T any](t *T) reflect.Type {
 	return reflect.TypeOf(t).Elem()
 }
-func InjectWrapFn(cemetery Cemetery, fn any) (*reflect.Value, error) {
-	return InjectWrapFnWithHook(cemetery, fn, nil, nil)
-}
-
-func InjectWrapFnWithHook(cemetery Cemetery, fn any, before func([]reflect.Value), after func([]reflect.Value)) (*reflect.Value, error) {
-	ft := reflect.TypeOf(fn)
-	fv := reflect.ValueOf(fn)
-	if ft.Kind() != reflect.Func {
-		return nil, NewInnerError("fn must be a function", NotCompatible)
-	}
-
-	in := ft.NumIn()
-	if in > 1 {
-		return nil, NewInnerError("fn only support one input parameter or no input parameter", NotCompatible)
-	}
-
-	var args = make([]reflect.Value, 0)
-
-	if in == 1 {
-		if ft.In(0).Kind() != reflect.Struct {
-			return nil, NewInnerError("fn input parameter must be a struct", NotCompatible)
-		}
-
-		pt := ft.In(0)
-
-		if pt.Name() != "" || pt.PkgPath() != "" {
-			return nil, NewInnerError("fn input parameter must be a anonymous struct", NotCompatible)
-		}
-
-		parameter := reflect.New(pt)
-
-		goner := parameter.Interface()
-		_, err := cemetery.ReviveOne(goner)
-		if err != nil {
-			return nil, ToError(err)
-		}
-		args = append(args, parameter.Elem())
-	}
-
-	var outList []reflect.Type
-	for i := 0; i < ft.NumOut(); i++ {
-		outList = append(outList, ft.Out(i))
-	}
-
-	makeFunc := reflect.MakeFunc(reflect.FuncOf(nil, outList, false), func([]reflect.Value) (results []reflect.Value) {
-		if before != nil {
-			before(args)
-		}
-		results = fv.Call(args)
-		if after != nil {
-			after(results)
-		}
-		return
-	})
-	return &makeFunc, nil
-}
-
-func ExecuteInjectWrapFn(fn *reflect.Value) (results []any) {
-	call := fn.Call([]reflect.Value{})
-
-	for i := 0; i < len(call); i++ {
-		arg := call[i].Interface()
-		v := reflect.ValueOf(arg)
-
-		if v.Kind() == reflect.Pointer && v.IsNil() {
-			results = append(results, nil)
-		} else {
-			results = append(results, arg)
-		}
-	}
-	return
-}
 
 func WrapNormalFnToProcess(fn any) Process {
 	return func(cemetery Cemetery) error {
-		wrapFn, err := InjectWrapFn(cemetery, fn)
+		args, err := cemetery.InjectFuncParameters(fn, nil, nil)
 		if err != nil {
 			return err
 		}
-		results := ExecuteInjectWrapFn(wrapFn)
+
+		var parameters []reflect.Value
+		for _, arg := range args {
+			parameters = append(parameters, reflect.ValueOf(arg))
+		}
+
+		results := reflect.ValueOf(fn).Call(parameters)
 		for _, result := range results {
-			if err, ok := result.(error); ok {
+			if err, ok := result.Interface().(error); ok {
 				return err
 			}
 		}
@@ -162,23 +96,34 @@ func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
 	return
 }
 
-type Record struct {
-	Count   int
+type timeUseRecord struct {
+	Count   int64
 	UseTime time.Duration
 }
 
-var mapRecord = make(map[string]*Record)
+var mapRecord = make(map[string]*timeUseRecord)
 
-func TimeStat(name string) func() {
-	start := time.Now()
-	return func() {
-		since := time.Since(start)
-		if mapRecord[name] == nil {
-			mapRecord[name] = &Record{}
-		}
-		mapRecord[name].UseTime += since
-		mapRecord[name].Count++
-
-		fmt.Printf("%s count %v, use %v, avg: %v\n", name, mapRecord[name].Count, mapRecord[name].UseTime, mapRecord[name].UseTime/time.Duration(mapRecord[name].Count))
+func TimeStat(name string, start time.Time, logs ...func(format string, args ...any)) {
+	since := time.Since(start)
+	if mapRecord[name] == nil {
+		mapRecord[name] = &timeUseRecord{}
 	}
+	mapRecord[name].UseTime += since
+	mapRecord[name].Count++
+
+	var log func(format string, args ...any)
+	if len(logs) == 0 {
+		log = func(format string, args ...any) {
+			fmt.Printf(format, args...)
+		}
+	} else {
+		log = logs[0]
+	}
+
+	log("%s count %v, use %v, avg: %v\n",
+		name,
+		mapRecord[name].Count,
+		mapRecord[name].UseTime,
+		mapRecord[name].UseTime/time.Duration(mapRecord[name].Count),
+	)
 }

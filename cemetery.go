@@ -235,23 +235,8 @@ func (c *cemetery) reviveByVampire2(goner Goner, tomb Tomb, extConfig string, v 
 }
 
 func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool, err error) {
-	tombs := c.GetTomByType(field.Type)
-	if len(tombs) > 0 {
-		var container Tomb
-
-		for _, t := range tombs {
-			if t.IsDefault() {
-				container = t
-				break
-			}
-		}
-		if container == nil {
-			container = tombs[0]
-			if len(tombs) > 1 {
-				c.Warnf(fmt.Sprintf("inject %s.%s more than one goner was found and no default, used the first!", goneTypeName, field.Name))
-			}
-		}
-
+	container := c.getGonerContainerByType(field.Type, fmt.Sprintf("%s.%s", goneTypeName, field.Name))
+	if container != nil {
 		c.setFieldValue(v, container.GetGoner())
 		suc = true
 		deps = append(deps, container)
@@ -461,6 +446,28 @@ func (c *cemetery) GetTomByType(t reflect.Type) (tombs []Tomb) {
 	return Tombs(c.tombs).GetTomByType(t)
 }
 
+func (c *cemetery) getGonerContainerByType(t reflect.Type, name string) Tomb {
+	tombs := c.GetTomByType(t)
+	if len(tombs) > 0 {
+		var container Tomb
+
+		for _, t := range tombs {
+			if t.IsDefault() {
+				container = t
+				break
+			}
+		}
+		if container == nil {
+			container = tombs[0]
+			if len(tombs) > 1 {
+				c.Warnf(fmt.Sprintf("inject %s more than one goner was found and no default, used the first!", name))
+			}
+		}
+		return container
+	}
+	return nil
+}
+
 func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int, obj *any)) (args []any, err error) {
 	ft := reflect.TypeOf(fn)
 	if ft.Kind() != reflect.Func {
@@ -470,22 +477,8 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 	in := ft.NumIn()
 
 	getOnlyOne := func(pt reflect.Type, i int) Goner {
-		tombs := c.GetTomByType(pt)
-		if len(tombs) > 0 {
-			var container Tomb
-
-			for _, t := range tombs {
-				if t.IsDefault() {
-					container = t
-					break
-				}
-			}
-			if container == nil {
-				container = tombs[0]
-				if len(tombs) > 1 {
-					c.Warnf(fmt.Sprintf("injected function %s %dth parameter more than one goner was found and no default, used the first!", GetFuncName(fn), i))
-				}
-			}
+		container := c.getGonerContainerByType(pt, fmt.Sprintf("%d parameter of %s", i, GetFuncName(fn)))
+		if container != nil {
 			return container.GetGoner()
 		}
 		return nil
@@ -508,7 +501,7 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 		}
 
 		if pt.Kind() != reflect.Struct {
-			err = NewInnerError(fmt.Sprintf("injected function %s %dth parameter must be a struct", GetFuncName(fn), i+1), NotCompatible)
+			err = NewInnerError(fmt.Sprintf("%dth parameter of %s must be a struct", i+1, GetFuncName(fn)), NotCompatible)
 			return
 		}
 

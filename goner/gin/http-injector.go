@@ -34,7 +34,7 @@ func parseConfKeyValue(conf string) (key, value string) {
 	}
 }
 
-func (s *httpInjector) StartCollectBindFuncs() {
+func (s *httpInjector) StartBindFuncs() {
 	s.bindFuncs = make([]BindFieldFunc, 0)
 	s.isInjectedBody = false
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
 	"reflect"
+	"time"
 )
 
 // NewGinProxy 新建代理器
@@ -64,7 +65,6 @@ func (p *proxy) proxyOne(x HandlerFunc, last bool) gin.HandlerFunc {
 			data, err := f(&Context{Context: context})
 			p.responser.ProcessResults(context, context.Writer, last, funcName, data, err)
 		}
-
 	case func(*Context) error:
 		f := x.(func(*Context) error)
 		return func(context *gin.Context) {
@@ -75,6 +75,40 @@ func (p *proxy) proxyOne(x HandlerFunc, last bool) gin.HandlerFunc {
 		f := x.(func(*Context))
 		return func(context *gin.Context) {
 			f(&Context{Context: context})
+			p.responser.ProcessResults(context, context.Writer, last, funcName)
+		}
+	case gin.HandlerFunc:
+		return x.(gin.HandlerFunc)
+
+	case func(ctx *gin.Context) (any, error):
+		f := x.(func(ctx *gin.Context) (any, error))
+		return func(context *gin.Context) {
+			data, err := f(context)
+			p.responser.ProcessResults(context, context.Writer, last, funcName, data, err)
+		}
+	case func(ctx *gin.Context) error:
+		f := x.(func(ctx *gin.Context) error)
+		return func(context *gin.Context) {
+			err := f(context)
+			p.responser.ProcessResults(context, context.Writer, last, funcName, err)
+		}
+	case func():
+		f := x.(func())
+		return func(context *gin.Context) {
+			f()
+			p.responser.ProcessResults(context, context.Writer, last, funcName)
+		}
+	case func() (any, error):
+		f := x.(func() (any, error))
+		return func(context *gin.Context) {
+			data, err := f()
+			p.responser.ProcessResults(context, context.Writer, last, funcName, data, err)
+		}
+	case func() error:
+		f := x.(func() error)
+		return func(context *gin.Context) {
+			err := f()
+			p.responser.ProcessResults(context, context.Writer, last, funcName, err)
 		}
 	default:
 		return p.buildProxyFn(x, funcName, last)
@@ -92,7 +126,7 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 					Type: pt,
 				}
 			}
-			p.injector.StartCollectBindFuncs()
+			p.injector.StartBindFuncs()
 			return nil
 		},
 		func(pt reflect.Type, i int, obj *any) {
@@ -109,7 +143,7 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 
 	fv := reflect.ValueOf(x)
 	return func(context *gin.Context) {
-		defer gone.TimeStat(funcName)()
+		defer gone.TimeStat(funcName, time.Now(), p.Infof)
 
 		parameters := make([]reflect.Value, 0, len(args))
 		for i, arg := range args {
@@ -145,7 +179,7 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 		var results []any
 		for i := 0; i < len(values); i++ {
 			arg := values[i]
-			if arg.Type() == ctxPointType && !arg.IsNil() {
+			if arg.Type().Kind() == reflect.Pointer && !arg.IsNil() {
 				results = append(results, nil)
 			} else {
 				results = append(results, arg.Interface())

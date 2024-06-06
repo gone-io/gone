@@ -24,7 +24,7 @@ func Test_httpInjector_Suck(t *testing.T) {
 	}
 
 	injector := httpInjector{}
-	injector.StartCollectBindFuncs()
+	injector.StartBindFuncs()
 
 	var req = &Req{}
 

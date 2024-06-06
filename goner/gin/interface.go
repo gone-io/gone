@@ -10,7 +10,7 @@ import (
 //go:generate sh -c "mockgen -package=gin net Listener > net_Listener_mock_test.go"
 //go:generate sh -c "mockgen -package=gin -source=../../gin_interface.go |gone mock -o gone_gin_mock_test.go"
 //go:generate sh -c "mockgen -package=gin -source=../../interface.go |gone mock -o gone_mock_test.go"
-//go:generate sh -c "mockgen -package=gin -self_package=github.com/gone-io/gone/goner/gin -source=interface.go -destination=mock_test.go"
+//go:generate sh -c "mockgen -package=gin -self_package=github.com/gone-io/gone/goner/gin -source=interface.go |gone mock -o mock_test.go"
 
 // RouterGroupName Router group name
 type RouterGroupName string
@@ -18,6 +18,8 @@ type RouterGroupName string
 // Context The `gone` framework encapsulated context based on `gin`
 // Deprecated use `gone.Context` instead
 type Context = gone.Context
+
+type OriginContent = gin.Context
 
 // HandlerFunc The `gone` framework route handler function
 type HandlerFunc = gone.HandlerFunc
@@ -125,7 +127,6 @@ type BindFieldFunc func(context *gin.Context, structVale reflect.Value) error
 type BindStructFunc func(*gin.Context, any, reflect.Type) (reflect.Value, error)
 
 type HttInjector interface {
-	StartCollectBindFuncs()
-	CollectBindFuncs() []BindFieldFunc
+	StartBindFuncs()
 	BindFuncs() BindStructFunc
 }

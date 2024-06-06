@@ -5,6 +5,7 @@
 package gin
 
 import (
+	goneMock "github.com/gone-io/gone"
 	reflect "reflect"
 
 	gin "github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 
 // MockController is a mock of Controller interface.
 type MockController struct {
+	goneMock.Flag
 	ctrl     *gomock.Controller
 	recorder *MockControllerMockRecorder
 }
@@ -50,6 +52,7 @@ func (mr *MockControllerMockRecorder) Mount() *gomock.Call {
 
 // MockHandleProxyToGin is a mock of HandleProxyToGin interface.
 type MockHandleProxyToGin struct {
+	goneMock.Flag
 	ctrl     *gomock.Controller
 	recorder *MockHandleProxyToGinMockRecorder
 }
@@ -109,6 +112,7 @@ func (mr *MockHandleProxyToGinMockRecorder) ProxyForMiddleware(handlers ...inter
 
 // MockXContext is a mock of XContext interface.
 type MockXContext struct {
+	goneMock.Flag
 	ctrl     *gomock.Controller
 	recorder *MockXContextMockRecorder
 }
@@ -161,6 +165,7 @@ func (mr *MockXContextMockRecorder) String(code, format interface{}, values ...i
 
 // MockResponser is a mock of Responser interface.
 type MockResponser struct {
+	goneMock.Flag
 	ctrl     *gomock.Controller
 	recorder *MockResponserMockRecorder
 }
@@ -223,40 +228,52 @@ func (mr *MockResponserMockRecorder) Success(ctx, data interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Success", reflect.TypeOf((*MockResponser)(nil).Success), ctx, data)
 }
 
-// MockkeepContext is a mock of keepContext interface.
-type MockkeepContext struct {
+// MockHttInjector is a mock of HttInjector interface.
+type MockHttInjector struct {
+	goneMock.Flag
 	ctrl     *gomock.Controller
-	recorder *MockkeepContextMockRecorder
+	recorder *MockHttInjectorMockRecorder
 }
 
-// MockkeepContextMockRecorder is the mock recorder for MockkeepContext.
-type MockkeepContextMockRecorder struct {
-	mock *MockkeepContext
+// MockHttInjectorMockRecorder is the mock recorder for MockHttInjector.
+type MockHttInjectorMockRecorder struct {
+	mock *MockHttInjector
 }
 
-// NewMockkeepContext creates a new mock instance.
-func NewMockkeepContext(ctrl *gomock.Controller) *MockkeepContext {
-	mock := &MockkeepContext{ctrl: ctrl}
-	mock.recorder = &MockkeepContextMockRecorder{mock}
+// NewMockHttInjector creates a new mock instance.
+func NewMockHttInjector(ctrl *gomock.Controller) *MockHttInjector {
+	mock := &MockHttInjector{ctrl: ctrl}
+	mock.recorder = &MockHttInjectorMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockkeepContext) EXPECT() *MockkeepContextMockRecorder {
+func (m *MockHttInjector) EXPECT() *MockHttInjectorMockRecorder {
 	return m.recorder
 }
 
-// SetContext mocks base method.
-func (m *MockkeepContext) SetContext(context *Context) (any, error) {
+// BindFuncs mocks base method.
+func (m *MockHttInjector) BindFuncs() BindStructFunc {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetContext", context)
-	ret0, _ := ret[0].(any)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "BindFuncs")
+	ret0, _ := ret[0].(BindStructFunc)
+	return ret0
 }
 
-// SetContext indicates an expected call of SetContext.
-func (mr *MockkeepContextMockRecorder) SetContext(context interface{}) *gomock.Call {
+// BindFuncs indicates an expected call of BindFuncs.
+func (mr *MockHttInjectorMockRecorder) BindFuncs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetContext", reflect.TypeOf((*MockkeepContext)(nil).SetContext), context)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BindFuncs", reflect.TypeOf((*MockHttInjector)(nil).BindFuncs))
+}
+
+// StartBindFuncs mocks base method.
+func (m *MockHttInjector) StartBindFuncs() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "StartBindFuncs")
+}
+
+// StartBindFuncs indicates an expected call of StartBindFuncs.
+func (mr *MockHttInjectorMockRecorder) StartBindFuncs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartBindFuncs", reflect.TypeOf((*MockHttInjector)(nil).StartBindFuncs))
 }
