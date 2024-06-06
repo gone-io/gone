@@ -462,3 +462,89 @@ func Test_cemetery_checkRevive(t *testing.T) {
 	err := test.(*cemetery).checkRevive(theTomb)
 	assert.Nil(t, err)
 }
+
+func Test_cemetery_InjectFuncParameters(t *testing.T) {
+	Prepare().Test(func(in struct {
+		cemetery Cemetery `gone:"*"`
+	}) {
+		t.Run("fn is not a func", func(t *testing.T) {
+			_, err := in.cemetery.InjectFuncParameters("", nil, nil)
+			assert.Error(t, err)
+			assert.Equal(t, err.(Error).Code(), NotCompatible)
+		})
+
+		t.Run("fn has two parameters", func(t *testing.T) {
+			executed := false
+			fn := func(cemetery Cemetery, in struct {
+				cemetery Cemetery `gone:"*"`
+			}) {
+				assert.NotNil(t, in.cemetery)
+				assert.NotNil(t, cemetery)
+				assert.Equal(t, cemetery, in.cemetery)
+				executed = true
+			}
+
+			args, err := in.cemetery.InjectFuncParameters(fn, nil, nil)
+			assert.Nil(t, err)
+
+			reflect.ValueOf(fn).
+				Call(
+					[]reflect.Value{
+						reflect.ValueOf(args[0]),
+						reflect.ValueOf(args[1]),
+					},
+				)
+			assert.True(t, executed)
+		})
+
+		t.Run("fn parameter is not struct", func(t *testing.T) {
+			fn := func(int) {}
+			_, err := in.cemetery.InjectFuncParameters(fn, nil, nil)
+			assert.Error(t, err)
+			assert.Equal(t, err.(Error).Code(), NotCompatible)
+		})
+
+		t.Run("filter some parameters", func(t *testing.T) {
+			var tmp any
+			executed := false
+			fn := func(
+				cemetery Cemetery,
+				in struct {
+					cemetery Cemetery `gone:"*"`
+				},
+				test bool,
+			) {
+				assert.Equal(t, tmp, in)
+				assert.NotNil(t, in.cemetery)
+				assert.NotNil(t, cemetery)
+				assert.Equal(t, cemetery, in.cemetery)
+				assert.Equal(t, true, test)
+				executed = true
+			}
+
+			args, err := in.cemetery.InjectFuncParameters(fn, func(pt reflect.Type, i int) any {
+				if i == 2 {
+					return true
+				}
+				return nil
+			}, func(pt reflect.Type, i int, obj *any) {
+				assert.Equal(t, 1, i)
+				assert.Equal(t, pt, reflect.TypeOf(*obj))
+				tmp = *obj
+			})
+
+			assert.Nil(t, err)
+			assert.Equal(t, 3, len(args))
+			reflect.ValueOf(fn).
+				Call(
+					[]reflect.Value{
+						reflect.ValueOf(args[0]),
+						reflect.ValueOf(args[1]),
+						reflect.ValueOf(args[2]),
+					},
+				)
+			assert.True(t, executed)
+		})
+
+	})
+}

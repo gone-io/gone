@@ -461,7 +461,7 @@ func (c *cemetery) GetTomByType(t reflect.Type) (tombs []Tomb) {
 	return Tombs(c.tombs).GetTomByType(t)
 }
 
-func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int, obj any)) (args []any, err error) {
+func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int, obj *any)) (args []any, err error) {
 	ft := reflect.TypeOf(fn)
 	if ft.Kind() != reflect.Func {
 		return nil, NewInnerError("fn must be a function", NotCompatible)
@@ -483,7 +483,7 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 			if container == nil {
 				container = tombs[0]
 				if len(tombs) > 1 {
-					c.Warnf(fmt.Sprintf("injected function %s %d parameter more than one goner was found and no default, used the first!", GetFuncName(fn), i))
+					c.Warnf(fmt.Sprintf("injected function %s %dth parameter more than one goner was found and no default, used the first!", GetFuncName(fn), i))
 				}
 			}
 			return container.GetGoner()
@@ -493,20 +493,22 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 
 	for i := 0; i < in; i++ {
 		pt := ft.In(i)
-		x := injectBefore(pt, i)
-		if x != nil {
-			args = append(args, x)
-			continue
+		if injectBefore != nil {
+			x := injectBefore(pt, i)
+			if x != nil {
+				args = append(args, x)
+				continue
+			}
 		}
 
-		x = getOnlyOne(pt, i+1)
+		x := getOnlyOne(pt, i+1)
 		if x != nil {
 			args = append(args, x)
 			continue
 		}
 
 		if pt.Kind() != reflect.Struct {
-			err = NewInnerError(fmt.Sprintf("injected function %s %d parameter must be a struct", GetFuncName(fn), i), NotCompatible)
+			err = NewInnerError(fmt.Sprintf("injected function %s %dth parameter must be a struct", GetFuncName(fn), i+1), NotCompatible)
 			return
 		}
 
@@ -516,10 +518,11 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 		if err != nil {
 			return
 		}
-		x = parameter.Elem().Interface()
-
-		args = append(args, x)
-		injectAfter(pt, i, x)
+		obj := parameter.Elem().Interface()
+		args = append(args, obj)
+		if injectAfter != nil {
+			injectAfter(pt, i, &obj)
+		}
 	}
 	return
 }

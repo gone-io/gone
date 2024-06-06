@@ -49,7 +49,7 @@ type placeholder struct {
 	Type reflect.Type
 }
 
-type BindStructFuncAndType struct {
+type bindStructFuncAndType struct {
 	Fn   BindStructFunc
 	Type reflect.Type
 }
@@ -82,7 +82,7 @@ func (p *proxy) proxyOne(x HandlerFunc, last bool) gin.HandlerFunc {
 }
 
 func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.HandlerFunc {
-	m := make(map[int]*BindStructFuncAndType)
+	m := make(map[int]*bindStructFuncAndType)
 	args, err := p.cemetery.InjectFuncParameters(
 		x,
 		func(pt reflect.Type, i int) any {
@@ -95,8 +95,8 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 			p.injector.StartCollectBindFuncs()
 			return nil
 		},
-		func(pt reflect.Type, i int, obj any) {
-			m[i] = &BindStructFuncAndType{
+		func(pt reflect.Type, i int, obj *any) {
+			m[i] = &bindStructFuncAndType{
 				Fn:   p.injector.BindFuncs(),
 				Type: pt,
 			}
