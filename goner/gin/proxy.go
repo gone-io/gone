@@ -77,8 +77,8 @@ func (p *proxy) proxyOne(x HandlerFunc, last bool) gin.HandlerFunc {
 			f(&Context{Context: context})
 			p.responser.ProcessResults(context, context.Writer, last, funcName)
 		}
-	case gin.HandlerFunc:
-		return x.(gin.HandlerFunc)
+	case func(ctx *gin.Context):
+		return x.(func(ctx *gin.Context))
 
 	case func(ctx *gin.Context) (any, error):
 		f := x.(func(ctx *gin.Context) (any, error))
@@ -179,11 +179,19 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 		var results []any
 		for i := 0; i < len(values); i++ {
 			arg := values[i]
-			if arg.Type().Kind() == reflect.Pointer && !arg.IsNil() {
-				results = append(results, nil)
-			} else {
-				results = append(results, arg.Interface())
+
+			if arg.Kind() == reflect.Interface {
+				elem := arg.Elem()
+				switch elem.Kind() {
+				case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+					if elem.IsNil() {
+						results = append(results, nil)
+						continue
+					}
+				default:
+				}
 			}
+			results = append(results, arg.Interface())
 		}
 		p.responser.ProcessResults(context, context.Writer, last, funcName, results...)
 	}

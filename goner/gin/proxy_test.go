@@ -109,7 +109,7 @@ func Test_proxy_Proxy(t *testing.T) {
 
 				injector.EXPECT().BindFuncs().Return(fn2)
 
-				funcs := proxy.ProxyForMiddleware(func(
+				funcs := proxy.Proxy(func(
 					one One,
 					two Two,
 					logger gone.Logger,
@@ -118,7 +118,7 @@ func Test_proxy_Proxy(t *testing.T) {
 					ctx gone.Context,
 					ginCtxPtr *gin.OriginContent,
 					ginCtx gin.OriginContent,
-				) {
+				) (any, any, any, any, any, error, int) {
 					assert.NotNil(t, logger)
 					assert.Equal(t, logger, one.log)
 					assert.Equal(t, logger, two.log)
@@ -130,6 +130,11 @@ func Test_proxy_Proxy(t *testing.T) {
 					assert.Equal(t, ctx.Context, ginCtxPtr)
 					assert.Equal(t, *ctx.Context, ginCtx)
 					i++
+					var x *int = nil
+					type X struct{}
+					var s []int
+					var s2 = make([]int, 0)
+					return 10, s, s2, X{}, x, nil, 0
 				})
 				funcs[0](&gin.OriginContent{})
 				assert.Equal(t, 1, i)
