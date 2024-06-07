@@ -32,9 +32,6 @@ type iError struct {
 
 func (e *iError) Error() string {
 	msg := e.defaultErr.Error()
-	if e.trace == nil {
-		return msg
-	}
 	return fmt.Sprintf("%s\n%s", msg, e.trace)
 }
 

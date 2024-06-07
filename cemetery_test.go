@@ -1,6 +1,8 @@
 package gone
 
 import (
+	"errors"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -660,6 +662,62 @@ func Test_cemetery_reviveOneAndItsDeps(t *testing.T) {
 			tombs, err := c.(*cemetery).reviveOneAndItsDeps(newTomb)
 			assert.Nil(t, err)
 			assert.Equal(t, 2, len(tombs))
+		})
+	})
+}
+
+func Test_cemetery_ReviveOne(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
+		type X struct {
+			Flag
+			y string `gone:"xxx"`
+		}
+
+		type DepOnX struct {
+			Flag
+			X X `gone:"*"`
+		}
+
+		Prepare().Test(func(c Cemetery) {
+			_, err := c.ReviveOne(&DepOnX{})
+			assert.Error(t, err)
+		})
+	})
+}
+
+func Test_cemetery_prophesy(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	prophet := NewMockProphet(controller)
+	prophet2 := NewMockProphet2(controller)
+	t.Run("Suc", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			prophet.EXPECT().AfterRevive().Return(nil)
+			prophet2.EXPECT().AfterRevive().Return(nil)
+
+			c.Bury(prophet).Bury(prophet2)
+			err := c.(*cemetery).prophesy()
+			assert.Nil(t, err)
+		})
+	})
+	t.Run("prophet err", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			err := errors.New("err")
+			prophet.EXPECT().AfterRevive().Return(err)
+
+			c.Bury(prophet)
+			err1 := c.(*cemetery).prophesy()
+			assert.Equal(t, err, err1)
+		})
+	})
+	t.Run("prophet err", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			err := errors.New("err")
+			prophet2.EXPECT().AfterRevive().Return(err)
+
+			c.Bury(prophet2)
+			err1 := c.(*cemetery).prophesy()
+			assert.Equal(t, err, err1)
 		})
 	})
 }

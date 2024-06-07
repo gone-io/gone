@@ -234,7 +234,7 @@ func (c *cemetery) reviveByVampire2(goner Goner, tomb Tomb, extConfig string, v 
 	return false, nil
 }
 
-func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool, err error) {
+func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool) {
 	container := c.getGonerContainerByType(field.Type, fmt.Sprintf("%s.%s", goneTypeName, field.Name))
 	if container != nil {
 		c.setFieldValue(v, container.GetGoner())
@@ -244,7 +244,7 @@ func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value,
 	return
 }
 
-func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
+func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool) {
 	t := field.Type
 	switch t.Kind() {
 
@@ -358,17 +358,13 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 		}
 
 		// 根据类型匹配
-		if tmpDeps, suc, err = c.reviveFieldByType(field, v, goneTypeName); err != nil {
-			return
-		} else if suc {
+		if tmpDeps, suc = c.reviveFieldByType(field, v, goneTypeName); suc {
 			deps = append(deps, tmpDeps...)
 			continue
 		}
 
 		// 特殊类型处理
-		if tmpDeps, suc, err = c.reviveSpecialTypeFields(field, v); err != nil {
-			return
-		} else if suc {
+		if tmpDeps, suc = c.reviveSpecialTypeFields(field, v); suc {
 			deps = append(deps, tmpDeps...)
 			continue
 		}
@@ -404,13 +400,8 @@ var obsessionType = reflect.TypeOf(obsessionPtr).Elem()
 var obsessionPtr2 *Prophet2
 var obsessionType2 = reflect.TypeOf(obsessionPtr2).Elem()
 
-func (c *cemetery) prophesy(deps ...Tomb) error {
-	var tombs []Tomb
-	if len(deps) > 0 {
-		tombs = Tombs(deps).GetTomByType(obsessionType)
-	} else {
-		tombs = c.GetTomByType(obsessionType)
-	}
+func (c *cemetery) prophesy() error {
+	var tombs = c.GetTomByType(obsessionType)
 
 	for _, tomb := range tombs {
 		obsession := tomb.GetGoner().(Prophet)
@@ -420,13 +411,7 @@ func (c *cemetery) prophesy(deps ...Tomb) error {
 		}
 	}
 
-	// deal with Prophet2
-	if len(deps) > 0 {
-		tombs = Tombs(deps).GetTomByType(obsessionType2)
-	} else {
-		tombs = c.GetTomByType(obsessionType2)
-	}
-
+	tombs = c.GetTomByType(obsessionType2)
 	for _, tomb := range tombs {
 		obsession := tomb.GetGoner().(Prophet2)
 		err := obsession.AfterRevive()
