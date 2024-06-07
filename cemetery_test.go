@@ -550,3 +550,116 @@ func Test_cemetery_BuryOnce(t *testing.T) {
 	}
 	test.BuryOnce(&X{})
 }
+
+func Test_cemetery_replaceTombsGonerField(t *testing.T) {
+	type X struct {
+		Flag
+		s string `gone:"s"`
+	}
+
+	type Y struct {
+		Flag
+	}
+
+	Prepare().Test(func(cemetery Cemetery) {
+		err := cemetery.Bury(&X{}).ReplaceBury(&Y{}, "s")
+		assert.Error(t, err)
+	})
+}
+
+type sucker struct {
+	Flag
+	s string `gone:"s"`
+}
+
+func (s *sucker) Suck(conf string, v reflect.Value) SuckError {
+	v.SetString(conf)
+	return nil
+}
+
+type beenSuck struct {
+	Flag
+	s string `gone:"xxx"`
+}
+
+func Test_cemetery_reviveByVampire(t *testing.T) {
+	Prepare().Test(func(cemetery Cemetery) {
+		cemetery.Bury(&sucker{}, GonerId("xxx"))
+		suck := beenSuck{}
+		_, err := cemetery.ReviveOne(&suck)
+		assert.Error(t, err)
+	})
+}
+
+type sucker2 struct {
+	Flag
+	s string `gone:"s"`
+}
+
+func (s *sucker2) Suck(conf string, v reflect.Value, field reflect.StructField) error {
+	v.SetString(conf)
+	return nil
+}
+
+func Test_cemetery_reviveByVampire2(t *testing.T) {
+	Prepare().Test(func(cemetery Cemetery) {
+		cemetery.Bury(&sucker2{}, GonerId("xxx"))
+		suck := beenSuck{}
+		_, err := cemetery.ReviveOne(&suck)
+		assert.Error(t, err)
+	})
+}
+
+type depOnBeenSuck struct {
+	Flag
+	beenSuck beenSuck `gone:"*"`
+}
+
+func Test_cemetery_reviveOneAndItsDeps(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			suck := beenSuck{}
+			newTomb := NewTomb(&suck)
+
+			_, err := c.(*cemetery).reviveOneAndItsDeps(newTomb)
+			assert.Error(t, err)
+		})
+	})
+	t.Run("error in revive deps", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			c.Bury(&beenSuck{})
+
+			suck := depOnBeenSuck{}
+			newTomb := NewTomb(&suck)
+
+			_, err := c.(*cemetery).reviveOneAndItsDeps(newTomb)
+			assert.Error(t, err)
+		})
+	})
+	t.Run("success", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+
+			type Y struct {
+				Flag
+			}
+
+			type X struct {
+				Flag
+				y Y `gone:"*"`
+			}
+
+			type DepOnX struct {
+				Flag
+				X X `gone:"*"`
+			}
+
+			c.Bury(&X{}).Bury(&Y{})
+			suck := DepOnX{}
+			newTomb := NewTomb(&suck)
+
+			tombs, err := c.(*cemetery).reviveOneAndItsDeps(newTomb)
+			assert.Nil(t, err)
+			assert.Equal(t, 2, len(tombs))
+		})
+	})
+}

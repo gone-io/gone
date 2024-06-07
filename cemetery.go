@@ -380,9 +380,10 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 
 func (c *cemetery) reviveOneFromTomb(tomb Tomb) (deps []Tomb, err error) {
 	goner := tomb.GetGoner()
-
 	deps, err = c.ReviveOne(goner)
-
+	if err != nil {
+		return nil, err
+	}
 	tomb.GonerIsRevive(true)
 	return
 }
