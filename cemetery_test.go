@@ -538,3 +538,15 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 		})
 	})
 }
+
+func Test_cemetery_BuryOnce(t *testing.T) {
+	test := NewBuryMockCemeteryForTest()
+	defer func() {
+		err := recover()
+		assert.Error(t, err.(Error))
+	}()
+	type X struct {
+		Flag
+	}
+	test.BuryOnce(&X{})
+}

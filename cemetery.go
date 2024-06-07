@@ -156,10 +156,11 @@ const goneTag = "gone"
 const anonymous = "*"
 
 func parseGoneTagId(tag string) (id GonerId, extend string) {
+	if tag == "" {
+		return
+	}
 	list := strings.SplitN(tag, ",", 2)
 	switch len(list) {
-	case 0:
-		return
 	case 1:
 		id = GonerId(list[0])
 	default:

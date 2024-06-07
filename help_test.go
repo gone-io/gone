@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -41,4 +42,34 @@ func TestTimeStat(t *testing.T) {
 	t.Run("without log", func(t *testing.T) {
 		defer TimeStat("test", time.Now())
 	})
+}
+
+func TestWrapNormalFnToProcess(t *testing.T) {
+	Prepare().Test(func(cemetery Cemetery) {
+		fn := WrapNormalFnToProcess(func(in struct {
+			in Logger `gone:"xxx"`
+		}) {
+		})
+
+		err := fn(cemetery)
+		assert.Error(t, err)
+
+		process := WrapNormalFnToProcess(func() error {
+			return errors.New("err")
+		})
+
+		err = process(cemetery)
+		assert.Error(t, err)
+		assert.Equal(t, err.Error(), "err")
+	})
+}
+
+func TestBlank(t *testing.T) {
+	flag := Flag{}
+	flag.goneFlag()
+	id := GonerId("")
+	id.option()
+
+	isDefault := IsDefault(true)
+	isDefault.option()
 }

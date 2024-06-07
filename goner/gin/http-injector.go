@@ -88,20 +88,18 @@ const keyQuery = "query"
 const keyCookie = "cookie"
 
 func unsupportedAttributeType(fieldName string) error {
-	return NewInnerError(fmt.Sprintf("cannot inject %s，unsupported attribute type; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError)
+	return gone.NewInnerErrorSkip(fmt.Sprintf("cannot inject %s，unsupported attribute type; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError, 2)
 }
 func unsupportedKindConfigure(fieldName string) error {
-	return NewInnerError(fmt.Sprintf("cannot inject %s，unsupported kind configure; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError)
-}
-
-func injectParseStringParameterError(k reflect.Kind, kind, key string, err error) gone.Error {
-	return NewParameterError(
-		fmt.Sprintf("%s parameter %s required %s;parse error: %s", kind, key, k.String(), err.Error()),
-	)
+	return gone.NewInnerErrorSkip(fmt.Sprintf("cannot inject %s，unsupported kind configure; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError, 2)
 }
 
 func cannotInjectBodyMoreThanOnce(fieldName string) error {
-	return NewInnerError(fmt.Sprintf("cannot inject %s，http body inject only support inject once; ref doc: https://goner.fun/en/references/http-inject.md", fieldName), gone.InjectError)
+	return gone.NewInnerErrorSkip(fmt.Sprintf("cannot inject %s，http body inject only support inject once; ref doc: https://goner.fun/en/references/http-inject.md", fieldName), gone.InjectError, 2)
+}
+
+func injectParseStringParameterError(k reflect.Kind, kind, key string, err error) gone.Error {
+	return NewParameterError(fmt.Sprintf("%s parameter %s required %s;parse error: %s", kind, key, k.String(), err.Error()))
 }
 
 func (s *httpInjector) inject(kind string, key string, field reflect.StructField) (fn BindFieldFunc, err error) {
