@@ -485,13 +485,7 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 			args, err := cemetery.InjectFuncParameters(fn, nil, nil)
 			assert.Nil(t, err)
 
-			reflect.ValueOf(fn).
-				Call(
-					[]reflect.Value{
-						reflect.ValueOf(args[0]),
-						reflect.ValueOf(args[1]),
-					},
-				)
+			reflect.ValueOf(fn).Call(args)
 			assert.True(t, executed)
 		})
 
@@ -503,7 +497,6 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 		})
 
 		t.Run("filter some parameters", func(t *testing.T) {
-			var tmp any
 			executed := false
 			fn := func(
 				cemetery Cemetery,
@@ -512,7 +505,6 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 				},
 				test bool,
 			) {
-				assert.Equal(t, tmp, in)
 				assert.NotNil(t, in.cemetery)
 				assert.NotNil(t, cemetery)
 				assert.Equal(t, cemetery, in.cemetery)
@@ -525,22 +517,13 @@ func Test_cemetery_InjectFuncParameters(t *testing.T) {
 					return true
 				}
 				return nil
-			}, func(pt reflect.Type, i int, obj *any) {
+			}, func(pt reflect.Type, i int) {
 				assert.Equal(t, 1, i)
-				assert.Equal(t, pt, reflect.TypeOf(*obj))
-				tmp = *obj
 			})
 
 			assert.Nil(t, err)
 			assert.Equal(t, 3, len(args))
-			reflect.ValueOf(fn).
-				Call(
-					[]reflect.Value{
-						reflect.ValueOf(args[0]),
-						reflect.ValueOf(args[1]),
-						reflect.ValueOf(args[2]),
-					},
-				)
+			reflect.ValueOf(fn).Call(args)
 			assert.True(t, executed)
 		})
 

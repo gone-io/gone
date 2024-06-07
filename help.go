@@ -55,12 +55,7 @@ func WrapNormalFnToProcess(fn any) Process {
 			return err
 		}
 
-		var parameters []reflect.Value
-		for _, arg := range args {
-			parameters = append(parameters, reflect.ValueOf(arg))
-		}
-
-		results := reflect.ValueOf(fn).Call(parameters)
+		results := reflect.ValueOf(fn).Call(args)
 		for _, result := range results {
 			if err, ok := result.Interface().(error); ok {
 				return err
@@ -97,8 +92,8 @@ func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
 }
 
 type timeUseRecord struct {
-	Count   int64
 	UseTime time.Duration
+	Count   int64
 }
 
 var mapRecord = make(map[string]*timeUseRecord)
@@ -120,7 +115,7 @@ func TimeStat(name string, start time.Time, logs ...func(format string, args ...
 		log = logs[0]
 	}
 
-	log("%s count %v, use %v, avg: %v\n",
+	log("%s executed %v times, took %v, avg: %v\n",
 		name,
 		mapRecord[name].Count,
 		mapRecord[name].UseTime,

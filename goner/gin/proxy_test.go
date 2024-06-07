@@ -89,17 +89,18 @@ func Test_proxy_Proxy(t *testing.T) {
 
 				injector.EXPECT().StartBindFuncs().MinTimes(3).MaxTimes(3)
 
-				injector.EXPECT().BindFuncs().Return(func(ctx *gin.OriginContent, obj any, T reflect.Type) (reflect.Value, error) {
-					one, ok := obj.(One)
+				injector.EXPECT().BindFuncs().Return(func(ctx *gin.OriginContent, arg reflect.Value) (reflect.Value, error) {
+					one, ok := arg.Interface().(One)
 					assert.True(t, ok)
+
 					assert.Equal(t, logger, one.log)
 
 					one.X1 = "one"
 					return reflect.ValueOf(one), nil
 				})
 
-				fn2 := func(ctx *gin.OriginContent, obj any, arg reflect.Type) (reflect.Value, error) {
-					two, ok := obj.(Two)
+				fn2 := func(ctx *gin.OriginContent, arg reflect.Value) (reflect.Value, error) {
+					two, ok := arg.Interface().(Two)
 					assert.True(t, ok)
 					assert.Equal(t, logger, two.log)
 
@@ -158,7 +159,7 @@ func Test_proxy_Proxy(t *testing.T) {
 				bindErr := errors.New("bind error")
 
 				injector.EXPECT().StartBindFuncs()
-				injector.EXPECT().BindFuncs().Return(func(ctx *gin.OriginContent, obj any, T reflect.Type) (reflect.Value, error) {
+				injector.EXPECT().BindFuncs().Return(func(ctx *gin.OriginContent, obj reflect.Value) (reflect.Value, error) {
 					return reflect.Value{}, bindErr
 				})
 

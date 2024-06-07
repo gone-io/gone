@@ -1031,6 +1031,34 @@ func Test_httpInjector_inject(t *testing.T) {
 				}}, req.BodySlice)
 			},
 		},
+		{
+			name:      "inject by kind, inject body more than once",
+			fieldName: "BodySlice",
+			kind:      keyBody,
+			key:       stringKey,
+			ctx:       &context,
+
+			before: func() {
+				body := []Body{{
+					X: 100,
+					Y: stringVal,
+				}}
+				marshal, _ := yaml.Marshal(body)
+				context.Request.Body = io.NopCloser(bytes.NewBuffer(marshal))
+				context.Request.Header = http.Header{
+					"Content-Type": []string{"application/x-yaml"},
+				}
+				injector.isInjectedBody = true
+			},
+
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				assert.Error(t, err)
+				return false
+			},
+
+			bindErr: func(t assert.TestingT, err error) {
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1052,4 +1080,31 @@ func Test_httpInjector_inject(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_httpInjector_BindFuncs(t *testing.T) {
+	t.Run("Suc", func(t *testing.T) {
+		injector := httpInjector{}
+		injector.bindFuncs = append(injector.bindFuncs, func(ctx *gin.Context, v reflect.Value) error {
+			field := fieldByIndexFromStructValue(v, []int{0}, false, reflect.TypeOf(1000))
+			field.SetInt(1000)
+			return nil
+		})
+
+		fn := injector.BindFuncs()
+		injector.bindFuncs = nil
+
+		type X struct {
+			x int
+			y int
+		}
+		req := X{y: 200}
+
+		value, err := fn(&gin.Context{}, reflect.ValueOf(&req).Elem())
+		assert.Nil(t, err)
+
+		x := value.Interface().(X)
+		assert.Equal(t, 1000, x.x)
+		assert.Equal(t, 200, x.y)
+	})
 }

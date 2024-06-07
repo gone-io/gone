@@ -19,6 +19,7 @@ type proxy struct {
 	responser   Responser     `gone:"*"`
 	tracer      gone.Tracer   `gone:"*"`
 	injector    HttInjector   `gone:"*"`
+	stat        bool          `gone:"config,server.proxy.stat,default=false"`
 }
 
 func (p *proxy) Proxy(handlers ...HandlerFunc) (arr []gin.HandlerFunc) {
@@ -49,6 +50,8 @@ var goneContextType = goneContextPointType.Elem()
 type placeholder struct {
 	Type reflect.Type
 }
+
+var placeholderType = reflect.TypeOf(placeholder{})
 
 type bindStructFuncAndType struct {
 	Fn   BindStructFunc
@@ -122,14 +125,14 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 		func(pt reflect.Type, i int) any {
 			switch pt {
 			case ctxPointType, ctxType, goneContextPointType, goneContextType:
-				return &placeholder{
+				return placeholder{
 					Type: pt,
 				}
 			}
 			p.injector.StartBindFuncs()
 			return nil
 		},
-		func(pt reflect.Type, i int, obj *any) {
+		func(pt reflect.Type, i int) {
 			m[i] = &bindStructFuncAndType{
 				Fn:   p.injector.BindFuncs(),
 				Type: pt,
@@ -143,11 +146,15 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 
 	fv := reflect.ValueOf(x)
 	return func(context *gin.Context) {
-		defer gone.TimeStat(funcName, time.Now(), p.Infof)
+		if p.stat {
+			defer gone.TimeStat(funcName+"-inject-proxy", time.Now(), p.Infof)
+		}
 
 		parameters := make([]reflect.Value, 0, len(args))
 		for i, arg := range args {
-			if holder, ok := arg.(*placeholder); ok {
+			switch arg.Type() {
+			case placeholderType:
+				holder := arg.Interface().(placeholder)
 				switch holder.Type {
 				case ctxPointType:
 					parameters = append(parameters, reflect.ValueOf(context))
@@ -158,19 +165,18 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 				case goneContextType:
 					parameters = append(parameters, reflect.ValueOf(Context{Context: context}))
 				}
-				continue
-			}
-
-			if f, ok := m[i]; ok {
-				parameter, err := f.Fn(context, arg, f.Type)
-				if err != nil {
-					p.responser.Failed(context, err)
-					return
+			default:
+				if f, ok := m[i]; ok {
+					parameter, err := f.Fn(context, arg)
+					if err != nil {
+						p.responser.Failed(context, err)
+						return
+					}
+					parameters = append(parameters, parameter)
+				} else {
+					parameters = append(parameters, arg)
 				}
-				parameters = append(parameters, parameter)
-				continue
 			}
-			parameters = append(parameters, reflect.ValueOf(arg))
 		}
 
 		//call the func x

@@ -76,7 +76,7 @@ type Cemetery interface {
 	//GetTomByType return the Tombs by the GonerType
 	GetTomByType(reflect.Type) []Tomb
 
-	InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int, obj *any)) (args []any, err error)
+	InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int)) (args []reflect.Value, err error)
 }
 
 // Priest A function which has A Cemetery parameter, and return an error. use for Burying Goner

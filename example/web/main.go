@@ -21,12 +21,21 @@ func (ctr *controller) Mount() gin.MountError {
 	return nil
 }
 
-func (ctr *controller) hello(in struct {
-	name string `gone:"http,query"`
-}, log gone.Logger) (any, error) {
+func (ctr *controller) hello(
+	in struct {
+		name string      `gone:"http,query"`
+		log  gone.Logger `gone:"gone-logger"`
+	},
+	log gone.Logger,
+	in2 struct {
+		age string `gone:"http,query"`
+	},
+) (any, error) {
 	defer gone.TimeStat("hello", time.Now(), log.Infof)
 
-	//log.Infof("hello, %s", in.name)
+	log.Infof("hello, %s", in.name)
+	in.log.Infof("%s", in.name)
+	in.log.Infof("age: %s", in2.age)
 	return "hello, " + in.name, nil
 }
 

@@ -124,7 +124,7 @@ type Responser interface {
 type BusinessError = gone.BusinessError
 
 type BindFieldFunc func(context *gin.Context, structVale reflect.Value) error
-type BindStructFunc func(*gin.Context, any, reflect.Type) (reflect.Value, error)
+type BindStructFunc func(*gin.Context, reflect.Value) (reflect.Value, error)
 
 type HttInjector interface {
 	StartBindFuncs()

@@ -367,10 +367,10 @@ func (mr *MockCemeteryMockRecorder) GetTomByType(arg0 interface{}) *gomock.Call 
 }
 
 // InjectFuncParameters mocks base method.
-func (m *MockCemetery) InjectFuncParameters(fn any, injectBefore func(reflect.Type, int) any, injectAfter func(reflect.Type, int, *any)) ([]any, error) {
+func (m *MockCemetery) InjectFuncParameters(fn any, injectBefore func(reflect.Type, int) any, injectAfter func(reflect.Type, int)) ([]reflect.Value, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "InjectFuncParameters", fn, injectBefore, injectAfter)
-	ret0, _ := ret[0].([]any)
+	ret0, _ := ret[0].([]reflect.Value)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -133,8 +133,7 @@ func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, 
 
 			v := gonerValue.Field(i)
 			if !field.IsExported() {
-				//黑魔法：让非导出字段可以访问
-				v = reflect.NewAt(field.Type, unsafe.Pointer(v.UnsafeAddr())).Elem()
+				v = BlackMagic(v)
 			}
 
 			if buried && v.Interface() == oldGoner {
@@ -338,8 +337,7 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 
 		v := gonerValue.Field(i)
 		if !field.IsExported() {
-			//黑魔法：让非导出字段可以访问
-			v = reflect.NewAt(field.Type, unsafe.Pointer(v.UnsafeAddr())).Elem()
+			v = BlackMagic(v)
 		}
 
 		//如果已经存在值，不再注入
@@ -468,7 +466,7 @@ func (c *cemetery) getGonerContainerByType(t reflect.Type, name string) Tomb {
 	return nil
 }
 
-func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int, obj *any)) (args []any, err error) {
+func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int)) (args []reflect.Value, err error) {
 	ft := reflect.TypeOf(fn)
 	if ft.Kind() != reflect.Func {
 		return nil, NewInnerError("fn must be a function", NotCompatible)
@@ -489,14 +487,14 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 		if injectBefore != nil {
 			x := injectBefore(pt, i)
 			if x != nil {
-				args = append(args, x)
+				args = append(args, reflect.ValueOf(x))
 				continue
 			}
 		}
 
 		x := getOnlyOne(pt, i+1)
 		if x != nil {
-			args = append(args, x)
+			args = append(args, reflect.ValueOf(x))
 			continue
 		}
 
@@ -511,11 +509,15 @@ func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Typ
 		if err != nil {
 			return
 		}
-		obj := parameter.Elem().Interface()
-		args = append(args, obj)
+
+		args = append(args, parameter.Elem())
 		if injectAfter != nil {
-			injectAfter(pt, i, &obj)
+			injectAfter(pt, i)
 		}
 	}
 	return
+}
+
+func BlackMagic(v reflect.Value) reflect.Value {
+	return reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem()
 }

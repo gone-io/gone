@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"unsafe"
 )
 
 func NewHttInjector() (gone.Goner, gone.GonerId, gone.GonerOption) {
@@ -45,9 +44,10 @@ func (s *httpInjector) CollectBindFuncs() []BindFieldFunc {
 
 func (s *httpInjector) BindFuncs() BindStructFunc {
 	funcs := s.CollectBindFuncs()
-	return func(context *gin.Context, arg any, T reflect.Type) (reflect.Value, error) {
-		v := reflect.ValueOf(&arg).Elem()
-		v = reflect.NewAt(T, unsafe.Pointer(v.UnsafeAddr())).Elem()
+	return func(context *gin.Context, arg reflect.Value) (reflect.Value, error) {
+		T := arg.Type()
+		v := reflect.New(T).Elem()
+		v.Set(arg)
 
 		for _, fn := range funcs {
 			err := fn(context, v)
@@ -57,6 +57,14 @@ func (s *httpInjector) BindFuncs() BindStructFunc {
 		}
 		return v, nil
 	}
+}
+
+func fieldByIndexFromStructValue(structValue reflect.Value, index []int, isExported bool, fieldType reflect.Type) reflect.Value {
+	v := structValue.FieldByIndex(index)
+	if !isExported {
+		v = gone.BlackMagic(v)
+	}
+	return v
 }
 
 func (s *httpInjector) Suck(conf string, v reflect.Value, field reflect.StructField) error {
@@ -69,7 +77,6 @@ func (s *httpInjector) Suck(conf string, v reflect.Value, field reflect.StructFi
 		return err
 	}
 
-	//index := field.Index()
 	s.bindFuncs = append(s.bindFuncs, fn)
 	return nil
 }
@@ -103,10 +110,6 @@ func (s *httpInjector) inject(kind string, key string, field reflect.StructField
 	}
 	return s.injectByKind(kind, key, field)
 }
-
-//var ctxPtr *gin.Context
-//var ctxPointType = reflect.TypeOf(ctxPtr)
-//var ctxType = ctxPointType.Elem()
 
 var requestPtr *http.Request
 var requestType = reflect.TypeOf(requestPtr)
@@ -490,14 +493,4 @@ func bitSize(kind reflect.Kind) int {
 
 func stringToBool(value string) bool {
 	return value != "" && value != "0" && value != "false"
-}
-
-func fieldByIndexFromStructValue(structValue reflect.Value, index []int, isExported bool, fieldType reflect.Type) reflect.Value {
-	v := structValue.FieldByIndex(index)
-
-	if !isExported {
-		//黑魔法：让非导出字段可以访问
-		v = reflect.NewAt(fieldType, unsafe.Pointer(v.UnsafeAddr())).Elem()
-	}
-	return v
 }
