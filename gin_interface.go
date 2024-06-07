@@ -45,4 +45,8 @@ type RouteGroup interface {
 	IRouter
 }
 
+type GinMiddleware interface {
+	Process(ctx *Context) error
+}
+
 type GinMountError error

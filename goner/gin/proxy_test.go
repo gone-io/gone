@@ -1,195 +1,177 @@
-package gin
+package gin_test
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/config"
+	"github.com/gone-io/gone/goner/gin"
+	"github.com/gone-io/gone/goner/logrus"
+	"github.com/gone-io/gone/goner/tracer"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
-func Test_proxy_proxyOne(t *testing.T) {
-	type fields struct {
-		Flag      gone.Flag
-		Logger    gone.Logger
-		cemetery  gone.Cemetery
-		responser Responser
-		tracer    gone.Tracer
-		inject    func(logger gone.Logger, cemetery gone.Cemetery, responser Responser, x HandlerFunc, context *gin.Context) (results []any)
-	}
-
+func Test_proxy_Proxy(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
-
-	mockResponser := NewMockResponser(controller)
-	mockResponser.EXPECT().ProcessResults(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	mockResponser.EXPECT().ProcessResults(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	mockResponser.EXPECT().ProcessResults(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-
-	gone.Prepare().AfterStart(func(in struct {
-		cemetery gone.Cemetery `gone:"gone-cemetery"`
-	}) {
-
-		type args struct {
-			x    HandlerFunc
-			last bool
-		}
-		tests := []struct {
-			name     string
-			fields   fields
-			args     args
-			wantFunc func(want gin.HandlerFunc) bool
-		}{
-			{
-				name: "func(*Context) (any, error)",
-				fields: fields{
-					responser: mockResponser,
-				},
-				args: args{
-					x:    func(ctx *Context) (any, error) { return nil, nil },
-					last: false,
-				},
-				wantFunc: func(want gin.HandlerFunc) bool {
-					want(&gin.Context{})
-					return true
-				},
-			},
-			{
-				name: "func(*Context) error",
-				fields: fields{
-					responser: mockResponser,
-				},
-				args: args{
-					x:    func(*Context) error { return nil },
-					last: false,
-				},
-				wantFunc: func(want gin.HandlerFunc) bool {
-					want(&gin.Context{})
-					return true
-				},
-			},
-			{
-				name: "func(*Context)",
-				fields: fields{
-					responser: mockResponser,
-				},
-				args: args{
-					x:    func(*Context) {},
-					last: false,
-				},
-				wantFunc: func(want gin.HandlerFunc) bool {
-					want(&gin.Context{})
-					return true
-				},
-			},
-			{
-				name: "other",
-				fields: fields{
-					responser: mockResponser,
-					cemetery:  in.cemetery,
-					inject: func(logger gone.Logger, cemetery gone.Cemetery, responser Responser, x HandlerFunc, context *gin.Context) (results []any) {
-						return []any{x}
-					},
-				},
-				args: args{
-					x:    func(in struct{}) {},
-					last: false,
-				},
-				wantFunc: func(want gin.HandlerFunc) bool {
-					want(&gin.Context{})
-					return true
-				},
-			},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				p := &proxy{
-					Flag:      tt.fields.Flag,
-					Logger:    tt.fields.Logger,
-					cemetery:  tt.fields.cemetery,
-					responser: tt.fields.responser,
-					tracer:    tt.fields.tracer,
-					inject:    tt.fields.inject,
-				}
-				one := p.proxyOne(tt.args.x, tt.args.last)
-
-				assert.Truef(t, tt.wantFunc(one), "proxyOne(%v, %v)", tt.args.x, tt.args.last)
-			})
-		}
-	}).Run()
-}
-
-func Test_injectHttp(t *testing.T) {
-
-	controller := gomock.NewController(t)
-	defer controller.Finish()
-
-	mockResponser := NewMockResponser(controller)
-	mockResponser.EXPECT().Failed(gomock.Any(), gomock.Any()).MinTimes(1)
+	responser := gin.NewMockResponser(controller)
+	injector := gin.NewMockHttInjector(controller)
+	responser.EXPECT().Success(gomock.Any(), gomock.Any()).AnyTimes()
+	responser.EXPECT().ProcessResults(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.All()).AnyTimes()
 
 	gone.
-		Prepare(config.Priest).
-		AfterStart(func(in struct {
-			logger   gone.Logger   `gone:"gone-logger"`
-			cemetery gone.Cemetery `gone:"gone-cemetery"`
-			//responser Responser     `gone:"gone-gin-processor"`
-		}) {
-			type args struct {
-				logger    gone.Logger
-				cemetery  gone.Cemetery
-				responser Responser
-				x         HandlerFunc
-				context   *gin.Context
-			}
+		Prepare(config.Priest, tracer.Priest, logrus.Priest, func(cemetery gone.Cemetery) error {
 
-			tests := []struct {
-				name           string
-				args           args
-				wantResultsLen int
-			}{
-				{
-					name: "with error",
-					args: args{
-						logger:    in.logger,
-						cemetery:  in.cemetery,
-						responser: mockResponser,
-						x:         func(ctx *Context) error { return nil },
-						context:   &gin.Context{},
+			cemetery.Bury(gin.NewGinProxy())
+			cemetery.Bury(responser)
+			cemetery.Bury(injector)
+			return nil
+		}).
+		Test(func(proxy gin.HandleProxyToGin, logger gone.Logger) {
+			i := 0
+			t.Run("Special funcs", func(t *testing.T) {
+				funcs := proxy.Proxy(
+					func(*gone.Context) (any, error) {
+						i++
+						return nil, nil
 					},
-					wantResultsLen: 0,
-				},
-				{
-					name: "no error",
-					args: args{
-						logger:    in.logger,
-						cemetery:  in.cemetery,
-						responser: mockResponser,
-						x:         func(in struct{}) error { return nil },
-						context:   &gin.Context{},
+					func(*gone.Context) error {
+						i++
+						return nil
 					},
-					wantResultsLen: 1,
-				},
-			}
-			for _, tt := range tests {
-				t.Run(tt.name, func(t *testing.T) {
-					results := injectHttp(tt.args.logger, tt.args.cemetery, tt.args.responser, tt.args.x, tt.args.context)
-					assert.Equalf(t, tt.wantResultsLen, len(results), "injectHttp(%v, %v, %v, %v, %v)", tt.args.logger, tt.args.cemetery, tt.args.responser, tt.args.x, tt.args.context)
+					func(*gone.Context) {
+						i++
+					},
+					func(*gin.OriginContent) (any, error) {
+						i++
+						return nil, nil
+					},
+					func(*gin.OriginContent) error {
+						i++
+						return nil
+					},
+					func(*gin.OriginContent) {
+						i++
+					},
+					func() {
+						i++
+					},
+					func() (any, error) {
+						i++
+						return nil, nil
+					},
+					func() error {
+						i++
+						return nil
+					},
+				)
+				for _, fn := range funcs {
+					fn(&gin.OriginContent{})
+				}
+
+				assert.Equal(t, 9, i)
+			})
+
+			t.Run("Inject funcs success", func(t *testing.T) {
+				i := 0
+
+				type One struct {
+					X1  string
+					log gone.Logger `gone:"*"`
+				}
+
+				type Two struct {
+					X2  string
+					log gone.Logger `gone:"*"`
+				}
+
+				injector.EXPECT().StartBindFuncs().MinTimes(3).MaxTimes(3)
+
+				injector.EXPECT().BindFuncs().Return(func(ctx *gin.OriginContent, arg reflect.Value) (reflect.Value, error) {
+					one, ok := arg.Interface().(One)
+					assert.True(t, ok)
+
+					assert.Equal(t, logger, one.log)
+
+					one.X1 = "one"
+					return reflect.ValueOf(one), nil
 				})
-			}
-		}).Run()
-}
 
-func Test_proxy_ProxyForMiddleware(t *testing.T) {
-	ginProxy, _, _ := NewGinProxy()
-	p := ginProxy.(HandleProxyToGin)
-	funcs := p.ProxyForMiddleware(func(ctx *gin.Context) {}, func() {})
-	assert.Equal(t, 2, len(funcs))
-}
+				fn2 := func(ctx *gin.OriginContent, arg reflect.Value) (reflect.Value, error) {
+					two, ok := arg.Interface().(Two)
+					assert.True(t, ok)
+					assert.Equal(t, logger, two.log)
 
-func Test_proxy_Proxy(t *testing.T) {
-	ginProxy, _, _ := NewGinProxy()
-	p := ginProxy.(HandleProxyToGin)
-	funcs := p.Proxy(func(ctx *gin.Context) {}, func() {})
-	assert.Equal(t, 2, len(funcs))
+					two.X2 = "two"
+					return reflect.ValueOf(two), nil
+				}
+
+				injector.EXPECT().BindFuncs().Return(fn2)
+
+				funcs := proxy.Proxy(func(
+					one One,
+					two Two,
+					logger gone.Logger,
+
+					ctxPtr *gone.Context,
+					ctx gone.Context,
+					ginCtxPtr *gin.OriginContent,
+					ginCtx gin.OriginContent,
+				) (any, any, any, any, any, error, int) {
+					assert.NotNil(t, logger)
+					assert.Equal(t, logger, one.log)
+					assert.Equal(t, logger, two.log)
+					assert.Equal(t, "one", one.X1)
+					assert.Equal(t, "two", two.X2)
+
+					assert.NotNil(t, ctxPtr)
+					assert.Equal(t, *ctxPtr, ctx)
+					assert.Equal(t, ctx.Context, ginCtxPtr)
+					assert.Equal(t, *ctx.Context, ginCtx)
+					i++
+					var x *int = nil
+					type X struct{}
+					var s []int
+					var s2 = make([]int, 0)
+					return 10, s, s2, X{}, x, nil, 0
+				})
+				funcs[0](&gin.OriginContent{})
+				assert.Equal(t, 1, i)
+			})
+
+			t.Run("Inject Error", func(t *testing.T) {
+				defer func() {
+					err := recover()
+					assert.Error(t, err.(error))
+				}()
+
+				injector.EXPECT().StartBindFuncs()
+				proxy.ProxyForMiddleware(func(in struct {
+					x gone.Logger `gone:"xxx"`
+				}) {
+				})
+
+			})
+
+			t.Run("Bind Context Error", func(t *testing.T) {
+				bindErr := errors.New("bind error")
+
+				injector.EXPECT().StartBindFuncs()
+				injector.EXPECT().BindFuncs().Return(func(ctx *gin.OriginContent, obj reflect.Value) (reflect.Value, error) {
+					return reflect.Value{}, bindErr
+				})
+
+				responser.EXPECT().Failed(gomock.Any(), gomock.Any()).Do(func(ctx any, err error) {
+					assert.Equal(t, bindErr, err)
+				})
+
+				arr := proxy.ProxyForMiddleware(func(in struct {
+					x gone.Logger `gone:"*"`
+				}) {
+				})
+				arr[0](&gin.OriginContent{})
+			})
+		})
 }

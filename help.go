@@ -6,28 +6,30 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // PanicTrace 用于获取调用者的堆栈信息
-func PanicTrace(kb int) []byte {
-	e := []byte("\ngoroutine ")
-	line := []byte("\n")
+func PanicTrace(kb int, skip int) []byte {
 	stack := make([]byte, kb<<10) //4KB
 	length := runtime.Stack(stack, true)
 
-	_, filename, fileLine, ok := runtime.Caller(1)
+	_, filename, fileLine, ok := runtime.Caller(skip)
 	start := 0
 	if ok {
 		start = bytes.Index(stack, []byte(fmt.Sprintf("%s:%d", filename, fileLine)))
 		stack = stack[start:length]
 	}
 
+	line := []byte("\n")
 	start = bytes.Index(stack, line) + 1
 	stack = stack[start:]
 	end := bytes.LastIndex(stack, line)
 	if end != -1 {
 		stack = stack[:end]
 	}
+
+	e := []byte("\ngoroutine ")
 	end = bytes.Index(stack, e)
 	if end != -1 {
 		stack = stack[:end]
@@ -38,7 +40,7 @@ func PanicTrace(kb int) []byte {
 
 // GetFuncName 获取某个函数的名字
 func GetFuncName(f any) string {
-	return strings.Trim(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
+	return strings.TrimSuffix(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
 }
 
 // GetInterfaceType 获取接口的类型
@@ -46,80 +48,77 @@ func GetInterfaceType[T any](t *T) reflect.Type {
 	return reflect.TypeOf(t).Elem()
 }
 
-func InjectWrapFn(cemetery Cemetery, fn any) (*reflect.Value, error) {
-	ft := reflect.TypeOf(fn)
-	fv := reflect.ValueOf(fn)
-	if ft.Kind() != reflect.Func {
-		return nil, NewInnerError("fn must be a function", NotCompatible)
-	}
-
-	in := ft.NumIn()
-	if in > 1 {
-		return nil, NewInnerError("fn only support one input parameter or no input parameter", NotCompatible)
-	}
-
-	var args = make([]reflect.Value, 0)
-
-	if in == 1 {
-		if ft.In(0).Kind() != reflect.Struct {
-			return nil, NewInnerError("fn input parameter must be a struct", NotCompatible)
-		}
-
-		pt := ft.In(0)
-
-		if pt.Name() != "" || pt.PkgPath() != "" {
-			return nil, NewInnerError("fn input parameter must be a anonymous struct", NotCompatible)
-		}
-
-		parameter := reflect.New(pt)
-
-		goner := parameter.Interface()
-		_, err := cemetery.ReviveOne(goner)
-		if err != nil {
-			return nil, ToError(err)
-		}
-		args = append(args, parameter.Elem())
-	}
-
-	var outList []reflect.Type
-	for i := 0; i < ft.NumOut(); i++ {
-		outList = append(outList, ft.Out(i))
-	}
-
-	makeFunc := reflect.MakeFunc(reflect.FuncOf(nil, outList, false), func([]reflect.Value) (results []reflect.Value) {
-		return fv.Call(args)
-	})
-	return &makeFunc, nil
-}
-
-func ExecuteInjectWrapFn(fn *reflect.Value) (results []any) {
-	call := fn.Call([]reflect.Value{})
-
-	for i := 0; i < len(call); i++ {
-		arg := call[i].Interface()
-		v := reflect.ValueOf(arg)
-
-		if v.Kind() == reflect.Pointer && v.IsNil() {
-			results = append(results, nil)
-		} else {
-			results = append(results, arg)
-		}
-	}
-	return
-}
-
 func WrapNormalFnToProcess(fn any) Process {
 	return func(cemetery Cemetery) error {
-		wrapFn, err := InjectWrapFn(cemetery, fn)
+		args, err := cemetery.InjectFuncParameters(fn, nil, nil)
 		if err != nil {
 			return err
 		}
-		results := ExecuteInjectWrapFn(wrapFn)
+
+		results := reflect.ValueOf(fn).Call(args)
 		for _, result := range results {
-			if err, ok := result.(error); ok {
+			if err, ok := result.Interface().(error); ok {
 				return err
 			}
 		}
 		return nil
 	}
+}
+
+// IsCompatible t Type can put in goner
+func IsCompatible(t reflect.Type, goner Goner) bool {
+	gonerType := reflect.TypeOf(goner)
+
+	switch t.Kind() {
+	case reflect.Interface:
+		return gonerType.Implements(t)
+	case reflect.Struct:
+		return gonerType.Elem() == t
+	default:
+		return gonerType == t
+	}
+}
+
+func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
+	t := v.Type()
+
+	switch t.Kind() {
+	case reflect.Interface, reflect.Pointer, reflect.Slice, reflect.Map:
+		v.Set(reflect.ValueOf(ref))
+	default:
+		v.Set(reflect.ValueOf(ref).Elem())
+	}
+	return
+}
+
+type timeUseRecord struct {
+	UseTime time.Duration
+	Count   int64
+}
+
+var mapRecord = make(map[string]*timeUseRecord)
+
+func TimeStat(name string, start time.Time, logs ...func(format string, args ...any)) {
+	since := time.Since(start)
+	if mapRecord[name] == nil {
+		mapRecord[name] = &timeUseRecord{}
+	}
+	mapRecord[name].UseTime += since
+	mapRecord[name].Count++
+
+	var log func(format string, args ...any)
+	if len(logs) == 0 {
+		log = func(format string, args ...any) {
+			fmt.Printf(format, args...)
+		}
+	} else {
+		log = logs[0]
+	}
+
+	log("%s executed %v times, took %v, avg: %v\n",
+		name,
+		mapRecord[name].Count,
+		mapRecord[name].UseTime,
+		mapRecord[name].UseTime/time.Duration(mapRecord[name].Count),
+	)
 }

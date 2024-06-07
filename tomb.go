@@ -37,7 +37,7 @@ type Tombs []Tomb
 
 func (tombs Tombs) GetTomByType(t reflect.Type) (filterTombs []Tomb) {
 	for _, tomb := range tombs {
-		if isCompatible(t, tomb.GetGoner()) {
+		if IsCompatible(t, tomb.GetGoner()) {
 			filterTombs = append(filterTombs, tomb)
 		}
 	}

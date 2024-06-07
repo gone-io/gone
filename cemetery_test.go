@@ -1,6 +1,8 @@
 package gone
 
 import (
+	"errors"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -461,4 +463,279 @@ func Test_cemetery_checkRevive(t *testing.T) {
 
 	err := test.(*cemetery).checkRevive(theTomb)
 	assert.Nil(t, err)
+}
+
+func Test_cemetery_InjectFuncParameters(t *testing.T) {
+	Prepare().Test(func(cemetery Cemetery) {
+		t.Run("fn is not a func", func(t *testing.T) {
+			_, err := cemetery.InjectFuncParameters("", nil, nil)
+			assert.Error(t, err)
+			assert.Equal(t, err.(Error).Code(), NotCompatible)
+		})
+
+		t.Run("fn has two parameters", func(t *testing.T) {
+			executed := false
+			fn := func(cemetery Cemetery, in struct {
+				cemetery Cemetery `gone:"*"`
+			}) {
+				assert.NotNil(t, in.cemetery)
+				assert.NotNil(t, cemetery)
+				assert.Equal(t, cemetery, in.cemetery)
+				executed = true
+			}
+
+			args, err := cemetery.InjectFuncParameters(fn, nil, nil)
+			assert.Nil(t, err)
+
+			reflect.ValueOf(fn).Call(args)
+			assert.True(t, executed)
+		})
+
+		t.Run("fn parameter is not struct", func(t *testing.T) {
+			fn := func(int) {}
+			_, err := cemetery.InjectFuncParameters(fn, nil, nil)
+			assert.Error(t, err)
+			assert.Equal(t, err.(Error).Code(), NotCompatible)
+		})
+
+		t.Run("filter some parameters", func(t *testing.T) {
+			executed := false
+			fn := func(
+				cemetery Cemetery,
+				in struct {
+					cemetery Cemetery `gone:"*"`
+				},
+				test bool,
+			) {
+				assert.NotNil(t, in.cemetery)
+				assert.NotNil(t, cemetery)
+				assert.Equal(t, cemetery, in.cemetery)
+				assert.Equal(t, true, test)
+				executed = true
+			}
+
+			args, err := cemetery.InjectFuncParameters(fn, func(pt reflect.Type, i int) any {
+				if i == 2 {
+					return true
+				}
+				return nil
+			}, func(pt reflect.Type, i int) {
+				assert.Equal(t, 1, i)
+			})
+
+			assert.Nil(t, err)
+			assert.Equal(t, 3, len(args))
+			reflect.ValueOf(fn).Call(args)
+			assert.True(t, executed)
+		})
+
+		t.Run("Revive Failed", func(t *testing.T) {
+			fn := func(in struct {
+				cemetery Cemetery `gone:"xxxxx"`
+			}) {
+			}
+			_, err := cemetery.InjectFuncParameters(fn, nil, nil)
+			assert.Error(t, err)
+			assert.Equal(t, CannotFoundGonerById, err.(Error).Code())
+		})
+	})
+}
+
+func Test_cemetery_BuryOnce(t *testing.T) {
+	test := NewBuryMockCemeteryForTest()
+	defer func() {
+		err := recover()
+		assert.Error(t, err.(Error))
+	}()
+	type X struct {
+		Flag
+	}
+	test.BuryOnce(&X{})
+}
+
+func Test_cemetery_replaceTombsGonerField(t *testing.T) {
+	type X struct {
+		Flag
+		s string `gone:"s"`
+	}
+
+	type Y struct {
+		Flag
+	}
+
+	Prepare().Test(func(cemetery Cemetery) {
+		err := cemetery.Bury(&X{}).ReplaceBury(&Y{}, "s")
+		assert.Error(t, err)
+	})
+}
+
+type sucker struct {
+	Flag
+	s string `gone:"s"`
+}
+
+func (s *sucker) Suck(conf string, v reflect.Value) SuckError {
+	v.SetString(conf)
+	return nil
+}
+
+type beenSuck struct {
+	Flag
+	s string `gone:"xxx"`
+}
+
+func Test_cemetery_reviveByVampire(t *testing.T) {
+	Prepare().Test(func(cemetery Cemetery) {
+		cemetery.Bury(&sucker{}, GonerId("xxx"))
+		suck := beenSuck{}
+		_, err := cemetery.ReviveOne(&suck)
+		assert.Error(t, err)
+	})
+}
+
+type sucker2 struct {
+	Flag
+	s string `gone:"s"`
+}
+
+func (s *sucker2) Suck(conf string, v reflect.Value, field reflect.StructField) error {
+	v.SetString(conf)
+	return nil
+}
+
+func Test_cemetery_reviveByVampire2(t *testing.T) {
+	Prepare().Test(func(cemetery Cemetery) {
+		cemetery.Bury(&sucker2{}, GonerId("xxx"))
+		suck := beenSuck{}
+		_, err := cemetery.ReviveOne(&suck)
+		assert.Error(t, err)
+	})
+}
+
+type depOnBeenSuck struct {
+	Flag
+	beenSuck beenSuck `gone:"*"`
+}
+
+func Test_cemetery_reviveOneAndItsDeps(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			suck := beenSuck{}
+			newTomb := NewTomb(&suck)
+
+			_, err := c.(*cemetery).reviveOneAndItsDeps(newTomb)
+			assert.Error(t, err)
+		})
+	})
+	t.Run("error in revive deps", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			c.Bury(&beenSuck{})
+
+			suck := depOnBeenSuck{}
+			newTomb := NewTomb(&suck)
+
+			_, err := c.(*cemetery).reviveOneAndItsDeps(newTomb)
+			assert.Error(t, err)
+		})
+	})
+	t.Run("success", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+
+			type Y struct {
+				Flag
+			}
+
+			type X struct {
+				Flag
+				y Y `gone:"*"`
+			}
+
+			type DepOnX struct {
+				Flag
+				X X `gone:"*"`
+			}
+
+			c.Bury(&X{}).Bury(&Y{})
+			suck := DepOnX{}
+			newTomb := NewTomb(&suck)
+
+			tombs, err := c.(*cemetery).reviveOneAndItsDeps(newTomb)
+			assert.Nil(t, err)
+			assert.Equal(t, 2, len(tombs))
+		})
+	})
+}
+
+func Test_cemetery_ReviveOne(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
+		type X struct {
+			Flag
+			y string `gone:"xxx"`
+		}
+
+		type DepOnX struct {
+			Flag
+			X X `gone:"*"`
+		}
+
+		Prepare().Test(func(c Cemetery) {
+			_, err := c.ReviveOne(&DepOnX{})
+			assert.Error(t, err)
+		})
+	})
+}
+
+func Test_cemetery_prophesy(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	prophet := NewMockProphet(controller)
+	prophet2 := NewMockProphet2(controller)
+	t.Run("Suc", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			prophet.EXPECT().AfterRevive().Return(nil)
+			prophet2.EXPECT().AfterRevive().Return(nil)
+
+			c.Bury(prophet).Bury(prophet2)
+			err := c.(*cemetery).prophesy()
+			assert.Nil(t, err)
+		})
+	})
+	t.Run("prophet err", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			err := errors.New("err")
+			prophet.EXPECT().AfterRevive().Return(err)
+
+			c.Bury(prophet)
+			err1 := c.(*cemetery).prophesy()
+			assert.Equal(t, err, err1)
+		})
+	})
+	t.Run("prophet err", func(t *testing.T) {
+		Prepare().Test(func(c Cemetery) {
+			err := errors.New("err")
+			prophet2.EXPECT().AfterRevive().Return(err)
+
+			c.Bury(prophet2)
+			err1 := c.(*cemetery).prophesy()
+			assert.Equal(t, err, err1)
+		})
+	})
+}
+
+func Test_cemetery_getGonerContainerByType(t *testing.T) {
+	Prepare().Test(func(c Cemetery) {
+		type X struct {
+			Flag
+		}
+
+		type DepOnX struct {
+			Flag
+			X X `gone:"*"`
+		}
+
+		c.Bury(&X{}, GonerId("x1")).Bury(&X{}, GonerId("x2"))
+
+		_, err := c.ReviveOne(&DepOnX{})
+		assert.Nil(t, err)
+	})
 }

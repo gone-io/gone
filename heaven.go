@@ -1,7 +1,6 @@
 package gone
 
 import (
-	"errors"
 	"os"
 	"os/signal"
 	"reflect"
@@ -104,10 +103,6 @@ func (h *heaven) startFlow() {
 func (h *heaven) panicOnError(err error) {
 	if err == nil {
 		return
-	}
-	var iErr InnerError
-	if errors.As(err, &iErr) {
-		h.Errorf("%s\n", iErr.Error())
 	}
 	panic(err)
 }

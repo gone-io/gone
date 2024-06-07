@@ -133,8 +133,7 @@ func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, 
 
 			v := gonerValue.Field(i)
 			if !field.IsExported() {
-				//黑魔法：让非导出字段可以访问
-				v = reflect.NewAt(field.Type, unsafe.Pointer(v.UnsafeAddr())).Elem()
+				v = BlackMagic(v)
 			}
 
 			if buried && v.Interface() == oldGoner {
@@ -157,40 +156,15 @@ const goneTag = "gone"
 const anonymous = "*"
 
 func parseGoneTagId(tag string) (id GonerId, extend string) {
+	if tag == "" {
+		return
+	}
 	list := strings.SplitN(tag, ",", 2)
 	switch len(list) {
-	case 0:
-		return
 	case 1:
 		id = GonerId(list[0])
 	default:
 		id, extend = GonerId(list[0]), list[1]
-	}
-	return
-}
-
-// 兼容：t类型可以装下goner
-func isCompatible(t reflect.Type, goner Goner) bool {
-	gonerType := reflect.TypeOf(goner)
-
-	switch t.Kind() {
-	case reflect.Interface:
-		return gonerType.Implements(t)
-	case reflect.Struct:
-		return gonerType.Elem() == t
-	default:
-		return gonerType == t
-	}
-}
-
-func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
-	t := v.Type()
-
-	switch t.Kind() {
-	case reflect.Interface, reflect.Pointer, reflect.Slice, reflect.Map:
-		v.Set(reflect.ValueOf(ref))
-	default:
-		v.Set(reflect.ValueOf(ref).Elem())
 	}
 	return
 }
@@ -206,7 +180,7 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 		}
 
 		goner := tomb.GetGoner()
-		if isCompatible(field.Type, goner) {
+		if IsCompatible(field.Type, goner) {
 			c.setFieldValue(v, goner)
 			suc = true
 			return
@@ -260,24 +234,9 @@ func (c *cemetery) reviveByVampire2(goner Goner, tomb Tomb, extConfig string, v 
 	return false, nil
 }
 
-func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool, err error) {
-	tombs := c.GetTomByType(field.Type)
-	if len(tombs) > 0 {
-		var container Tomb
-
-		for _, t := range tombs {
-			if t.IsDefault() {
-				container = t
-				break
-			}
-		}
-		if container == nil {
-			container = tombs[0]
-			if len(tombs) > 1 {
-				c.Warnf(fmt.Sprintf("inject %s.%s more than one goner was found and no default, used the first!", goneTypeName, field.Name))
-			}
-		}
-
+func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool) {
+	container := c.getGonerContainerByType(field.Type, fmt.Sprintf("%s.%s", goneTypeName, field.Name))
+	if container != nil {
 		c.setFieldValue(v, container.GetGoner())
 		suc = true
 		deps = append(deps, container)
@@ -285,7 +244,7 @@ func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value,
 	return
 }
 
-func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
+func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool) {
 	t := field.Type
 	switch t.Kind() {
 
@@ -379,8 +338,7 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 
 		v := gonerValue.Field(i)
 		if !field.IsExported() {
-			//黑魔法：让非导出字段可以访问
-			v = reflect.NewAt(field.Type, unsafe.Pointer(v.UnsafeAddr())).Elem()
+			v = BlackMagic(v)
 		}
 
 		//如果已经存在值，不再注入
@@ -400,17 +358,13 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 		}
 
 		// 根据类型匹配
-		if tmpDeps, suc, err = c.reviveFieldByType(field, v, goneTypeName); err != nil {
-			return
-		} else if suc {
+		if tmpDeps, suc = c.reviveFieldByType(field, v, goneTypeName); suc {
 			deps = append(deps, tmpDeps...)
 			continue
 		}
 
 		// 特殊类型处理
-		if tmpDeps, suc, err = c.reviveSpecialTypeFields(field, v); err != nil {
-			return
-		} else if suc {
+		if tmpDeps, suc = c.reviveSpecialTypeFields(field, v); suc {
 			deps = append(deps, tmpDeps...)
 			continue
 		}
@@ -422,9 +376,10 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 
 func (c *cemetery) reviveOneFromTomb(tomb Tomb) (deps []Tomb, err error) {
 	goner := tomb.GetGoner()
-
 	deps, err = c.ReviveOne(goner)
-
+	if err != nil {
+		return nil, err
+	}
 	tomb.GonerIsRevive(true)
 	return
 }
@@ -445,13 +400,8 @@ var obsessionType = reflect.TypeOf(obsessionPtr).Elem()
 var obsessionPtr2 *Prophet2
 var obsessionType2 = reflect.TypeOf(obsessionPtr2).Elem()
 
-func (c *cemetery) prophesy(deps ...Tomb) error {
-	var tombs []Tomb
-	if len(deps) > 0 {
-		tombs = Tombs(deps).GetTomByType(obsessionType)
-	} else {
-		tombs = c.GetTomByType(obsessionType)
-	}
+func (c *cemetery) prophesy() error {
+	var tombs = c.GetTomByType(obsessionType)
 
 	for _, tomb := range tombs {
 		obsession := tomb.GetGoner().(Prophet)
@@ -461,13 +411,7 @@ func (c *cemetery) prophesy(deps ...Tomb) error {
 		}
 	}
 
-	// deal with Prophet2
-	if len(deps) > 0 {
-		tombs = Tombs(deps).GetTomByType(obsessionType2)
-	} else {
-		tombs = c.GetTomByType(obsessionType2)
-	}
-
+	tombs = c.GetTomByType(obsessionType2)
 	for _, tomb := range tombs {
 		obsession := tomb.GetGoner().(Prophet2)
 		err := obsession.AfterRevive()
@@ -485,4 +429,82 @@ func (c *cemetery) GetTomById(id GonerId) Tomb {
 
 func (c *cemetery) GetTomByType(t reflect.Type) (tombs []Tomb) {
 	return Tombs(c.tombs).GetTomByType(t)
+}
+
+func (c *cemetery) getGonerContainerByType(t reflect.Type, name string) Tomb {
+	tombs := c.GetTomByType(t)
+	if len(tombs) > 0 {
+		var container Tomb
+
+		for _, t := range tombs {
+			if t.IsDefault() {
+				container = t
+				break
+			}
+		}
+		if container == nil {
+			container = tombs[0]
+			if len(tombs) > 1 {
+				c.Warnf(fmt.Sprintf("inject %s more than one goner was found and no default, used the first!", name))
+			}
+		}
+		return container
+	}
+	return nil
+}
+
+func (c *cemetery) InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int)) (args []reflect.Value, err error) {
+	ft := reflect.TypeOf(fn)
+	if ft.Kind() != reflect.Func {
+		return nil, NewInnerError("fn must be a function", NotCompatible)
+	}
+
+	in := ft.NumIn()
+
+	getOnlyOne := func(pt reflect.Type, i int) Goner {
+		container := c.getGonerContainerByType(pt, fmt.Sprintf("%d parameter of %s", i, GetFuncName(fn)))
+		if container != nil {
+			return container.GetGoner()
+		}
+		return nil
+	}
+
+	for i := 0; i < in; i++ {
+		pt := ft.In(i)
+		if injectBefore != nil {
+			x := injectBefore(pt, i)
+			if x != nil {
+				args = append(args, reflect.ValueOf(x))
+				continue
+			}
+		}
+
+		x := getOnlyOne(pt, i+1)
+		if x != nil {
+			args = append(args, reflect.ValueOf(x))
+			continue
+		}
+
+		if pt.Kind() != reflect.Struct {
+			err = NewInnerError(fmt.Sprintf("%dth parameter of %s must be a struct", i+1, GetFuncName(fn)), NotCompatible)
+			return
+		}
+
+		parameter := reflect.New(pt)
+		goner := parameter.Interface()
+		_, err = c.ReviveOne(goner)
+		if err != nil {
+			return
+		}
+
+		args = append(args, parameter.Elem())
+		if injectAfter != nil {
+			injectAfter(pt, i)
+		}
+	}
+	return
+}
+
+func BlackMagic(v reflect.Value) reflect.Value {
+	return reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem()
 }

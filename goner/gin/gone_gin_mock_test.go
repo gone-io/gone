@@ -741,3 +741,41 @@ func (mr *MockRouteGroupMockRecorder) Use(arg0 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Use", reflect.TypeOf((*MockRouteGroup)(nil).Use), arg0...)
 }
+
+// MockGinMiddleware is a mock of GinMiddleware interface.
+type MockGinMiddleware struct {
+	goneMock.Flag
+	ctrl     *gomock.Controller
+	recorder *MockGinMiddlewareMockRecorder
+}
+
+// MockGinMiddlewareMockRecorder is the mock recorder for MockGinMiddleware.
+type MockGinMiddlewareMockRecorder struct {
+	mock *MockGinMiddleware
+}
+
+// NewMockGinMiddleware creates a new mock instance.
+func NewMockGinMiddleware(ctrl *gomock.Controller) *MockGinMiddleware {
+	mock := &MockGinMiddleware{ctrl: ctrl}
+	mock.recorder = &MockGinMiddlewareMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGinMiddleware) EXPECT() *MockGinMiddlewareMockRecorder {
+	return m.recorder
+}
+
+// Process mocks base method.
+func (m *MockGinMiddleware) Process(ctx *gone.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Process", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Process indicates an expected call of Process.
+func (mr *MockGinMiddlewareMockRecorder) Process(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*MockGinMiddleware)(nil).Process), ctx)
+}

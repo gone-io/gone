@@ -32,9 +32,6 @@ type iError struct {
 
 func (e *iError) Error() string {
 	msg := e.defaultErr.Error()
-	if e.trace == nil {
-		return msg
-	}
 	return fmt.Sprintf("%s\n%s", msg, e.trace)
 }
 
@@ -43,7 +40,11 @@ func (e *iError) Stack() []byte {
 }
 
 func NewInnerError(msg string, code int) Error {
-	return &iError{defaultErr: &defaultErr{code: code, msg: msg}, trace: PanicTrace(2)}
+	return NewInnerErrorSkip(msg, code, 1)
+}
+
+func NewInnerErrorSkip(msg string, code int, skip int) Error {
+	return &iError{defaultErr: &defaultErr{code: code, msg: msg}, trace: PanicTrace(2, skip)}
 }
 
 // 错误代码：gone框架内部错误代码编码空间:1001~1999
@@ -69,24 +70,26 @@ const (
 	DbRollForPanic
 
 	MustHaveGonerId
+
+	InjectError
 )
 
 func GonerIdIsExistedError(id GonerId) Error {
-	return NewInnerError(fmt.Sprintf("Goner Id(%s) is existed", id), GonerIdIsExisted)
+	return NewInnerErrorSkip(fmt.Sprintf("Goner Id(%s) is existed", id), GonerIdIsExisted, 2)
 }
 
 func CannotFoundGonerByIdError(id GonerId) Error {
-	return NewInnerError(fmt.Sprintf("Cannot found the Goner by Id(%s)", id), CannotFoundGonerById)
+	return NewInnerErrorSkip(fmt.Sprintf("Cannot found the Goner by Id(%s)", id), CannotFoundGonerById, 2)
 }
 
 func CannotFoundGonerByTypeError(t reflect.Type) Error {
-	return NewInnerError(fmt.Sprintf("Cannot found the Goner by Type(%s)", t.Name()), CannotFoundGonerByType)
+	return NewInnerErrorSkip(fmt.Sprintf("Cannot found the Goner by Type(%s)", t.Name()), CannotFoundGonerByType, 2)
 }
 
 func NotCompatibleError(a reflect.Type, b reflect.Type) Error {
-	return NewInnerError(fmt.Sprintf("Not compatible: %s/%s vs %s/%s", a.PkgPath(), a.Name(), b.PkgPath(), b.Name()), NotCompatible)
+	return NewInnerErrorSkip(fmt.Sprintf("Not compatible: %s/%s vs %s/%s", a.PkgPath(), a.Name(), b.PkgPath(), b.Name()), NotCompatible, 2)
 }
 
 func ReplaceBuryIdParamEmptyError() Error {
-	return NewInnerError("ReplaceBury id cannot be empty", ReplaceBuryIdParamEmpty)
+	return NewInnerErrorSkip("ReplaceBury id cannot be empty", ReplaceBuryIdParamEmpty, 2)
 }
