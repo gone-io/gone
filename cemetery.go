@@ -9,21 +9,16 @@ import (
 
 func newCemetery() Cemetery {
 	return &cemetery{
-		SimpleLogger: &defaultLogger{},
-		tombMap:      make(map[GonerId]Tomb),
+		Logger:  _defaultLogger,
+		tombMap: make(map[GonerId]Tomb),
 	}
 }
 
 type cemetery struct {
 	Flag
-	SimpleLogger `gone:"gone-logger"`
-	tombMap      map[GonerId]Tomb
-	tombs        []Tomb
-}
-
-func (c *cemetery) SetLogger(logger SimpleLogger) SetLoggerError {
-	c.SimpleLogger = logger
-	return nil
+	Logger  `gone:"gone-logger"`
+	tombMap map[GonerId]Tomb
+	tombs   []Tomb
 }
 
 func GetGoneDefaultId(goner Goner) GonerId {

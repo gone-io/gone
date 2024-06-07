@@ -7,13 +7,6 @@ import (
 	"testing"
 )
 
-func Test_heaven_SetLogger(t *testing.T) {
-	h := heaven{}
-	err := h.SetLogger(&defaultLogger{})
-	assert.Nil(t, err)
-
-}
-
 func Test_heaven_burial(t *testing.T) {
 	executed := false
 	func() {

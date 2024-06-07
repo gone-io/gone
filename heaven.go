@@ -12,7 +12,7 @@ import (
 func New(priests ...Priest) Heaven {
 	cemetery := newCemetery()
 	h := heaven{
-		SimpleLogger:              &defaultLogger{},
+		Logger:                    _defaultLogger,
 		cemetery:                  cemetery,
 		priests:                   priests,
 		signal:                    make(chan os.Signal),
@@ -22,6 +22,7 @@ func New(priests ...Priest) Heaven {
 
 	h.
 		cemetery.
+		Bury(NewSimpleLogger()).
 		Bury(&h, IdGoneHeaven, IsDefault(true)).
 		Bury(cemetery, IdGoneCemetery, IsDefault(true))
 	return &h
@@ -30,8 +31,8 @@ func New(priests ...Priest) Heaven {
 type heaven struct {
 	Flag
 
-	SimpleLogger `gone:"gone-logger"`
-	cemetery     Cemetery
+	Logger   `gone:"gone-logger"`
+	cemetery Cemetery
 
 	priests []Priest
 
@@ -53,11 +54,6 @@ func (h *heaven) SetAfterStopSignalWaitSecond(sec int) {
 func getAngelType() reflect.Type {
 	var angelPtr *Angel = nil
 	return reflect.TypeOf(angelPtr).Elem()
-}
-
-func (h *heaven) SetLogger(logger SimpleLogger) SetLoggerError {
-	h.SimpleLogger = logger
-	return nil
 }
 
 func (h *heaven) GetHeavenStopSignal() <-chan struct{} {

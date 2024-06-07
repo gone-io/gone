@@ -246,44 +246,6 @@ func (mr *MockTombMockRecorder) SetId(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetId", reflect.TypeOf((*MockTomb)(nil).SetId), arg0)
 }
 
-// MockDefaultLogger is a mock of DefaultLogger interface.
-type MockDefaultLogger struct {
-	goneMock.Flag
-	ctrl     *gomock.Controller
-	recorder *MockDefaultLoggerMockRecorder
-}
-
-// MockDefaultLoggerMockRecorder is the mock recorder for MockDefaultLogger.
-type MockDefaultLoggerMockRecorder struct {
-	mock *MockDefaultLogger
-}
-
-// NewMockDefaultLogger creates a new mock instance.
-func NewMockDefaultLogger(ctrl *gomock.Controller) *MockDefaultLogger {
-	mock := &MockDefaultLogger{ctrl: ctrl}
-	mock.recorder = &MockDefaultLoggerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockDefaultLogger) EXPECT() *MockDefaultLoggerMockRecorder {
-	return m.recorder
-}
-
-// SetLogger mocks base method.
-func (m *MockDefaultLogger) SetLogger(logger gone.SimpleLogger) gone.SetLoggerError {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetLogger", logger)
-	ret0, _ := ret[0].(gone.SetLoggerError)
-	return ret0
-}
-
-// SetLogger indicates an expected call of SetLogger.
-func (mr *MockDefaultLoggerMockRecorder) SetLogger(logger interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLogger", reflect.TypeOf((*MockDefaultLogger)(nil).SetLogger), logger)
-}
-
 // MockCemetery is a mock of Cemetery interface.
 type MockCemetery struct {
 	goneMock.Flag
@@ -374,6 +336,21 @@ func (mr *MockCemeteryMockRecorder) GetTomByType(arg0 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTomByType", reflect.TypeOf((*MockCemetery)(nil).GetTomByType), arg0)
 }
 
+// InjectFuncParameters mocks base method.
+func (m *MockCemetery) InjectFuncParameters(fn any, injectBefore func(reflect.Type, int) any, injectAfter func(reflect.Type, int)) ([]reflect.Value, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InjectFuncParameters", fn, injectBefore, injectAfter)
+	ret0, _ := ret[0].([]reflect.Value)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InjectFuncParameters indicates an expected call of InjectFuncParameters.
+func (mr *MockCemeteryMockRecorder) InjectFuncParameters(fn, injectBefore, injectAfter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InjectFuncParameters", reflect.TypeOf((*MockCemetery)(nil).InjectFuncParameters), fn, injectBefore, injectAfter)
+}
+
 // ReplaceBury mocks base method.
 func (m *MockCemetery) ReplaceBury(arg0 gone.Goner, arg1 gone.GonerId) error {
 	m.ctrl.T.Helper()
@@ -427,21 +404,6 @@ func (m *MockCemetery) goneFlag() {
 func (mr *MockCemeteryMockRecorder) goneFlag() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "goneFlag", reflect.TypeOf((*MockCemetery)(nil).goneFlag))
-}
-
-// reviveDependence mocks base method.
-func (m *MockCemetery) reviveDependence(tomb gone.Tomb) ([]gone.Tomb, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "reviveDependence", tomb)
-	ret0, _ := ret[0].([]gone.Tomb)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// reviveDependence indicates an expected call of reviveDependence.
-func (mr *MockCemeteryMockRecorder) reviveDependence(tomb interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "reviveDependence", reflect.TypeOf((*MockCemetery)(nil).reviveDependence), tomb)
 }
 
 // MockHeaven is a mock of Heaven interface.
@@ -564,6 +526,18 @@ func (m *MockHeaven) Install() gone.Heaven {
 func (mr *MockHeavenMockRecorder) Install() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Install", reflect.TypeOf((*MockHeaven)(nil).Install))
+}
+
+// SetAfterStopSignalWaitSecond mocks base method.
+func (m *MockHeaven) SetAfterStopSignalWaitSecond(sec int) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetAfterStopSignalWaitSecond", sec)
+}
+
+// SetAfterStopSignalWaitSecond indicates an expected call of SetAfterStopSignalWaitSecond.
+func (mr *MockHeavenMockRecorder) SetAfterStopSignalWaitSecond(sec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAfterStopSignalWaitSecond", reflect.TypeOf((*MockHeaven)(nil).SetAfterStopSignalWaitSecond), sec)
 }
 
 // Start mocks base method.

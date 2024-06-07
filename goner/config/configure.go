@@ -11,9 +11,9 @@ import (
 
 type propertiesConfigure struct {
 	gone.Flag
-	gone.SimpleLogger `gone:"gone-logger"`
-	props             *properties.Properties
-	cemetery          gone.Cemetery `gone:"gone-cemetery"`
+	gone.Logger `gone:"gone-logger"`
+	props       *properties.Properties
+	cemetery    gone.Cemetery `gone:"gone-cemetery"`
 }
 
 func (c *propertiesConfigure) Get(key string, v any, defaultVal string) error {
@@ -158,7 +158,7 @@ func decodeSlice(sliceElementType reflect.Type, k string, conf PropertiesConfigu
 }
 
 func (c *propertiesConfigure) isInTestKit() bool {
-	return c.cemetery.GetTomById(gone.IdGoneTestKit) != nil
+	return c.cemetery != nil && c.cemetery.GetTomById(gone.IdGoneTestKit) != nil
 }
 
 func (c *propertiesConfigure) mustGetProperties() (*properties.Properties, error) {

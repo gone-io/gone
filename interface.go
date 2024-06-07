@@ -46,11 +46,6 @@ type Tomb interface {
 	SetDefault(isDefault bool) Tomb
 }
 
-type SetLoggerError error
-type DefaultLogger interface {
-	SetLogger(logger SimpleLogger) SetLoggerError
-}
-
 // Cemetery which is for burying and reviving Goner
 type Cemetery interface {
 	Goner

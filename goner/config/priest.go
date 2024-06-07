@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/logrus"
 )
 
 func NewConfig() (gone.Vampire, gone.GonerId, gone.GonerOption) {
@@ -14,7 +13,6 @@ func NewConfigure() (gone.Goner, gone.GonerId, gone.GonerOption) {
 }
 
 func Priest(cemetery gone.Cemetery) error {
-	_ = logrus.Priest(cemetery)
 
 	cemetery.
 		BuryOnce(NewConfig()).

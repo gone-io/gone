@@ -72,6 +72,8 @@ const (
 	MustHaveGonerId
 
 	InjectError
+
+	ConfigError
 )
 
 func GonerIdIsExistedError(id GonerId) Error {
