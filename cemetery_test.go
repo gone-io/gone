@@ -721,3 +721,21 @@ func Test_cemetery_prophesy(t *testing.T) {
 		})
 	})
 }
+
+func Test_cemetery_getGonerContainerByType(t *testing.T) {
+	Prepare().Test(func(c Cemetery) {
+		type X struct {
+			Flag
+		}
+
+		type DepOnX struct {
+			Flag
+			X X `gone:"*"`
+		}
+
+		c.Bury(&X{}, GonerId("x1")).Bury(&X{}, GonerId("x2"))
+
+		_, err := c.ReviveOne(&DepOnX{})
+		assert.Nil(t, err)
+	})
+}
