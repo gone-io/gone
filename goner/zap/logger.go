@@ -6,7 +6,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"reflect"
+	"strings"
 )
+import "gopkg.in/natefinch/lumberjack.v2"
 
 func NewZapLogger() (gone.Goner, gone.GonerId, gone.IsDefault) {
 	return &log{}, "zap", true
@@ -15,11 +17,26 @@ func NewZapLogger() (gone.Goner, gone.GonerId, gone.IsDefault) {
 type log struct {
 	gone.Flag
 	*zap.Logger
+	tracer gone.Tracer `gone:"*"`
 
-	level        string `gone:"config,log.level,default=info"`
+	level             string `gone:"config,log.level,default=info"`
+	enableTraceId     bool   `gone:"config,log.enable-trace-id,default=true"`
+	disableStacktrace bool   `gone:"config,log.disable-stacktrace,default=false"`
+	stackTraceLevel   string `gone:"config,log.stacktrace-level,default=error"`
+
 	reportCaller bool   `gone:"config,log.report-caller,default=true"`
-	output       string `gone:"config,log.output,default=stdout"`
-	format       string `gone:"config,log.format,default=text"`
+	encoder      string `gone:"config,log.encoder,default=console"`
+
+	output    string `gone:"config,log.output,default=stdout"`
+	errOutput string `gone:"config,log.error-output,default=stderr"`
+
+	rotationOutput      string `gone:"config,log.rotation.output"`
+	rotationErrorOutput string `gone:"config,log.rotation.error-output"`
+	rotationMaxSize     int    `gone:"config,log.rotation.max-size,default=100"`
+	rotationMaxFiles    int    `gone:"config,log.rotation.max-files,default=10"`
+	rotationMaxAge      int    `gone:"config,log.rotation.max-age,default=30"`
+	rotationLocalTime   bool   `gone:"config,log.rotation.local-time,default=true"`
+	rotationCompress    bool   `gone:"config,log.rotation.compress,default=false"`
 }
 
 func (l *log) Named(s string) Logger {
@@ -53,36 +70,121 @@ func (l *log) sugar() *zap.SugaredLogger {
 
 func (l *log) AfterRevive() (err error) {
 	if l.Logger == nil {
-		cfg := zap.Config{
-			Level:       zap.NewAtomicLevelAt(zap.DebugLevel),
-			Development: false,
-			Encoding:    "json",
-			EncoderConfig: zapcore.EncoderConfig{
-				TimeKey:        "time",
-				LevelKey:       "level",
-				NameKey:        "logger",
-				CallerKey:      "", // 不记录日志调用位置
-				FunctionKey:    zapcore.OmitKey,
-				MessageKey:     "message",
-				LineEnding:     zapcore.DefaultLineEnding,
-				EncodeLevel:    zapcore.LowercaseLevelEncoder,
-				EncodeTime:     zapcore.RFC3339TimeEncoder,
-				EncodeDuration: zapcore.SecondsDurationEncoder,
-				EncodeCaller:   zapcore.ShortCallerEncoder,
-			},
-			OutputPaths:      []string{"stdout", "testdata/test.log"},
-			ErrorOutputPaths: []string{"testdata/error.log"},
-		}
-
-		l.Logger, err = cfg.Build()
-		//l.Logger, err = zap.NewProduction()
-
+		l.Logger, err = l.Build()
 		if err != nil {
-			return gone.ToError(err)
+			return err
 		}
 	}
 	return nil
 }
+
+func (l *log) Build() (*zap.Logger, error) {
+	outputs := strings.Split(l.output, ",")
+	sink, closeOut, err := zap.Open(outputs...)
+	if err != nil {
+		return nil, gone.ToError(err)
+	}
+
+	if l.rotationOutput != "" {
+		rotationWriter := zapcore.AddSync(&lumberjack.Logger{
+			Filename:   l.rotationOutput,
+			MaxSize:    l.rotationMaxSize, // megabytes
+			MaxBackups: l.rotationMaxFiles,
+			MaxAge:     l.rotationMaxAge, // days
+			Compress:   l.rotationCompress,
+		})
+
+		sink = zap.CombineWriteSyncers(sink, rotationWriter)
+	}
+
+	errOutputs := strings.Split(l.errOutput, ",")
+	var errSink zapcore.WriteSyncer
+	if len(errOutputs) > 0 {
+		errSink, _, err = zap.Open(errOutputs...)
+		if err != nil {
+			closeOut()
+			return nil, gone.ToError(err)
+		}
+	}
+
+	if l.rotationErrorOutput != "" {
+		rotationWriter := zapcore.AddSync(&lumberjack.Logger{
+			Filename:   l.rotationErrorOutput,
+			MaxSize:    l.rotationMaxSize, // megabytes
+			MaxBackups: l.rotationMaxFiles,
+			MaxAge:     l.rotationMaxAge, // days
+			Compress:   l.rotationCompress,
+		})
+		if errSink == nil {
+			errSink = rotationWriter
+		} else {
+			errSink = zap.CombineWriteSyncers(errSink, rotationWriter)
+		}
+	}
+	var encoder zapcore.Encoder
+	if l.encoder == "console" {
+		config := zap.NewDevelopmentEncoderConfig()
+		config.ConsoleSeparator = "|"
+		encoder = zapcore.NewConsoleEncoder(config)
+	} else {
+		encoder = zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+	}
+
+	if l.enableTraceId {
+		encoder = NewTraceEncoder(encoder, l.tracer)
+	}
+
+	core := zapcore.NewCore(
+		encoder,
+		sink,
+		l.parseLevel(l.level),
+	)
+
+	var opts []Option
+
+	if errSink != nil {
+		opts = append(opts, zap.ErrorOutput(errSink))
+	}
+	if !l.disableStacktrace {
+		opts = append(opts, zap.AddStacktrace(l.parseLevel(l.stackTraceLevel)))
+	}
+
+	if l.reportCaller {
+		opts = append(opts, zap.AddCaller())
+	}
+
+	logger := zap.New(core)
+	if len(opts) > 0 {
+		logger = logger.WithOptions(opts...)
+	}
+
+	zapcore.RegisterHooks(core, func(entry zapcore.Entry) error {
+		//entry.
+		return nil
+	})
+
+	return logger, nil
+}
+
+func (l *log) parseLevel(level string) zapcore.Level {
+	switch level {
+	default:
+		return zap.InfoLevel
+	case "debug", "trace":
+		return zap.DebugLevel
+	case "info":
+		return zap.InfoLevel
+	case "warn":
+		return zap.WarnLevel
+	case "error":
+		return zap.ErrorLevel
+	case "panic":
+		return zap.PanicLevel
+	case "fatal":
+		return zap.FatalLevel
+	}
+}
+
 func (l *log) Start(gone.Cemetery) error {
 	return nil
 }

@@ -6,7 +6,11 @@ import (
 )
 
 func TestNewSugar(t *testing.T) {
-	gone.Prepare(Priest).Test(func(log gone.Logger) {
-		log.Info("test")
+	gone.Prepare(Priest).Test(func(log gone.Logger, tracer gone.Tracer) {
+		tracer.SetTraceId("", func() {
+			log.Info("info log")
+			log.Warn("warn log")
+			log.Error("error log")
+		})
 	})
 }

@@ -9,7 +9,9 @@ import (
 
 func Test_parseOutput(t *testing.T) {
 	gone.Prepare(Priest).Test(func(log gone.Logger) {
-		log.Infof("test")
+		log.Info("info log")
+		log.Warn("warn log")
+		log.Error("error log")
 	})
 }
 

@@ -29,6 +29,7 @@ func (l *sugar) AfterRevive() error {
 func (l *sugar) Tracef(format string, args ...any) {
 	l.Debugf(format, args...)
 }
+
 func (l *sugar) Trace(args ...any) {
 	l.Debug(args...)
 }
