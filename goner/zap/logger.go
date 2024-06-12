@@ -137,7 +137,7 @@ func (l *log) Build() (*zap.Logger, error) {
 	core := zapcore.NewCore(
 		encoder,
 		sink,
-		l.parseLevel(l.level),
+		parseLevel(l.level),
 	)
 
 	var opts []Option
@@ -146,7 +146,7 @@ func (l *log) Build() (*zap.Logger, error) {
 		opts = append(opts, zap.ErrorOutput(errSink))
 	}
 	if !l.disableStacktrace {
-		opts = append(opts, zap.AddStacktrace(l.parseLevel(l.stackTraceLevel)))
+		opts = append(opts, zap.AddStacktrace(parseLevel(l.stackTraceLevel)))
 	}
 
 	if l.reportCaller {
@@ -157,16 +157,10 @@ func (l *log) Build() (*zap.Logger, error) {
 	if len(opts) > 0 {
 		logger = logger.WithOptions(opts...)
 	}
-
-	zapcore.RegisterHooks(core, func(entry zapcore.Entry) error {
-		//entry.
-		return nil
-	})
-
 	return logger, nil
 }
 
-func (l *log) parseLevel(level string) zapcore.Level {
+func parseLevel(level string) zapcore.Level {
 	switch level {
 	default:
 		return zap.InfoLevel

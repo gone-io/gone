@@ -13,7 +13,10 @@ type traceEncoder struct {
 }
 
 func (e *traceEncoder) EncodeEntry(entry zapcore.Entry, fields []Field) (*buffer.Buffer, error) {
-	fields = append(fields, zap.String("traceId", e.tracer.GetTraceId()))
+	traceId := e.tracer.GetTraceId()
+	if traceId != "" {
+		fields = append(fields, zap.String("traceId", traceId))
+	}
 	return e.Encoder.EncodeEntry(entry, fields)
 }
 

@@ -55,3 +55,21 @@ func TestGrpcClientPriest(t *testing.T) {
 	err := GrpcClientPriest(cemetery)
 	assert.Nil(t, err)
 }
+
+func TestConfigPriest(t *testing.T) {
+	cemetery := gone.NewBuryMockCemeteryForTest()
+	err := ConfigPriest(cemetery)
+	assert.Nil(t, err)
+}
+
+func TestLogrusLoggerPriest(t *testing.T) {
+	cemetery := gone.NewBuryMockCemeteryForTest()
+	err := LogrusLoggerPriest(cemetery)
+	assert.Nil(t, err)
+}
+
+func TestZapLoggerPriest(t *testing.T) {
+	cemetery := gone.NewBuryMockCemeteryForTest()
+	err := ZapLoggerPriest(cemetery)
+	assert.Nil(t, err)
+}
