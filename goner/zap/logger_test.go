@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"os"
 	"testing"
 )
 
@@ -120,4 +121,13 @@ func Test_log_Sugar(t *testing.T) {
 	gone.Prepare(Priest).Test(func(l Logger) {
 		l.Sugar().Infof("this is test:%d", 100)
 	})
+}
+
+func Test_log_Build(t *testing.T) {
+	_ = os.Setenv("ENV", "prod")
+	gone.Prepare(Priest).Test(func(l Logger) {
+		l.Info("info log")
+		l.Error("error log")
+	})
+	_ = os.Setenv("ENV", "")
 }

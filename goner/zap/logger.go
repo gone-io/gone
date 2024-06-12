@@ -28,7 +28,7 @@ type log struct {
 	encoder      string `gone:"config,log.encoder,default=console"`
 
 	output    string `gone:"config,log.output,default=stdout"`
-	errOutput string `gone:"config,log.error-output,default=stderr"`
+	errOutput string `gone:"config,log.error-output"`
 
 	rotationOutput      string `gone:"config,log.rotation.output"`
 	rotationErrorOutput string `gone:"config,log.rotation.error-output"`
@@ -58,7 +58,11 @@ func (l *log) With(fields ...Field) Logger {
 	return &log{Logger: l.Logger.With(fields...)}
 }
 func (l *log) Sugar() gone.Logger {
-	return &sugar{SugaredLogger: l.Logger.Sugar()}
+	SugaredLogger := l.Logger.Sugar()
+	return &sugar{
+		SugaredLogger: SugaredLogger,
+		inner:         SugaredLogger.WithOptions(zap.AddCallerSkip(1)),
+	}
 }
 
 func (l *log) sugar() *zap.SugaredLogger {
@@ -99,7 +103,7 @@ func (l *log) Build() (*zap.Logger, error) {
 
 	errOutputs := strings.Split(l.errOutput, ",")
 	var errSink zapcore.WriteSyncer
-	if len(errOutputs) > 0 {
+	if l.errOutput != "" && len(errOutputs) > 0 {
 		errSink, _, err = zap.Open(errOutputs...)
 		if err != nil {
 			closeOut()
@@ -118,7 +122,7 @@ func (l *log) Build() (*zap.Logger, error) {
 		if errSink == nil {
 			errSink = rotationWriter
 		} else {
-			errSink = zap.CombineWriteSyncers(errSink, rotationWriter)
+			errSink = zap.CombineWriteSyncers(rotationWriter, errSink)
 		}
 	}
 	var encoder zapcore.Encoder
@@ -140,11 +144,14 @@ func (l *log) Build() (*zap.Logger, error) {
 		parseLevel(l.level),
 	)
 
-	var opts []Option
-
 	if errSink != nil {
-		opts = append(opts, zap.ErrorOutput(errSink))
+		core = zapcore.NewTee(
+			core,
+			zapcore.NewCore(encoder, errSink, zap.NewAtomicLevelAt(zap.ErrorLevel)),
+		)
 	}
+
+	var opts []Option
 	if !l.disableStacktrace {
 		opts = append(opts, zap.AddStacktrace(parseLevel(l.stackTraceLevel)))
 	}
@@ -153,10 +160,7 @@ func (l *log) Build() (*zap.Logger, error) {
 		opts = append(opts, zap.AddCaller())
 	}
 
-	logger := zap.New(core)
-	if len(opts) > 0 {
-		logger = logger.WithOptions(opts...)
-	}
+	logger := zap.New(core, opts...)
 	return logger, nil
 }
 
