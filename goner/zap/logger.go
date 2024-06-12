@@ -65,6 +65,16 @@ func (l *log) Sugar() gone.Logger {
 	}
 }
 
+// SetLogger set zap.Logger of the log Goner, very Useful for custom zap logger
+func (l *log) SetLogger(logger *zap.Logger) {
+	l.Logger = logger
+}
+
+// GetLogger get zap.Logger of the log Goner
+func (l *log) GetLogger() *zap.Logger {
+	return l.Logger
+}
+
 func (l *log) sugar() *zap.SugaredLogger {
 	if l.Logger == nil {
 		_ = l.AfterRevive()
@@ -72,12 +82,13 @@ func (l *log) sugar() *zap.SugaredLogger {
 	return l.Logger.Sugar()
 }
 
-func (l *log) AfterRevive() (err error) {
-	if l.Logger == nil {
-		l.Logger, err = l.Build()
+func (l *log) AfterRevive() error {
+	if l.GetLogger() == nil {
+		logger, err := l.Build()
 		if err != nil {
 			return err
 		}
+		l.SetLogger(logger)
 	}
 	return nil
 }
