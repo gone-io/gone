@@ -63,13 +63,15 @@ func TestConfigPriest(t *testing.T) {
 }
 
 func TestLogrusLoggerPriest(t *testing.T) {
-	cemetery := gone.NewBuryMockCemeteryForTest()
-	err := LogrusLoggerPriest(cemetery)
-	assert.Nil(t, err)
+	gone.Prepare().Test(func(cemetery gone.Cemetery) {
+		err := LogrusLoggerPriest(cemetery)
+		assert.Nil(t, err)
+	})
 }
 
 func TestZapLoggerPriest(t *testing.T) {
-	cemetery := gone.NewBuryMockCemeteryForTest()
-	err := ZapLoggerPriest(cemetery)
-	assert.Nil(t, err)
+	gone.Prepare().Test(func(cemetery gone.Cemetery) {
+		err := ZapLoggerPriest(cemetery)
+		assert.Nil(t, err)
+	})
 }

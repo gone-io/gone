@@ -3,6 +3,7 @@ package gone_zap
 import (
 	"github.com/gone-io/gone"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"testing"
 )
@@ -87,5 +88,29 @@ func Test_log_Named(t *testing.T) {
 		logger := l.Named("cat")
 
 		assert.Equal(t, "cat", logger.(*log).Logger.Name())
+	})
+}
+
+func Test_log_WithOptions(t *testing.T) {
+	gone.Prepare(Priest).Test(func(l Logger) {
+		assert.Equal(t, l, l.WithOptions())
+
+		logger := l.WithOptions(zap.AddCallerSkip(1))
+		assert.NotEqual(t, l, logger)
+	})
+}
+
+func Test_log_With(t *testing.T) {
+	gone.Prepare(Priest).Test(func(l Logger) {
+		assert.Equal(t, l, l.With())
+
+		logger := l.With(zap.String("key", "value"))
+		assert.NotEqual(t, l, logger)
+	})
+}
+
+func Test_log_Sugar(t *testing.T) {
+	gone.Prepare(Priest).Test(func(l Logger) {
+		l.Sugar().Infof("this is test:%d", 100)
 	})
 }
