@@ -70,6 +70,13 @@ func Test_parseLevel(t *testing.T) {
 			},
 			want: zapcore.FatalLevel,
 		},
+		{
+			name: "unknown",
+			args: args{
+				level: "unknown",
+			},
+			want: zapcore.InfoLevel, // default
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

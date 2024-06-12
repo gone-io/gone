@@ -11,6 +11,15 @@ func TestNewSugar(t *testing.T) {
 			log.Info("info log")
 			log.Warn("warn log")
 			log.Error("error log")
+			log.Trace("trace log")
+			log.Tracef("trace log: %d", 1)
+			log.Traceln("trace log")
+
+			log.Printf("%s", "print log")
+			log.Print("print log")
+			log.Println("print log")
+
+			log.Warningf("warning log: %d", 1)
 		})
 	})
 }

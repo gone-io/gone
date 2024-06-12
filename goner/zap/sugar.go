@@ -19,40 +19,43 @@ type sugar struct {
 	gone.Flag
 	*zap.SugaredLogger
 	logger Logger `gone:"*"`
+
+	inner *zap.SugaredLogger
 }
 
 func (l *sugar) AfterRevive() error {
 	l.SugaredLogger = l.logger.sugar()
+	l.inner = l.WithOptions(zap.AddCallerSkip(1))
 	return nil
 }
 
 func (l *sugar) Tracef(format string, args ...any) {
-	l.Debugf(format, args...)
+	l.inner.Debugf(format, args...)
 }
 
 func (l *sugar) Trace(args ...any) {
-	l.Debug(args...)
+	l.inner.Debug(args...)
 }
 func (l *sugar) Traceln(args ...any) {
-	l.Debugln(args...)
+	l.inner.Debugln(args...)
 }
 
 func (l *sugar) Printf(format string, args ...any) {
-	l.Infof(format, args...)
+	l.inner.Infof(format, args...)
 }
 func (l *sugar) Print(args ...any) {
-	l.Info(args...)
+	l.inner.Info(args...)
 }
 func (l *sugar) Println(args ...any) {
-	l.Infoln(args...)
+	l.inner.Infoln(args...)
 }
 
 func (l *sugar) Warningf(format string, args ...any) {
-	l.Warnf(format, args...)
+	l.inner.Warnf(format, args...)
 }
 func (l *sugar) Warning(args ...any) {
-	l.Warn(args...)
+	l.inner.Warn(args...)
 }
 func (l *sugar) Warningln(args ...any) {
-	l.Warnln(args...)
+	l.inner.Warnln(args...)
 }
