@@ -1,6 +1,7 @@
 package priest
 
 import (
+	"bytes"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
 	"os"
@@ -21,6 +22,7 @@ func TestAction(t *testing.T) {
 	})
 
 	t.Run("good args", func(t *testing.T) {
+		_ = os.Remove("testdata/x/goner-new.go")
 		app := cli.App{
 			Commands: []*cli.Command{
 				CreateCommand(),
@@ -30,13 +32,20 @@ func TestAction(t *testing.T) {
 		ch := getWatchDoneChannel()
 		go func() {
 			time.Sleep(1 * time.Second)
-			file, _ := os.OpenFile("testdata/x/goner.go", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+			file, _ := os.OpenFile("testdata/x/goner-new.go", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 			defer func() {
 				_ = file.Close()
 				time.Sleep(1 * time.Second)
 				close(ch)
 			}()
-			_, _ = file.WriteString("//test")
+			_, _ = file.WriteString(`package x
+
+import "github.com/gone-io/gone"
+
+//go:gone
+func New2() gone.Goner {
+	return &goner{}
+}`)
 		}()
 
 		err := app.Run([]string{"", "priest",
@@ -48,5 +57,9 @@ func TestAction(t *testing.T) {
 			"-w",
 		})
 		assert.Nil(t, err)
+
+		file, err := os.ReadFile("testdata/x/priest.go")
+		assert.Nil(t, err)
+		assert.True(t, bytes.Contains(file, []byte("cemetery.Bury(New2())")))
 	})
 }
