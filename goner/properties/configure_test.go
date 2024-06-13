@@ -1,4 +1,4 @@
-package config
+package properties
 
 import (
 	"errors"
@@ -38,7 +38,7 @@ func Test_parseKeyFromProperties(t *testing.T) {
 		key         string
 		value       any
 		defaultVale string
-		props       PropertiesConfigure
+		props       Configure
 	}
 	tests := []struct {
 		name    string

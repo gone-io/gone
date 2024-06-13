@@ -2,7 +2,7 @@
 // Source: configure.go
 
 // Package config is a generated GoMock package.
-package config
+package properties
 
 import (
 	reflect "reflect"

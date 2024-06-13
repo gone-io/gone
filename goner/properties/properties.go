@@ -1,4 +1,4 @@
-package config
+package properties
 
 import (
 	"flag"
@@ -53,6 +53,11 @@ func GetProperties(envParams ...string) (*properties.Properties, error) {
 		)
 	}
 
+	filenames, err = filterNotExistedFiles(filenames)
+	if err != nil {
+		return nil, gone.ToError(err)
+	}
+
 	props, err := properties.LoadFiles(filenames, properties.UTF8, true)
 	return props, gone.ToError(err)
 }
@@ -68,4 +73,18 @@ func getConfDir() string {
 func getExecutableDir() (string, error) {
 	dir, err := os.Executable()
 	return filepath.Dir(dir), gone.ToError(err)
+}
+
+func filterNotExistedFiles(filenames []string) (list []string, err error) {
+	for _, file := range filenames {
+		_, err := os.Stat(file)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return nil, gone.ToError(err)
+			}
+		} else {
+			list = append(list, file)
+		}
+	}
+	return
 }

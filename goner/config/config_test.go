@@ -62,3 +62,55 @@ func Test_config_Suck(t *testing.T) {
 		return Priest(cemetery)
 	})
 }
+
+func TestParseConfAnnotation(t *testing.T) {
+	type args struct {
+		tag string
+	}
+	tests := []struct {
+		name           string
+		args           args
+		wantKey        string
+		wantDefaultVal string
+	}{
+		{
+			name: "key,default=value",
+			args: args{
+				tag: "key,default=100",
+			},
+			wantKey:        "key",
+			wantDefaultVal: "100",
+		},
+		{
+			name: "key,default=value,default=value2",
+			args: args{
+				tag: "key,default=100,default=200",
+			},
+			wantKey:        "key",
+			wantDefaultVal: "100",
+		},
+		{
+			name: "key,x=value,default=value2",
+			args: args{
+				tag: "key,x=100,default=200",
+			},
+			wantKey:        "key",
+			wantDefaultVal: "200",
+		},
+		{
+			name: "key=3000,x=value,default=value2",
+			args: args{
+				tag: "key=3000,x=100,default=200",
+			},
+			wantKey:        "key",
+			wantDefaultVal: "3000",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotKey, gotDefaultVal := ParseConfAnnotation(tt.args.tag)
+			assert.Equalf(t, tt.wantKey, gotKey, "ParseConfAnnotation(%v)", tt.args.tag)
+			assert.Equalf(t, tt.wantDefaultVal, gotDefaultVal, "ParseConfAnnotation(%v)", tt.args.tag)
+		})
+	}
+}

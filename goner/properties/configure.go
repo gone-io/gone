@@ -1,4 +1,4 @@
-package config
+package properties
 
 import (
 	"fmt"
@@ -9,19 +9,21 @@ import (
 	"time"
 )
 
-type propertiesConfigure struct {
+func NewConfigure() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &configure{}, gone.IdGoneConfigure, gone.IsDefault(true)
+}
+
+type configure struct {
 	gone.Flag
 	gone.Logger `gone:"gone-logger"`
 	props       *properties.Properties
 	cemetery    gone.Cemetery `gone:"gone-cemetery"`
 }
 
-func (c *propertiesConfigure) Get(key string, v any, defaultVal string) error {
+func (c *configure) Get(key string, v any, defaultVal string) error {
 	if c.props == nil {
-		env := GetEnv("")
-		c.Infof("==>Use Env: %s", env)
 		var err error
-		c.props, err = c.mustGetProperties()
+		c.props, err = c.getProperties()
 		if err != nil {
 			return gone.ToError(err)
 		}
@@ -31,7 +33,7 @@ func (c *propertiesConfigure) Get(key string, v any, defaultVal string) error {
 
 const SliceMaxSize = 100
 
-type PropertiesConfigure interface {
+type Configure interface {
 	FilterStripPrefix(prefix string) *properties.Properties
 	Decode(x interface{}) error
 	GetParsedDuration(key string, def time.Duration) time.Duration
@@ -49,7 +51,7 @@ func parseKeyFromProperties(
 	key string,
 	value any,
 	defaultVale string,
-	props PropertiesConfigure,
+	props Configure,
 ) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
@@ -131,7 +133,7 @@ func parseKeyFromProperties(
 	return nil
 }
 
-func decodeSlice(sliceElementType reflect.Type, k string, conf PropertiesConfigure, el reflect.Value) error {
+func decodeSlice(sliceElementType reflect.Type, k string, conf Configure, el reflect.Value) error {
 	switch sliceElementType.Kind() {
 	case reflect.Struct:
 		v := reflect.New(sliceElementType)
@@ -157,11 +159,11 @@ func decodeSlice(sliceElementType reflect.Type, k string, conf PropertiesConfigu
 	return nil
 }
 
-func (c *propertiesConfigure) isInTestKit() bool {
+func (c *configure) isInTestKit() bool {
 	return c.cemetery != nil && c.cemetery.GetTomById(gone.IdGoneTestKit) != nil
 }
 
-func (c *propertiesConfigure) mustGetProperties() (*properties.Properties, error) {
+func (c *configure) getProperties() (*properties.Properties, error) {
 	properties.LogPrintf = c.Warnf
 
 	if c.isInTestKit() {

@@ -1,4 +1,4 @@
-package config
+package properties
 
 import (
 	"fmt"
@@ -18,6 +18,9 @@ const defaultTestConfigFile = defaultConf + testExt
 func GetTestProperties() (props *properties.Properties, err error) {
 	var configDir string
 	configDir, err = lookupConfigDir("")
+	if err != nil {
+		return nil, gone.ToError(err)
+	}
 	props, err = buildTestProps(configDir)
 	return props, gone.ToError(err)
 }
@@ -61,6 +64,11 @@ func buildTestProps(configDir string) (*properties.Properties, error) {
 		path.Join(configDir, fmt.Sprintf("%s%s", env, ext)),
 		path.Join(configDir, fmt.Sprintf("%s%s", env, testExt)),
 	)
+	var err error
+	files, err = filterNotExistedFiles(files)
+	if err != nil {
+		return nil, gone.ToError(err)
+	}
 
 	return properties.LoadFiles(files, properties.UTF8, true)
 }

@@ -1,4 +1,4 @@
-package config
+package properties
 
 import (
 	"flag"

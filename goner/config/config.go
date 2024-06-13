@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+type Configure = gone.Configure
+
+func NewConfig() (gone.Vampire, gone.GonerId, gone.GonerOption) {
+	return &config{}, gone.IdConfig, gone.IsDefault(true)
+}
+
 type config struct {
 	gone.Flag
 	configure Configure `gone:"gone-configure"`
@@ -14,6 +20,14 @@ type config struct {
 func ParseConfAnnotation(tag string) (key string, defaultVal string) {
 	splitArray := strings.Split(tag, ",")
 	key = strings.TrimSpace(splitArray[0])
+	if strings.Contains(key, "=") {
+		split := strings.Split(key, "=")
+		key = split[0]
+		if len(split) > 1 {
+			defaultVal = split[1]
+		}
+		return
+	}
 	if len(splitArray) > 1 {
 		for i := 1; i < len(splitArray); i++ {
 			s := splitArray[i]
@@ -39,10 +53,4 @@ func (f *config) Suck(conf string, v reflect.Value) gone.SuckError {
 		v = v.Elem()
 	}
 	return f.configure.Get(key, v.Addr().Interface(), defaultVal)
-}
-
-// Configure 配置接口
-type Configure interface {
-	//Get 将获取`key`所对应的值，值将写入到参数`v`中；参数`v`，只接受指针类型；如果`key`对应的值不存在，将使用defaultVal
-	Get(key string, v any, defaultVal string) error
 }
