@@ -298,7 +298,7 @@ func Test_cemetery_ReplaceBury(t *testing.T) {
 
 	t.Run("replace revived with empty goneId", func(t *testing.T) {
 		c := newCemetery()
-		err := c.ReplaceBury(&ZeroPoint{}, "")
+		err := c.ReplaceBury(&ZeroPoint{})
 		assert.Equal(t, err.(Error).Code(), ReplaceBuryIdParamEmpty)
 	})
 
@@ -550,7 +550,7 @@ func Test_cemetery_replaceTombsGonerField(t *testing.T) {
 	}
 
 	Prepare().Test(func(cemetery Cemetery) {
-		err := cemetery.Bury(&X{}).ReplaceBury(&Y{}, "s")
+		err := cemetery.Bury(&X{}).ReplaceBury(&Y{}, GonerId("s"))
 		assert.Error(t, err)
 	})
 }

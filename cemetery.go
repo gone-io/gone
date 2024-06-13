@@ -63,7 +63,7 @@ func (c *cemetery) Bury(goner Goner, options ...GonerOption) Cemetery {
 	return c
 }
 
-func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
+func (c *cemetery) filterGonerIdFromOptions(options []GonerOption) GonerId {
 	var id GonerId
 
 	for _, option := range options {
@@ -72,6 +72,11 @@ func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
 			id = option.(GonerId)
 		}
 	}
+	return id
+}
+
+func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
+	var id = c.filterGonerIdFromOptions(options)
 	if id == "" {
 		panic(NewInnerError("GonerId is empty, must have gonerId option", MustHaveGonerId))
 	}
@@ -82,7 +87,8 @@ func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
 	return c
 }
 
-func (c *cemetery) ReplaceBury(goner Goner, id GonerId) (err error) {
+func (c *cemetery) ReplaceBury(goner Goner, options ...GonerOption) (err error) {
+	var id = c.filterGonerIdFromOptions(options)
 	if id == "" {
 		err = ReplaceBuryIdParamEmptyError()
 		return
@@ -322,7 +328,8 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 	if goneTypeName == "" {
 		goneTypeName = "[Anonymous Goner]"
 	}
-	c.Infof("Revive %s", goneTypeName)
+
+	//c.Debugf("Revive %s", goneTypeName)
 
 	for i := 0; i < gonerValue.NumField(); i++ {
 		field := gonerType.Field(i)
