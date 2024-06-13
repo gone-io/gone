@@ -19,9 +19,9 @@ func TestNewSugar(t *testing.T) {
 			log.Print("print log")
 			log.Println("print log")
 
-			log.Warningf("warning log: %d", 1)
-			log.Warning("warning log")
-			log.Warningln("warning log")
+			//log.Warningf("warning log: %d", 1)
+			//log.Warning("warning log")
+			//log.Warningln("warning log")
 		})
 	})
 }

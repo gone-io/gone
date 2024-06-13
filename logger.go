@@ -10,6 +10,10 @@ func NewSimpleLogger() (Goner, GonerId, IsDefault) {
 	return _defaultLogger, IdGoneLogger, true
 }
 
+func GetSimpleLogger() Logger {
+	return _defaultLogger
+}
+
 type defaultLogger struct {
 	Flag
 	*log.Logger
@@ -30,6 +34,7 @@ func (l *defaultLogger) Warnf(format string, args ...any) {
 func (l *defaultLogger) Warningf(format string, args ...any) {
 	log.Printf(format, args...)
 }
+
 func (l *defaultLogger) Errorf(format string, args ...any) {
 	log.Printf(format, args...)
 }

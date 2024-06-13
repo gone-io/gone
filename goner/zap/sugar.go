@@ -6,7 +6,10 @@ import (
 )
 
 func NewSugar() (gone.Goner, gone.GonerId, gone.IsDefault) {
-	logger, err := zap.NewDevelopment(zap.AddStacktrace(zap.ErrorLevel))
+	config := zap.NewDevelopmentConfig()
+	config.EncoderConfig.ConsoleSeparator = "|"
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	logger, err := config.Build(zap.AddStacktrace(zap.ErrorLevel))
 	if err != nil {
 		panic(gone.ToError(err))
 	}

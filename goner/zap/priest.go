@@ -7,11 +7,16 @@ import (
 )
 
 func Priest(cemetery gone.Cemetery) error {
+	t := cemetery.GetTomById(gone.IdGoneLogger)
+	if t != nil && t.GetGoner().(gone.Logger) != gone.GetSimpleLogger() {
+		t.GetGoner().(gone.Logger).Warn("logger is loaded, zap logger not used")
+		return nil
+	}
+
 	_ = config.Priest(cemetery)
 	_ = tracer.Priest(cemetery)
 
 	cemetery.BuryOnce(NewZapLogger())
 
-	theLogger, id, _ := NewSugar()
-	return cemetery.ReplaceBury(theLogger, id)
+	return cemetery.ReplaceBury(NewSugar())
 }
