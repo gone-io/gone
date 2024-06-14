@@ -2,27 +2,15 @@ package gin
 
 import (
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/cmux"
 )
 
-func ginPriest(cemetery gone.Cemetery) error {
-	arr := []func() (gone.Goner, gone.GonerId, gone.GonerOption){
-		NewGinProxy,
-		NewGinRouter,
-		NewGinProcessor,
-		NewGinResponser,
-		NewGinServer,
-		NewHttInjector,
-	}
-
-	for _, f := range arr {
-		cemetery.BuryOnce(f())
-	}
-	return nil
-}
-
 func Priest(cemetery gone.Cemetery) error {
-	_ = cmux.Priest(cemetery)
-	_ = ginPriest(cemetery)
+	cemetery.
+		BuryOnce(NewGinProxy()).
+		BuryOnce(NewGinRouter()).
+		BuryOnce(NewGinProcessor()).
+		BuryOnce(NewGinResponser()).
+		BuryOnce(NewGinServer()).
+		BuryOnce(NewHttInjector())
 	return nil
 }

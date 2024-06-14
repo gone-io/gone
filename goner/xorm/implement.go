@@ -6,10 +6,10 @@ import (
 	"xorm.io/xorm"
 )
 
-func NewXormEngine() (gone.Angel, gone.GonerId, gone.GonerOption) {
+func NewXormEngine() (gone.Angel, gone.GonerId, gone.GonerOption, gone.GonerOption) {
 	return &engine{
 		newFunc: newEngine,
-	}, gone.IdGoneXorm, gone.IsDefault(true)
+	}, gone.IdGoneXorm, gone.IsDefault(true), gone.Order3
 }
 
 func newEngine(driverName string, dataSourceName string) (xorm.EngineInterface, error) {

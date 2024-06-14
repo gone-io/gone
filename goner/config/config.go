@@ -8,8 +8,8 @@ import (
 
 type Configure = gone.Configure
 
-func NewConfig() (gone.Vampire, gone.GonerId, gone.GonerOption) {
-	return &config{}, gone.IdConfig, gone.IsDefault(true)
+func NewConfig() (gone.Vampire, gone.GonerId, gone.GonerOption, gone.GonerOption) {
+	return &config{}, gone.IdConfig, gone.IsDefault(true), gone.Order0
 }
 
 type config struct {

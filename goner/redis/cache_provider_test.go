@@ -42,7 +42,7 @@ func TestCacheProvider(t *testing.T) {
 		}, func(cemetery gone.Cemetery) error {
 			cemetery.Bury(new(ErrorUseCacheProvider))
 			return nil
-		}, Priest)
+		}, logrus.Priest, Priest)
 	})
 
 	t.Run("correct use", func(t *testing.T) {

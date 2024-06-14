@@ -12,8 +12,7 @@ func Priest(cemetery gone.Cemetery) error {
 		t.GetGoner().(gone.Logger).Warn("logger is loaded, logrus logger not used")
 		return nil
 	}
-
-	_ = tracer.Priest(cemetery)
 	_ = config.Priest(cemetery)
+	_ = tracer.Priest(cemetery)
 	return cemetery.ReplaceBury(NewLogger())
 }

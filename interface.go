@@ -39,6 +39,12 @@ type Order int
 
 func (Order) option() {}
 
+const Order0 Order = 0
+const Order1 Order = 10
+const Order2 Order = 100
+const Order3 Order = 1000
+const Order4 Order = 10000
+
 // Tomb container of Goner
 type Tomb interface {
 	SetId(GonerId) Tomb
