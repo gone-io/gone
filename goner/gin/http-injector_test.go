@@ -486,7 +486,7 @@ func Test_httpInjector_inject(t *testing.T) {
 
 			bindErr: func(t assert.TestingT, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, []bool{false, true, true, true}, req.BoolSlice)
+				assert.Equal(t, []bool{false, true, false, false}, req.BoolSlice)
 			},
 		},
 		{
@@ -774,7 +774,7 @@ func Test_httpInjector_inject(t *testing.T) {
 
 			bindErr: func(t assert.TestingT, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, req.Bool, true)
+				assert.Equal(t, req.Bool, false)
 			},
 		},
 
@@ -1000,7 +1000,7 @@ func Test_httpInjector_inject(t *testing.T) {
 			},
 		},
 		{
-			name:      "inject by kind, inject body []any yaml",
+			name:      "inject by kind, inject body []any test.yaml",
 			fieldName: "BodySlice",
 			kind:      keyBody,
 			key:       stringKey,
@@ -1046,7 +1046,7 @@ func Test_httpInjector_inject(t *testing.T) {
 				marshal, _ := yaml.Marshal(body)
 				context.Request.Body = io.NopCloser(bytes.NewBuffer(marshal))
 				context.Request.Header = http.Header{
-					"Content-Type": []string{"application/x-yaml"},
+					"Content-Type": []string{"application/x-test.yaml"},
 				}
 				injector.isInjectedBody = true
 			},

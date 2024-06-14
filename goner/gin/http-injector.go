@@ -490,5 +490,6 @@ func bitSize(kind reflect.Kind) int {
 }
 
 func stringToBool(value string) bool {
-	return value != "" && value != "0" && value != "false"
+	def, _ := strconv.ParseBool(value)
+	return def
 }
