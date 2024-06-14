@@ -45,6 +45,7 @@ func NewController() gone.Goner {
 
 func Priest(cemetery gone.Cemetery) error {
 	//Load the Goner of the gin web framework into the system
+	_ = goner.ZapLoggerPriest(cemetery)
 	_ = goner.GinPriest(cemetery)
 
 	//Load the business Goner
@@ -53,7 +54,6 @@ func Priest(cemetery gone.Cemetery) error {
 }
 
 func main() {
-
 	//Gone.Server is used to start a service, and the program will block until the service ends.
 	gone.Serve(Priest)
 }

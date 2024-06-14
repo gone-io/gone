@@ -66,7 +66,7 @@ func WrapNormalFnToProcess(fn any) Process {
 }
 
 // IsCompatible t Type can put in goner
-func IsCompatible(t reflect.Type, goner Goner) bool {
+func IsCompatible(t reflect.Type, goner any) bool {
 	gonerType := reflect.TypeOf(goner)
 
 	switch t.Kind() {

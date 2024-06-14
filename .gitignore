@@ -4,3 +4,4 @@ test-app
 coverage.txt
 
 demo
+*.log

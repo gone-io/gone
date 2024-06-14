@@ -10,7 +10,7 @@ import (
 
 func doWatch(fn func(string, string, fsnotify.Op), scanDirs []string, exclude string) {
 	watch(func(event fsnotify.Event) {
-		if event.Op&fsnotify.Write == fsnotify.Write || event.Op == fsnotify.Remove {
+		if event.Op&fsnotify.Write == fsnotify.Write || event.Op == fsnotify.Remove || event.Op == fsnotify.Create {
 			if exclude != event.Name && filepath.Ext(event.Name) == ".go" {
 				log.Infof("watch file(%s) changed", event.Name)
 				fn(filepath.Dir(event.Name), event.Name, event.Op)

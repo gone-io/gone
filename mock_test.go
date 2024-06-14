@@ -240,43 +240,6 @@ func (mr *MockTombMockRecorder) SetId(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetId", reflect.TypeOf((*MockTomb)(nil).SetId), arg0)
 }
 
-// MockDefaultLogger is a mock of DefaultLogger interface.
-type MockDefaultLogger struct {
-	ctrl     *gomock.Controller
-	recorder *MockDefaultLoggerMockRecorder
-}
-
-// MockDefaultLoggerMockRecorder is the mock recorder for MockDefaultLogger.
-type MockDefaultLoggerMockRecorder struct {
-	mock *MockDefaultLogger
-}
-
-// NewMockDefaultLogger creates a new mock instance.
-func NewMockDefaultLogger(ctrl *gomock.Controller) *MockDefaultLogger {
-	mock := &MockDefaultLogger{ctrl: ctrl}
-	mock.recorder = &MockDefaultLoggerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockDefaultLogger) EXPECT() *MockDefaultLoggerMockRecorder {
-	return m.recorder
-}
-
-// SetLogger mocks base method.
-func (m *MockDefaultLogger) SetLogger(logger SimpleLogger) SetLoggerError {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetLogger", logger)
-	ret0, _ := ret[0].(SetLoggerError)
-	return ret0
-}
-
-// SetLogger indicates an expected call of SetLogger.
-func (mr *MockDefaultLoggerMockRecorder) SetLogger(logger interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLogger", reflect.TypeOf((*MockDefaultLogger)(nil).SetLogger), logger)
-}
-
 // MockCemetery is a mock of Cemetery interface.
 type MockCemetery struct {
 	ctrl     *gomock.Controller
@@ -382,17 +345,22 @@ func (mr *MockCemeteryMockRecorder) InjectFuncParameters(fn, injectBefore, injec
 }
 
 // ReplaceBury mocks base method.
-func (m *MockCemetery) ReplaceBury(arg0 Goner, arg1 GonerId) error {
+func (m *MockCemetery) ReplaceBury(goner Goner, options ...GonerOption) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReplaceBury", arg0, arg1)
+	varargs := []interface{}{goner}
+	for _, a := range options {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ReplaceBury", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ReplaceBury indicates an expected call of ReplaceBury.
-func (mr *MockCemeteryMockRecorder) ReplaceBury(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockCemeteryMockRecorder) ReplaceBury(goner interface{}, options ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplaceBury", reflect.TypeOf((*MockCemetery)(nil).ReplaceBury), arg0, arg1)
+	varargs := append([]interface{}{goner}, options...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplaceBury", reflect.TypeOf((*MockCemetery)(nil).ReplaceBury), varargs...)
 }
 
 // ReviveAllFromTombs mocks base method.
@@ -1411,55 +1379,6 @@ func (mr *MockLoggerMockRecorder) Warnf(format interface{}, args ...interface{})
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{format}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warnf", reflect.TypeOf((*MockLogger)(nil).Warnf), varargs...)
-}
-
-// Warning mocks base method.
-func (m *MockLogger) Warning(args ...any) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range args {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Warning", varargs...)
-}
-
-// Warning indicates an expected call of Warning.
-func (mr *MockLoggerMockRecorder) Warning(args ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warning", reflect.TypeOf((*MockLogger)(nil).Warning), args...)
-}
-
-// Warningf mocks base method.
-func (m *MockLogger) Warningf(format string, args ...any) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{format}
-	for _, a := range args {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Warningf", varargs...)
-}
-
-// Warningf indicates an expected call of Warningf.
-func (mr *MockLoggerMockRecorder) Warningf(format interface{}, args ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{format}, args...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warningf", reflect.TypeOf((*MockLogger)(nil).Warningf), varargs...)
-}
-
-// Warningln mocks base method.
-func (m *MockLogger) Warningln(args ...any) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range args {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Warningln", varargs...)
-}
-
-// Warningln indicates an expected call of Warningln.
-func (mr *MockLoggerMockRecorder) Warningln(args ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warningln", reflect.TypeOf((*MockLogger)(nil).Warningln), args...)
 }
 
 // Warnln mocks base method.
@@ -3251,4 +3170,41 @@ func (m *MockCMuxServer) MatchWithWriters(matcher ...cmux.MatchWriter) net.Liste
 func (mr *MockCMuxServerMockRecorder) MatchWithWriters(matcher ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MatchWithWriters", reflect.TypeOf((*MockCMuxServer)(nil).MatchWithWriters), matcher...)
+}
+
+// MockConfigure is a mock of Configure interface.
+type MockConfigure struct {
+	ctrl     *gomock.Controller
+	recorder *MockConfigureMockRecorder
+}
+
+// MockConfigureMockRecorder is the mock recorder for MockConfigure.
+type MockConfigureMockRecorder struct {
+	mock *MockConfigure
+}
+
+// NewMockConfigure creates a new mock instance.
+func NewMockConfigure(ctrl *gomock.Controller) *MockConfigure {
+	mock := &MockConfigure{ctrl: ctrl}
+	mock.recorder = &MockConfigureMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConfigure) EXPECT() *MockConfigureMockRecorder {
+	return m.recorder
+}
+
+// Get mocks base method.
+func (m *MockConfigure) Get(key string, v any, defaultVal string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", key, v, defaultVal)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockConfigureMockRecorder) Get(key, v, defaultVal interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockConfigure)(nil).Get), key, v, defaultVal)
 }

@@ -119,7 +119,7 @@ func Test_httpInjector_inject(t *testing.T) {
 		Str   string
 		Bool  bool
 		Int   int
-		Uint  int
+		Uint  uint
 		Float float32
 
 		Struct    Struct
@@ -486,7 +486,7 @@ func Test_httpInjector_inject(t *testing.T) {
 
 			bindErr: func(t assert.TestingT, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, []bool{false, true, true, true}, req.BoolSlice)
+				assert.Equal(t, []bool{false, true, false, false}, req.BoolSlice)
 			},
 		},
 		{
@@ -774,7 +774,7 @@ func Test_httpInjector_inject(t *testing.T) {
 
 			bindErr: func(t assert.TestingT, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, req.Bool, true)
+				assert.Equal(t, req.Bool, false)
 			},
 		},
 
@@ -827,7 +827,7 @@ func Test_httpInjector_inject(t *testing.T) {
 
 			bindErr: func(t assert.TestingT, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, req.Uint, NumberVal)
+				assert.Equal(t, req.Uint, uint(NumberVal))
 			},
 		},
 		{
@@ -913,6 +913,28 @@ func Test_httpInjector_inject(t *testing.T) {
 			},
 		},
 		{
+			name:      "inject by kind, inject body Struct, parse error",
+			fieldName: "Body",
+			kind:      keyBody,
+			key:       stringKey,
+			ctx:       &context,
+
+			before: func() {
+				marshal := []byte(`{"X": 100i, "Y": 100}`)
+				context.Request.Body = io.NopCloser(bytes.NewBuffer(marshal))
+			},
+
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				assert.Nil(t, err)
+				return true
+			},
+
+			bindErr: func(t assert.TestingT, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, http.StatusBadRequest, err.(gone.Error).Code())
+			},
+		},
+		{
 			name:      "inject by kind, inject body Struct Pointer",
 			fieldName: "BodyPtr",
 			kind:      keyBody,
@@ -939,6 +961,28 @@ func Test_httpInjector_inject(t *testing.T) {
 					X: 100,
 					Y: stringVal,
 				}, *req.BodyPtr)
+			},
+		},
+		{
+			name:      "inject by kind, inject body Struct Pointer, parse error",
+			fieldName: "BodyPtr",
+			kind:      keyBody,
+			key:       stringKey,
+			ctx:       &context,
+
+			before: func() {
+				marshal := []byte(`{"X": 100i, "Y": 100}`)
+				context.Request.Body = io.NopCloser(bytes.NewBuffer(marshal))
+			},
+
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				assert.Nil(t, err)
+				return true
+			},
+
+			bindErr: func(t assert.TestingT, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, http.StatusBadRequest, err.(gone.Error).Code())
 			},
 		},
 		{
@@ -1000,7 +1044,7 @@ func Test_httpInjector_inject(t *testing.T) {
 			},
 		},
 		{
-			name:      "inject by kind, inject body []any yaml",
+			name:      "inject by kind, inject body []any test.yaml",
 			fieldName: "BodySlice",
 			kind:      keyBody,
 			key:       stringKey,
@@ -1046,7 +1090,7 @@ func Test_httpInjector_inject(t *testing.T) {
 				marshal, _ := yaml.Marshal(body)
 				context.Request.Body = io.NopCloser(bytes.NewBuffer(marshal))
 				context.Request.Header = http.Header{
-					"Content-Type": []string{"application/x-yaml"},
+					"Content-Type": []string{"application/x-test.yaml"},
 				}
 				injector.isInjectedBody = true
 			},
@@ -1058,6 +1102,33 @@ func Test_httpInjector_inject(t *testing.T) {
 
 			bindErr: func(t assert.TestingT, err error) {
 			},
+		},
+		{
+			name:      "inject by kind, inject body with unsupported type",
+			fieldName: "Int",
+			kind:      keyBody,
+			key:       stringKey,
+			ctx:       &context,
+
+			before: func() {
+				body := []Body{{
+					X: 100,
+					Y: stringVal,
+				}}
+				marshal, _ := yaml.Marshal(body)
+				context.Request.Body = io.NopCloser(bytes.NewBuffer(marshal))
+				context.Request.Header = http.Header{
+					"Content-Type": []string{"application/x-test.yaml"},
+				}
+				injector.isInjectedBody = true
+			},
+
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				assert.Error(t, err)
+				return false
+			},
+
+			bindErr: func(t assert.TestingT, err error) {},
 		},
 	}
 	for _, tt := range tests {
@@ -1107,4 +1178,56 @@ func Test_httpInjector_BindFuncs(t *testing.T) {
 		assert.Equal(t, 1000, x.x)
 		assert.Equal(t, 200, x.y)
 	})
+}
+
+func Test_bitSize(t *testing.T) {
+	type args struct {
+		kind reflect.Kind
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "int64",
+			args: args{
+				kind: reflect.Int64,
+			},
+			want: 64,
+		},
+		{
+			name: "int",
+			args: args{
+				kind: reflect.Int,
+			},
+			want: 32,
+		},
+		{
+			name: "int16",
+			args: args{
+				kind: reflect.Int16,
+			},
+			want: 16,
+		},
+		{
+			name: "int8",
+			args: args{
+				kind: reflect.Int8,
+			},
+			want: 8,
+		},
+		{
+			name: "default",
+			args: args{
+				kind: reflect.Map,
+			},
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, bitSize(tt.args.kind), "bitSize(%v)", tt.args.kind)
+		})
+	}
 }

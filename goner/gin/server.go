@@ -3,7 +3,6 @@ package gin
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
 	Cmux "github.com/soheilhy/cmux"
 	"net"
@@ -39,7 +38,6 @@ type server struct {
 	listener net.Listener
 	port     int    `gone:"config,server.port=8080"`
 	host     string `gone:"config,server.host,default=0.0.0.0"`
-	mode     string `gone:"config,server.mode,default=release"`
 
 	createListener func(*server) error
 }
@@ -55,7 +53,6 @@ func (s *server) Start(cemetery gone.Cemetery) error {
 	}
 
 	s.stopFlag = false
-	gin.SetMode(s.mode) //设置模式
 	s.httpServer = &http.Server{
 		Handler: s,
 	}

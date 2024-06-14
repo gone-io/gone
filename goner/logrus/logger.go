@@ -57,7 +57,7 @@ func parseLogLevel(level string) logrus.Level {
 	var l logrus.Level
 	err := l.UnmarshalText([]byte(level))
 	if err != nil {
-		panic("cannot parse logger level")
+		panic(gone.NewInnerError("cannot parse logger level", gone.ConfigError))
 	}
 	return l
 }
@@ -69,9 +69,9 @@ func parseOutput(output string) io.Writer {
 	case "stderr":
 		return os.Stderr
 	default:
-		f, err := os.Open(output)
+		f, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			panic(err)
+			panic(gone.ToError(err))
 		}
 		return f
 	}

@@ -1,6 +1,8 @@
 package gone
 
-import "reflect"
+import (
+	"reflect"
+)
 
 func NewTomb(goner Goner) Tomb {
 	return &tomb{goner: goner}
@@ -11,6 +13,8 @@ type tomb struct {
 	goner      Goner
 	reviveFlag bool
 	isDefault  bool
+
+	order Order
 }
 
 func (t *tomb) SetId(id GonerId) Tomb {
@@ -35,6 +39,18 @@ func (t *tomb) GonerIsRevive(flags ...bool) bool {
 
 type Tombs []Tomb
 
+func (tombs Tombs) Len() int {
+	return len(tombs)
+}
+
+func (tombs Tombs) Less(i, j int) bool {
+	return tombs[i].GetOrder() < tombs[j].GetOrder()
+}
+
+func (tombs Tombs) Swap(i, j int) {
+	tombs[i], tombs[j] = tombs[j], tombs[i]
+}
+
 func (tombs Tombs) GetTomByType(t reflect.Type) (filterTombs []Tomb) {
 	for _, tomb := range tombs {
 		if IsCompatible(t, tomb.GetGoner()) {
@@ -50,5 +66,13 @@ func (t *tomb) IsDefault() bool {
 
 func (t *tomb) SetDefault(isDefault bool) Tomb {
 	t.isDefault = isDefault
+	return t
+}
+
+func (t *tomb) GetOrder() Order {
+	return t.order
+}
+func (t *tomb) SetOrder(order Order) Tomb {
+	t.order = order
 	return t
 }

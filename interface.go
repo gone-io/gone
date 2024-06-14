@@ -35,6 +35,10 @@ type IsDefault bool
 
 func (IsDefault) option() {}
 
+type Order int
+
+func (Order) option() {}
+
 // Tomb container of Goner
 type Tomb interface {
 	SetId(GonerId) Tomb
@@ -44,11 +48,9 @@ type Tomb interface {
 
 	IsDefault() bool
 	SetDefault(isDefault bool) Tomb
-}
 
-type SetLoggerError error
-type DefaultLogger interface {
-	SetLogger(logger SimpleLogger) SetLoggerError
+	GetOrder() Order
+	SetOrder(order Order) Tomb
 }
 
 // Cemetery which is for burying and reviving Goner
@@ -62,7 +64,7 @@ type Cemetery interface {
 	BuryOnce(goner Goner, options ...GonerOption) Cemetery
 
 	//ReplaceBury replace the Goner in the Cemetery with a new Goner
-	ReplaceBury(Goner, GonerId) error
+	ReplaceBury(goner Goner, options ...GonerOption) error
 
 	//ReviveOne Revive a Goner from the Cemetery
 	ReviveOne(goner any) (deps []Tomb, err error)
@@ -173,7 +175,6 @@ type Logger interface {
 	Infof(format string, args ...any)
 	Printf(format string, args ...any)
 	Warnf(format string, args ...any)
-	Warningf(format string, args ...any)
 	Errorf(format string, args ...any)
 	Fatalf(format string, args ...any)
 	Panicf(format string, args ...any)
@@ -183,7 +184,6 @@ type Logger interface {
 	Info(args ...any)
 	Print(args ...any)
 	Warn(args ...any)
-	Warning(args ...any)
 	Error(args ...any)
 	Fatal(args ...any)
 	Panic(args ...any)
@@ -193,7 +193,6 @@ type Logger interface {
 	Infoln(args ...any)
 	Println(args ...any)
 	Warnln(args ...any)
-	Warningln(args ...any)
 	Errorln(args ...any)
 	Fatalln(args ...any)
 	Panicln(args ...any)
@@ -228,9 +227,18 @@ type XormEngine interface {
 
 //-----------
 
-// CMuxServer cMux 服务，用于复用同一端口监听多种协议，参考文档：https://pkg.go.dev/github.com/soheilhy/cmux
+// CMuxServer cMux service，Used to multiplex the same port to listen for multiple protocols，ref：https://pkg.go.dev/github.com/soheilhy/cmux
 type CMuxServer interface {
 	Match(matcher ...cmux.Matcher) net.Listener
 	MatchWithWriters(matcher ...cmux.MatchWriter) net.Listener
 	GetAddress() string
+}
+
+// -----------
+
+// Configure use for get value of struct attribute tag by `gone:"config,${key}"`
+type Configure interface {
+
+	//Get the value from config system
+	Get(key string, v any, defaultVal string) error
 }

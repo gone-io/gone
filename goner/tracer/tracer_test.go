@@ -26,10 +26,7 @@ func TestTracer(t *testing.T) {
 		}
 
 		tracer.SetTraceId(traceId, fn)
-	}, Priest, func(cemetery gone.Cemetery) error {
-		cemetery.Bury(gone.NewSimpleLogger())
-		return nil
-	})
+	}, Priest)
 }
 
 func BenchmarkTracer_GetTraceId(b *testing.B) {
@@ -53,8 +50,5 @@ func BenchmarkTracer_GetTraceId(b *testing.B) {
 		tracer.SetTraceId(traceId, func() {
 			fn()
 		})
-	}, Priest, func(cemetery gone.Cemetery) error {
-		cemetery.Bury(gone.NewSimpleLogger())
-		return nil
-	})
+	}, Priest)
 }

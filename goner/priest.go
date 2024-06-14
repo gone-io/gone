@@ -11,6 +11,7 @@ import (
 	"github.com/gone-io/gone/goner/tracer"
 	"github.com/gone-io/gone/goner/urllib"
 	"github.com/gone-io/gone/goner/xorm"
+	gone_zap "github.com/gone-io/gone/goner/zap"
 )
 
 func BasePriest(cemetery gone.Cemetery) error {
@@ -18,6 +19,18 @@ func BasePriest(cemetery gone.Cemetery) error {
 	_ = logrus.Priest(cemetery)
 	_ = config.Priest(cemetery)
 	return nil
+}
+
+func ConfigPriest(cemetery gone.Cemetery) error {
+	return config.Priest(cemetery)
+}
+
+func LogrusLoggerPriest(cemetery gone.Cemetery) error {
+	return logrus.Priest(cemetery)
+}
+
+func ZapLoggerPriest(cemetery gone.Cemetery) error {
+	return gone_zap.Priest(cemetery)
 }
 
 func GinPriest(cemetery gone.Cemetery) error {

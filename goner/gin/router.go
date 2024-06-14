@@ -21,12 +21,15 @@ type router struct {
 	*gin.Engine
 
 	htmlTpl string `gone:"config,server.html-tpl-pattern"`
+	mode    string `gone:"config,server.mode,default=release"`
 
 	HandleProxyToGin `gone:"gone-gin-proxy"`
 }
 
 func (r *router) AfterRevive() gone.AfterReviveError {
+	gin.SetMode(r.mode)
 	r.Engine = gin.New()
+
 	if r.htmlTpl != "" {
 		r.Engine.LoadHTMLGlob(r.htmlTpl)
 	}

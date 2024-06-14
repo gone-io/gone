@@ -3,27 +3,23 @@ package gone
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"unsafe"
 )
 
 func newCemetery() Cemetery {
 	return &cemetery{
-		SimpleLogger: &defaultLogger{},
-		tombMap:      make(map[GonerId]Tomb),
+		Logger:  _defaultLogger,
+		tombMap: make(map[GonerId]Tomb),
 	}
 }
 
 type cemetery struct {
 	Flag
-	SimpleLogger `gone:"gone-logger"`
-	tombMap      map[GonerId]Tomb
-	tombs        []Tomb
-}
-
-func (c *cemetery) SetLogger(logger SimpleLogger) SetLoggerError {
-	c.SimpleLogger = logger
-	return nil
+	Logger  `gone:"gone-logger"`
+	tombMap map[GonerId]Tomb
+	tombs   Tombs
 }
 
 func GetGoneDefaultId(goner Goner) GonerId {
@@ -46,6 +42,8 @@ func (c *cemetery) bury(goner Goner, options ...GonerOption) Tomb {
 			id = option.(GonerId)
 		case IsDefault:
 			t.SetDefault(bool(option.(IsDefault)))
+		case Order:
+			t.SetOrder(option.(Order))
 		}
 	}
 
@@ -68,7 +66,7 @@ func (c *cemetery) Bury(goner Goner, options ...GonerOption) Cemetery {
 	return c
 }
 
-func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
+func (c *cemetery) filterGonerIdFromOptions(options []GonerOption) GonerId {
 	var id GonerId
 
 	for _, option := range options {
@@ -77,6 +75,11 @@ func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
 			id = option.(GonerId)
 		}
 	}
+	return id
+}
+
+func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
+	var id = c.filterGonerIdFromOptions(options)
 	if id == "" {
 		panic(NewInnerError("GonerId is empty, must have gonerId option", MustHaveGonerId))
 	}
@@ -87,7 +90,8 @@ func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
 	return c
 }
 
-func (c *cemetery) ReplaceBury(goner Goner, id GonerId) (err error) {
+func (c *cemetery) ReplaceBury(goner Goner, options ...GonerOption) (err error) {
+	var id = c.filterGonerIdFromOptions(options)
 	if id == "" {
 		err = ReplaceBuryIdParamEmptyError()
 		return
@@ -327,7 +331,8 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 	if goneTypeName == "" {
 		goneTypeName = "[Anonymous Goner]"
 	}
-	c.Infof("Revive %s", goneTypeName)
+
+	//c.Debugf("Revive %s", goneTypeName)
 
 	for i := 0; i < gonerValue.NumField(); i++ {
 		field := gonerType.Field(i)
@@ -385,6 +390,7 @@ func (c *cemetery) reviveOneFromTomb(tomb Tomb) (deps []Tomb, err error) {
 }
 
 func (c *cemetery) ReviveAllFromTombs() error {
+	sort.Sort(c.tombs)
 	for _, tomb := range c.tombs {
 		_, err := c.reviveOneFromTomb(tomb)
 		if err != nil {
@@ -428,7 +434,7 @@ func (c *cemetery) GetTomById(id GonerId) Tomb {
 }
 
 func (c *cemetery) GetTomByType(t reflect.Type) (tombs []Tomb) {
-	return Tombs(c.tombs).GetTomByType(t)
+	return c.tombs.GetTomByType(t)
 }
 
 func (c *cemetery) getGonerContainerByType(t reflect.Type, name string) Tomb {

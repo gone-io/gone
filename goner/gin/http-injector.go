@@ -485,10 +485,11 @@ func bitSize(kind reflect.Kind) int {
 	case reflect.Int8, reflect.Uint8:
 		return 8
 	default:
-		return 32
+		return 0
 	}
 }
 
 func stringToBool(value string) bool {
-	return value != "" && value != "0" && value != "false"
+	def, _ := strconv.ParseBool(value)
+	return def
 }

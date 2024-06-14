@@ -7,23 +7,24 @@ import (
 )
 
 func TestBasePriest(t *testing.T) {
-	cemetery := gone.NewBuryMockCemeteryForTest()
-	err := BasePriest(cemetery)
-	assert.Nil(t, err)
-
-	gone.Prepare(BasePriest).Run()
+	gone.Prepare().Run(func(cemetery gone.Cemetery) {
+		err := BasePriest(cemetery)
+		assert.Nil(t, err)
+	})
 }
 
 func TestGinPriest(t *testing.T) {
-	cemetery := gone.NewBuryMockCemeteryForTest()
-	err := GinPriest(cemetery)
-	assert.Nil(t, err)
+	gone.Prepare().Run(func(cemetery gone.Cemetery) {
+		err := GinPriest(cemetery)
+		assert.Nil(t, err)
+	})
 }
 
 func TestXormPriest(t *testing.T) {
-	cemetery := gone.NewBuryMockCemeteryForTest()
-	err := XormPriest(cemetery)
-	assert.Nil(t, err)
+	gone.Prepare().Run(func(cemetery gone.Cemetery) {
+		err := XormPriest(cemetery)
+		assert.Nil(t, err)
+	})
 }
 
 func TestRedisPriest(t *testing.T) {
@@ -54,4 +55,24 @@ func TestGrpcClientPriest(t *testing.T) {
 	cemetery := gone.NewBuryMockCemeteryForTest()
 	err := GrpcClientPriest(cemetery)
 	assert.Nil(t, err)
+}
+
+func TestConfigPriest(t *testing.T) {
+	cemetery := gone.NewBuryMockCemeteryForTest()
+	err := ConfigPriest(cemetery)
+	assert.Nil(t, err)
+}
+
+func TestLogrusLoggerPriest(t *testing.T) {
+	gone.Prepare().Test(func(cemetery gone.Cemetery) {
+		err := LogrusLoggerPriest(cemetery)
+		assert.Nil(t, err)
+	})
+}
+
+func TestZapLoggerPriest(t *testing.T) {
+	gone.Prepare().Test(func(cemetery gone.Cemetery) {
+		err := ZapLoggerPriest(cemetery)
+		assert.Nil(t, err)
+	})
 }
