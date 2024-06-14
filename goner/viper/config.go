@@ -39,13 +39,9 @@ func (c *configure) isInTestKit() bool {
 }
 
 func (c *configure) readConfig() (err error) {
-	configs, err := config.GetConfSettings(c.isInTestKit())
-	if err != nil {
-		return err
-	}
+	configs := config.GetConfSettings(c.isInTestKit())
 
 	conf := viper.New()
-
 	for _, setting := range configs {
 		vConf := viper.New()
 		vConf.SetConfigName(setting.ConfigName)

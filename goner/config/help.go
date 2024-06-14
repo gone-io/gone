@@ -17,10 +17,10 @@ const TestSuffix = "_test"
 
 const DefaultConf = "default"
 
-var envFlag = flag.String("env", "", "environment，默认为local")
+var envFlag = flag.String("env", "", "environment")
 var confFlag = flag.String("conf", "", "config directory")
 
-// GetEnv get environment
+// GetEnv get environment, fetch value from command line flag(-env) first, then from environment variable(ENV), then use default value
 func GetEnv() string {
 	flag.Parse()
 	if *envFlag != "" {
@@ -34,6 +34,7 @@ func GetEnv() string {
 	return defaultEnv
 }
 
+// GetConfDir get config directory, fetch value from command line flag(-conf) first, then from environment variable(CONF)
 func GetConfDir() string {
 	flag.Parse()
 	if *confFlag != "" {
@@ -42,37 +43,41 @@ func GetConfDir() string {
 	return os.Getenv(EConf)
 }
 
-func GetExecutableConfDir() (string, error) {
+func MustGetExecutableConfDir() string {
 	dir, err := os.Executable()
 	if err != nil {
-		return "", gone.ToError(err)
+		panic(gone.ToError(err))
 	}
-
-	return path.Join(filepath.Dir(dir), ConPath), nil
+	return path.Join(filepath.Dir(dir), ConPath)
 }
 
+func MustGetWorkDir() string {
+	workDir, err := os.Getwd()
+	if err != nil {
+		panic(gone.ToError(err))
+	}
+	return workDir
+}
+
+// ConfSetting config settings, include config file dir path and config file name(do not include file extension)
 type ConfSetting struct {
 	ConfigPath string
 	ConfigName string
 }
 
-func GetConfSettings(isInTestKit bool) (configs []ConfSetting, err error) {
+// GetConfSettings get config settings
+func GetConfSettings(isInTestKit bool) (configs []ConfSetting) {
 	var configPaths []string
 
-	executableConfDir, err := GetExecutableConfDir()
-	if err != nil {
-		return
-	}
+	executableConfDir := MustGetExecutableConfDir()
 
 	configPaths = append(configPaths, executableConfDir)
-	wordDir, err := os.Getwd()
-	if err != nil {
-		return nil, gone.ToError(err)
-	}
-	configPaths = append(configPaths, path.Join(wordDir, ConPath))
+	workDir := MustGetWorkDir()
+
+	configPaths = append(configPaths, path.Join(MustGetWorkDir(), ConPath))
 
 	if isInTestKit {
-		configPaths = append(configPaths, path.Join(wordDir, "testdata", ConPath))
+		configPaths = append(configPaths, path.Join(workDir, "testdata", ConPath))
 	}
 
 	settingConfPath := GetConfDir()

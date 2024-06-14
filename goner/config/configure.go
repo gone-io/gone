@@ -23,15 +23,13 @@ type configure struct {
 
 func (c *configure) Get(key string, v any, defaultVal string) error {
 	if c.props == nil {
-		var err error
-		c.props, err = c.getProperties()
-
-		c.props = fixExpand(c.props)
+		props, err := c.getProperties()
 		if err != nil {
 			return gone.ToError(err)
 		}
+		c.props = fixExpand(props)
 	}
-	return parseKeyFromProperties(key, v, defaultVal, c.props)
+	return getFromProperties(key, v, defaultVal, c.props)
 }
 
 const SliceMaxSize = 100
@@ -49,7 +47,7 @@ func fixExpand(props *properties.Properties) *properties.Properties {
 	return newProperties
 }
 
-func parseKeyFromProperties(
+func getFromProperties(
 	key string,
 	value any,
 	defaultVale string,
@@ -123,6 +121,7 @@ func parseKeyFromProperties(
 			if conf.Len() == 0 {
 				break
 			}
+
 			err := decodeSliceElement(sliceElementType, k, conf, el)
 			if err != nil {
 				return err
@@ -141,6 +140,7 @@ func decodeSliceElement(sliceElementType reflect.Type, k string, conf *propertie
 			return gone.NewInnerError(fmt.Sprintf("config %s err:%s", k, err.Error()), gone.NotCompatible)
 		}
 		el.Set(reflect.Append(el, v.Elem()))
+
 	case reflect.Pointer:
 		if sliceElementType.Elem().Kind() == reflect.Struct {
 			v := reflect.New(sliceElementType.Elem())
@@ -165,10 +165,7 @@ func (c *configure) isInTestKit() bool {
 const ext = ".properties"
 
 func (c *configure) getProperties() (*properties.Properties, error) {
-	configs, err := GetConfSettings(c.isInTestKit())
-	if err != nil {
-		return nil, err
-	}
+	configs := GetConfSettings(c.isInTestKit())
 	var filePaths []string
 	for _, conf := range configs {
 		filePaths = append(filePaths, path.Join(conf.ConfigPath, conf.ConfigName+ext))
