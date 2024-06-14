@@ -13,10 +13,8 @@ func Priest(cemetery gone.Cemetery) error {
 		return nil
 	}
 
+	cemetery.BuryOnce(NewZapLogger())
 	_ = config.Priest(cemetery)
 	_ = tracer.Priest(cemetery)
-
-	cemetery.BuryOnce(NewZapLogger())
-
 	return cemetery.ReplaceBury(NewSugar())
 }

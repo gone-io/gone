@@ -10,11 +10,11 @@ import (
 	"sync"
 )
 
-func NewGinServer() (gone.Goner, gone.GonerId, gone.GonerOption) {
+func NewGinServer() (gone.Goner, gone.GonerId, gone.GonerOption, gone.GonerOption) {
 	s := server{
 		createListener: createListener,
 	}
-	return &s, gone.IdGoneGin, gone.IsDefault(true)
+	return &s, gone.IdGoneGin, gone.IsDefault(true), gone.Order2
 }
 
 func createListener(s *server) (err error) {

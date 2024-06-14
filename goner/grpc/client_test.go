@@ -16,7 +16,7 @@ import (
 
 func (s *clientRegister) Infof(format string, args ...any) {}
 func TestClientRegister_traceInterceptor(t *testing.T) {
-	gone.Prepare(tracer.Priest, logrus.Priest, config.Priest).AfterStart(func(in struct {
+	gone.Prepare(config.Priest, tracer.Priest, logrus.Priest).AfterStart(func(in struct {
 		tracer tracer.Tracer `gone:"gone-tracer"`
 	}) {
 

@@ -2,6 +2,8 @@ package gone_zap
 
 import (
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/config"
+	"github.com/gone-io/gone/goner/tracer"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -10,7 +12,7 @@ import (
 )
 
 func Test_log_Suck(t *testing.T) {
-	gone.Prepare(Priest).Test(func(in struct {
+	gone.Prepare(config.Priest, tracer.Priest, Priest).Test(func(in struct {
 		log   Logger      `gone:"zap,in-test"`
 		sugar gone.Logger `gone:"zap,sugar"`
 	}) {

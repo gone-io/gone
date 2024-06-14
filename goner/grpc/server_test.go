@@ -161,7 +161,7 @@ func Test_server_traceInterceptor(t *testing.T) {
 		XTraceId: []string{traceId},
 	})
 
-	gone.Prepare(tracer.Priest, logrus.Priest, config.Priest).AfterStart(func(in struct {
+	gone.Prepare(config.Priest, tracer.Priest, logrus.Priest).AfterStart(func(in struct {
 		tracer tracer.Tracer `gone:"gone-tracer"`
 	}) {
 		s := server{

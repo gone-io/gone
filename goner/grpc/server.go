@@ -37,10 +37,10 @@ type server struct {
 	createListener func(*server) error
 }
 
-func NewServer() gone.Goner {
+func NewServer() (gone.Goner, gone.GonerOption) {
 	return &server{
 		createListener: createListener,
-	}
+	}, gone.Order2
 }
 
 func (s *server) initListener(cemetery gone.Cemetery) error {

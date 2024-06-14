@@ -5,6 +5,8 @@ import (
 )
 
 func Priest(cemetery gone.Cemetery) error {
-	cemetery.BuryOnce(NewConfigure()).BuryOnce(NewConfig())
+	cemetery.
+		BuryOnce(NewConfigure()).
+		BuryOnce(NewConfig())
 	return nil
 }

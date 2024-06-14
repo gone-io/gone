@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-func NewConfigure() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &configure{}, gone.IdGoneConfigure, gone.IsDefault(true)
+func NewConfigure() (gone.Goner, gone.GonerId, gone.GonerOption, gone.GonerOption) {
+	return &configure{}, gone.IdGoneConfigure, gone.IsDefault(true), gone.Order0
 }
 
 type configure struct {

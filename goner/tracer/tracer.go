@@ -7,8 +7,8 @@ import (
 	"sync"
 )
 
-func NewTracer() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &tracer{}, gone.IdGoneTracer, gone.IsDefault(true)
+func NewTracer() (gone.Goner, gone.GonerId, gone.GonerOption, gone.GonerOption) {
+	return &tracer{}, gone.IdGoneTracer, gone.IsDefault(true), gone.Order0
 }
 
 type tracer struct {

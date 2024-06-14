@@ -2,6 +2,7 @@ package goner
 
 import (
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/cmux"
 	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/goner/gin"
 	gone_grpc "github.com/gone-io/gone/goner/grpc"
@@ -15,9 +16,9 @@ import (
 )
 
 func BasePriest(cemetery gone.Cemetery) error {
+	_ = config.Priest(cemetery)
 	_ = tracer.Priest(cemetery)
 	_ = logrus.Priest(cemetery)
-	_ = config.Priest(cemetery)
 	return nil
 }
 
@@ -26,41 +27,57 @@ func ConfigPriest(cemetery gone.Cemetery) error {
 }
 
 func LogrusLoggerPriest(cemetery gone.Cemetery) error {
+	_ = config.Priest(cemetery)
+	_ = tracer.Priest(cemetery)
 	return logrus.Priest(cemetery)
 }
 
 func ZapLoggerPriest(cemetery gone.Cemetery) error {
+	_ = config.Priest(cemetery)
+	_ = tracer.Priest(cemetery)
 	return gone_zap.Priest(cemetery)
 }
 
 func GinPriest(cemetery gone.Cemetery) error {
+	_ = BasePriest(cemetery)
 	_ = gin.Priest(cemetery)
 	return nil
 }
 
 func XormPriest(cemetery gone.Cemetery) error {
+	_ = BasePriest(cemetery)
 	_ = xorm.Priest(cemetery)
 	return nil
 }
 
 func RedisPriest(cemetery gone.Cemetery) error {
+	_ = BasePriest(cemetery)
 	_ = redis.Priest(cemetery)
 	return nil
 }
 
 func SchedulePriest(cemetery gone.Cemetery) error {
+	_ = BasePriest(cemetery)
 	_ = schedule.Priest(cemetery)
 	return nil
 }
 
 func UrllibPriest(cemetery gone.Cemetery) error {
+	_ = BasePriest(cemetery)
 	return urllib.Priest(cemetery)
 }
 
 func GrpcServerPriest(cemetery gone.Cemetery) error {
+	_ = CMuxPriest(cemetery)
 	return gone_grpc.ServerPriest(cemetery)
 }
 
 func GrpcClientPriest(cemetery gone.Cemetery) error {
+	_ = BasePriest(cemetery)
 	return gone_grpc.ClientRegisterPriest(cemetery)
+}
+
+func CMuxPriest(cemetery gone.Cemetery) error {
+	_ = BasePriest(cemetery)
+	return cmux.Priest(cemetery)
 }

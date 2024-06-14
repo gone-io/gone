@@ -31,9 +31,6 @@ func (l *defaultLogger) Infof(format string, args ...any) {
 func (l *defaultLogger) Warnf(format string, args ...any) {
 	log.Printf(format, args...)
 }
-func (l *defaultLogger) Warningf(format string, args ...any) {
-	log.Printf(format, args...)
-}
 
 func (l *defaultLogger) Errorf(format string, args ...any) {
 	log.Printf(format, args...)
@@ -51,9 +48,7 @@ func (l *defaultLogger) Info(args ...any) {
 func (l *defaultLogger) Warn(args ...any) {
 	log.Print(args...)
 }
-func (l *defaultLogger) Warning(args ...any) {
-	log.Print(args...)
-}
+
 func (l *defaultLogger) Error(args ...any) {
 	log.Print(args...)
 }
@@ -70,9 +65,7 @@ func (l *defaultLogger) Infoln(args ...any) {
 func (l *defaultLogger) Warnln(args ...any) {
 	log.Println(args...)
 }
-func (l *defaultLogger) Warningln(args ...any) {
-	log.Println(args...)
-}
+
 func (l *defaultLogger) Errorln(args ...any) {
 	log.Println(args...)
 }
