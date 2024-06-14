@@ -52,15 +52,20 @@ func (p *Preparer) testKit() *Preparer {
 	return p
 }
 
-// Test Use for writing test cases
-// example:
-//
-//	gone.Prepare(priests...).Test(func(in struct{
-//	    cemetery Cemetery `gone:"*"`
-//	}) {
-//
-//	  // test code
-//	})
+/*
+Test Use for writing test cases
+example:
+```go
+
+	gone.Prepare(priests...).Test(func(in struct{
+	    cemetery Cemetery `gone:"*"`
+	}) {
+
+	  // test code
+	})
+
+```
+*/
 func (p *Preparer) Test(fn any) {
 	p.testKit().AfterStart(fn).Run()
 }

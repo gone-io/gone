@@ -2,8 +2,28 @@ package gone
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
 )
+
+// BError Business error implementation
+type BError struct {
+	err  Error
+	data any
+}
+
+func (e *BError) Msg() string {
+	return e.err.Msg()
+}
+func (e *BError) Code() int {
+	return e.err.Code()
+}
+func (e *BError) Error() string {
+	return e.err.Error()
+}
+func (e *BError) Data() any {
+	return e.data
+}
 
 type defaultErr struct {
 	code int
@@ -21,8 +41,52 @@ func (e *defaultErr) Code() int {
 	return e.code
 }
 
+// NewError create a error
 func NewError(code int, msg string) Error {
 	return &defaultErr{code: code, msg: msg}
+}
+
+// NewParameterError create a Parameter error
+func NewParameterError(msg string, ext ...int) Error {
+	var code = http.StatusBadRequest
+	if len(ext) > 0 {
+		code = ext[0]
+	}
+	return NewError(code, msg)
+}
+
+// NewBusinessError create a business error
+func NewBusinessError(msg string, ext ...any) BusinessError {
+	var code = 0
+	var data any = nil
+	if len(ext) > 0 {
+		i, ok := ext[0].(int)
+		if ok {
+			code = i
+		}
+	}
+	if len(ext) > 1 {
+		data = ext[1]
+	}
+
+	return &BError{err: NewError(code, msg), data: data}
+}
+
+// ToError translate any type to An Error
+func ToError(input any) Error {
+	if input == nil {
+		return nil
+	}
+	switch input.(type) {
+	case Error:
+		return input.(Error)
+	case error:
+		return NewInnerError(input.(error).Error(), http.StatusInternalServerError)
+	case string:
+		return NewInnerError(input.(string), http.StatusInternalServerError)
+	default:
+		return NewInnerError(fmt.Sprintf("%v", input), http.StatusInternalServerError)
+	}
 }
 
 type iError struct {
@@ -47,33 +111,37 @@ func NewInnerErrorSkip(msg string, code int, skip int) Error {
 	return &iError{defaultErr: &defaultErr{code: code, msg: msg}, trace: PanicTrace(2, skip)}
 }
 
-// 错误代码：gone框架内部错误代码编码空间:1001~1999
+// Error Code：1001~1999 used for gone framework.
 const (
-	// GonerIdIsExisted GonerId 不存在
+	// GonerIdIsExisted Goner for the GonerId is existed.
 	GonerIdIsExisted = 1001 + iota
 
-	// CannotFoundGonerById 通过GonerId查找Goner失败
+	// CannotFoundGonerById cannot find the Goner by the GonerId.
 	CannotFoundGonerById
 
-	// CannotFoundGonerByType 通过类型查找Goner失败
+	// CannotFoundGonerByType cannot find the Goner by the Type.
 	CannotFoundGonerByType
 
-	//NotCompatible 类型不兼容
+	//NotCompatible Goner is not compatible with the Type.
 	NotCompatible
 
-	//ReplaceBuryIdParamEmpty 替换性下葬，GonerId不能为空
+	//ReplaceBuryIdParamEmpty Cemetery.ReplaceBury error for the GonerId is empty.
 	ReplaceBuryIdParamEmpty
 
+	//StartError Gone Start flow error.
 	StartError
+
+	//StopError Gone Stop flow error.
 	StopError
 
+	//DbRollForPanic error in rollback of DB transaction  for panic.
 	DbRollForPanic
 
+	//MustHaveGonerId error for the GonerId is empty.
 	MustHaveGonerId
 
+	//InjectError error for dependence injection error
 	InjectError
-
-	ConfigError
 )
 
 func GonerIdIsExistedError(id GonerId) Error {

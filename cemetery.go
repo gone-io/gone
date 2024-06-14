@@ -185,7 +185,7 @@ func (c *cemetery) reviveFieldById(tag string, field reflect.StructField, v refl
 
 		goner := tomb.GetGoner()
 		if IsCompatible(field.Type, goner) {
-			c.setFieldValue(v, goner)
+			setFieldValue(v, goner)
 			suc = true
 			return
 		}
@@ -241,7 +241,7 @@ func (c *cemetery) reviveByVampire2(goner Goner, tomb Tomb, extConfig string, v 
 func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool) {
 	container := c.getGonerContainerByType(field.Type, fmt.Sprintf("%s.%s", goneTypeName, field.Name))
 	if container != nil {
-		c.setFieldValue(v, container.GetGoner())
+		setFieldValue(v, container.GetGoner())
 		suc = true
 		deps = append(deps, container)
 	}

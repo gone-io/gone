@@ -58,14 +58,20 @@ func Prepare(priests ...Priest) *Preparer {
 	}
 }
 
-// Run 开始运行一个Gone程序；`gone.Run` 和 `gone.Serve` 的区别是：
-// 1. gone.Serve启动的程序，主协程会调用 Heaven.WaitEnd 挂起等待停机信号，可以用于服务程序的开发
-// 2. gone.Run启动的程序，主协程则不会挂起，运行完就结束，适合开发一致性运行的代码
+/*
+Run A Gone Program；
+
+gone.Run vs gone.Serve:
+
+- gone.Run, The main goroutine never hangs, and the program is terminated when the main goroutine exits.
+
+- gone.Serve, The main goroutine calls Heaven.WaitEnd and hangs, and the program waiting for the stop signal for exiting.
+*/
 func Run(priests ...Priest) {
 	Prepare(priests...).Run()
 }
 
-// Serve 开始服务，参考[Run](#Run)
+// Serve Start for A Gone Server Program.
 func Serve(priests ...Priest) {
 	Prepare(priests...).Serve()
 }

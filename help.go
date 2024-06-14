@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// PanicTrace 用于获取调用者的堆栈信息
+// PanicTrace used for getting panic stack
 func PanicTrace(kb int, skip int) []byte {
 	stack := make([]byte, kb<<10) //4KB
 	length := runtime.Stack(stack, true)
@@ -38,12 +38,12 @@ func PanicTrace(kb int, skip int) []byte {
 	return stack
 }
 
-// GetFuncName 获取某个函数的名字
+// GetFuncName get function name
 func GetFuncName(f any) string {
 	return strings.TrimSuffix(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
 }
 
-// GetInterfaceType 获取接口的类型
+// GetInterfaceType get interface type
 func GetInterfaceType[T any](t *T) reflect.Type {
 	return reflect.TypeOf(t).Elem()
 }
@@ -79,7 +79,7 @@ func IsCompatible(t reflect.Type, goner any) bool {
 	}
 }
 
-func (c *cemetery) setFieldValue(v reflect.Value, ref any) {
+func setFieldValue(v reflect.Value, ref any) {
 	t := v.Type()
 
 	switch t.Kind() {
