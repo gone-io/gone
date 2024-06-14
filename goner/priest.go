@@ -39,6 +39,7 @@ func ZapLoggerPriest(cemetery gone.Cemetery) error {
 }
 
 func GinPriest(cemetery gone.Cemetery) error {
+	_ = BasePriest(cemetery)
 	_ = gin.Priest(cemetery)
 	return nil
 }
