@@ -180,6 +180,20 @@ func (mr *MockTombMockRecorder) GetId() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetId", reflect.TypeOf((*MockTomb)(nil).GetId))
 }
 
+// GetOrder mocks base method.
+func (m *MockTomb) GetOrder() Order {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrder")
+	ret0, _ := ret[0].(Order)
+	return ret0
+}
+
+// GetOrder indicates an expected call of GetOrder.
+func (mr *MockTombMockRecorder) GetOrder() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrder", reflect.TypeOf((*MockTomb)(nil).GetOrder))
+}
+
 // GonerIsRevive mocks base method.
 func (m *MockTomb) GonerIsRevive(flags ...bool) bool {
 	m.ctrl.T.Helper()
@@ -238,6 +252,20 @@ func (m *MockTomb) SetId(arg0 GonerId) Tomb {
 func (mr *MockTombMockRecorder) SetId(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetId", reflect.TypeOf((*MockTomb)(nil).SetId), arg0)
+}
+
+// SetOrder mocks base method.
+func (m *MockTomb) SetOrder(order Order) Tomb {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOrder", order)
+	ret0, _ := ret[0].(Tomb)
+	return ret0
+}
+
+// SetOrder indicates an expected call of SetOrder.
+func (mr *MockTombMockRecorder) SetOrder(order interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOrder", reflect.TypeOf((*MockTomb)(nil).SetOrder), order)
 }
 
 // MockCemetery is a mock of Cemetery interface.
@@ -980,6 +1008,85 @@ func (m *MockInnerError) Stack() []byte {
 func (mr *MockInnerErrorMockRecorder) Stack() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stack", reflect.TypeOf((*MockInnerError)(nil).Stack))
+}
+
+// MockBusinessError is a mock of BusinessError interface.
+type MockBusinessError struct {
+	ctrl     *gomock.Controller
+	recorder *MockBusinessErrorMockRecorder
+}
+
+// MockBusinessErrorMockRecorder is the mock recorder for MockBusinessError.
+type MockBusinessErrorMockRecorder struct {
+	mock *MockBusinessError
+}
+
+// NewMockBusinessError creates a new mock instance.
+func NewMockBusinessError(ctrl *gomock.Controller) *MockBusinessError {
+	mock := &MockBusinessError{ctrl: ctrl}
+	mock.recorder = &MockBusinessErrorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockBusinessError) EXPECT() *MockBusinessErrorMockRecorder {
+	return m.recorder
+}
+
+// Code mocks base method.
+func (m *MockBusinessError) Code() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Code")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Code indicates an expected call of Code.
+func (mr *MockBusinessErrorMockRecorder) Code() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Code", reflect.TypeOf((*MockBusinessError)(nil).Code))
+}
+
+// Data mocks base method.
+func (m *MockBusinessError) Data() any {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Data")
+	ret0, _ := ret[0].(any)
+	return ret0
+}
+
+// Data indicates an expected call of Data.
+func (mr *MockBusinessErrorMockRecorder) Data() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Data", reflect.TypeOf((*MockBusinessError)(nil).Data))
+}
+
+// Error mocks base method.
+func (m *MockBusinessError) Error() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockBusinessErrorMockRecorder) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockBusinessError)(nil).Error))
+}
+
+// Msg mocks base method.
+func (m *MockBusinessError) Msg() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Msg")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Msg indicates an expected call of Msg.
+func (mr *MockBusinessErrorMockRecorder) Msg() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Msg", reflect.TypeOf((*MockBusinessError)(nil).Msg))
 }
 
 // MockLogger is a mock of Logger interface.

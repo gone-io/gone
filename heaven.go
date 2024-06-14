@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// New 新建Heaven; Heaven 代表了一个应用程序；
+// New build new Heaven
 func New(priests ...Priest) Heaven {
 	cemetery := newCemetery()
 	h := heaven{
@@ -84,7 +84,6 @@ func (h *heaven) installAngelHook() {
 }
 
 func (h *heaven) startFlow() {
-	// start Handlers 顺序调用：先注册的先调用
 	for _, before := range h.beforeStartHandlers {
 		err := before(h.cemetery)
 		h.panicOnError(err)
@@ -104,7 +103,6 @@ func (h *heaven) panicOnError(err error) {
 }
 
 func (h *heaven) stopFlow() {
-	// stop Handlers 逆序调用：先注册的后调用
 	for i := len(h.beforeStopHandlers) - 1; i >= 0; i-- {
 		before := h.beforeStopHandlers[i]
 		err := before(h.cemetery)
@@ -141,7 +139,7 @@ func (h *heaven) End() Heaven {
 	return h
 }
 
-// AfterStopSignalWaitSecond 收到停机信号后，退出程序等待的时间
+// AfterStopSignalWaitSecond , The variable is used to set the time to wait after the stop signal is received.
 var AfterStopSignalWaitSecond = 5
 
 func (h *heaven) Stop() Heaven {
@@ -158,19 +156,25 @@ func (h *heaven) Stop() Heaven {
 	return h
 }
 
+// BeforeStart register a process function which will be executed before the start of the system.
 func (h *heaven) BeforeStart(p Process) Heaven {
 	h.beforeStartHandlers = append([]Process{p}, h.beforeStartHandlers...)
 	return h
 }
+
+// AfterStart register a process function which will be executed after the start of the system.
 func (h *heaven) AfterStart(p Process) Heaven {
 	h.afterStartHandlers = append(h.afterStartHandlers, p)
 	return h
 }
 
+// BeforeStop register a process function which will be executed before the stop of the system.
 func (h *heaven) BeforeStop(p Process) Heaven {
 	h.beforeStopHandlers = append([]Process{p}, h.beforeStopHandlers...)
 	return h
 }
+
+// AfterStop register a process function which will be executed after the stop of the system.
 func (h *heaven) AfterStop(p Process) Heaven {
 	h.afterStopHandlers = append(h.afterStopHandlers, p)
 	return h

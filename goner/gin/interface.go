@@ -6,8 +6,8 @@ import (
 	"reflect"
 )
 
-//go:generate sh -c "mockgen -package=gin github.com/gin-gonic/gin ResponseWriter > gin_ResponseWriter_mock_test.go"
-//go:generate sh -c "mockgen -package=gin net Listener > net_Listener_mock_test.go"
+//go:generate sh -c "mockgen -package=gin github.com/gin-gonic/gin ResponseWriter > gin_response_writer_mock_test.go"
+//go:generate sh -c "mockgen -package=gin net Listener > net_listener_mock_test.go"
 //go:generate sh -c "mockgen -package=gin -source=../../gin_interface.go |gone mock -o gone_gin_mock_test.go"
 //go:generate sh -c "mockgen -package=gin -source=../../interface.go |gone mock -o gone_mock_test.go"
 //go:generate sh -c "mockgen -package=gin -self_package=github.com/gone-io/gone/goner/gin -source=interface.go |gone mock -o mock_test.go"

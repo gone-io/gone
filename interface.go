@@ -161,6 +161,13 @@ type Vampire2 interface {
 	Suck(conf string, v reflect.Value, field reflect.StructField) error
 }
 
+/*
+Three errors:
+- Internal error, internal system error, which can only be repaired by system upgrade.
+- Parameter error, input error, error is caused by input information, and input needs to be adjusted.
+- Business error, due to different business results guided by internal or external information
+*/
+
 // Error normal error
 type Error interface {
 	error
@@ -168,10 +175,16 @@ type Error interface {
 	Code() int
 }
 
-// InnerError which has stack
+// InnerError which has stack, and which is used for Internal error
 type InnerError interface {
 	Error
 	Stack() []byte
+}
+
+// BusinessError which has data, and which is used for Business error
+type BusinessError interface {
+	Error
+	Data() any
 }
 
 // Logger log interface

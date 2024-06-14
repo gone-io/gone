@@ -57,7 +57,7 @@ func parseLogLevel(level string) logrus.Level {
 	var l logrus.Level
 	err := l.UnmarshalText([]byte(level))
 	if err != nil {
-		panic(gone.NewInnerError("cannot parse logger level", gone.ConfigError))
+		return logrus.InfoLevel
 	}
 	return l
 }

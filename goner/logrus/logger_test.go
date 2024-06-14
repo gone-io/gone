@@ -18,7 +18,7 @@ func Test_parseOutput(t *testing.T) {
 func Test_parseLogLevel(t *testing.T) {
 	defer func() {
 		err := recover()
-		assert.Error(t, err.(gone.Error))
+		assert.Nil(t, err)
 	}()
 	parseLogLevel("xxx")
 }
