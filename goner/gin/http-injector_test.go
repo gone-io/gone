@@ -827,7 +827,7 @@ func Test_httpInjector_inject(t *testing.T) {
 
 			bindErr: func(t assert.TestingT, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, req.Uint, NumberVal)
+				assert.Equal(t, req.Uint, uint(NumberVal))
 			},
 		},
 		{
