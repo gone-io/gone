@@ -72,4 +72,6 @@ func TestBlank(t *testing.T) {
 
 	isDefault := IsDefault(true)
 	isDefault.option()
+	order := Order(1)
+	order.option()
 }

@@ -3,6 +3,7 @@ package gone
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"unsafe"
 )
@@ -18,7 +19,7 @@ type cemetery struct {
 	Flag
 	Logger  `gone:"gone-logger"`
 	tombMap map[GonerId]Tomb
-	tombs   []Tomb
+	tombs   Tombs
 }
 
 func GetGoneDefaultId(goner Goner) GonerId {
@@ -41,6 +42,8 @@ func (c *cemetery) bury(goner Goner, options ...GonerOption) Tomb {
 			id = option.(GonerId)
 		case IsDefault:
 			t.SetDefault(bool(option.(IsDefault)))
+		case Order:
+			t.SetOrder(option.(Order))
 		}
 	}
 
@@ -387,6 +390,7 @@ func (c *cemetery) reviveOneFromTomb(tomb Tomb) (deps []Tomb, err error) {
 }
 
 func (c *cemetery) ReviveAllFromTombs() error {
+	sort.Sort(c.tombs)
 	for _, tomb := range c.tombs {
 		_, err := c.reviveOneFromTomb(tomb)
 		if err != nil {
@@ -430,7 +434,7 @@ func (c *cemetery) GetTomById(id GonerId) Tomb {
 }
 
 func (c *cemetery) GetTomByType(t reflect.Type) (tombs []Tomb) {
-	return Tombs(c.tombs).GetTomByType(t)
+	return c.tombs.GetTomByType(t)
 }
 
 func (c *cemetery) getGonerContainerByType(t reflect.Type, name string) Tomb {

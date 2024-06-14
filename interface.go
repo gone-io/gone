@@ -35,6 +35,10 @@ type IsDefault bool
 
 func (IsDefault) option() {}
 
+type Order int
+
+func (Order) option() {}
+
 // Tomb container of Goner
 type Tomb interface {
 	SetId(GonerId) Tomb
@@ -44,6 +48,9 @@ type Tomb interface {
 
 	IsDefault() bool
 	SetDefault(isDefault bool) Tomb
+
+	GetOrder() Order
+	SetOrder(order Order) Tomb
 }
 
 // Cemetery which is for burying and reviving Goner
