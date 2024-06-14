@@ -52,13 +52,3 @@ func (l *sugar) Print(args ...any) {
 func (l *sugar) Println(args ...any) {
 	l.inner.Infoln(args...)
 }
-
-func (l *sugar) Warningf(format string, args ...any) {
-	l.inner.Warnf(format, args...)
-}
-func (l *sugar) Warning(args ...any) {
-	l.inner.Warn(args...)
-}
-func (l *sugar) Warningln(args ...any) {
-	l.inner.Warnln(args...)
-}
