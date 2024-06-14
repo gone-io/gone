@@ -79,6 +79,10 @@ func (h *heaven) installAngelHook() {
 	for _, tomb := range angleTombs {
 		angel := tomb.GetGoner().(Angel)
 		h.BeforeStart(angel.Start)
+	}
+
+	for i := len(angleTombs) - 1; i >= 0; i-- {
+		angel := angleTombs[i].GetGoner().(Angel)
 		h.BeforeStop(angel.Stop)
 	}
 }
@@ -103,15 +107,13 @@ func (h *heaven) panicOnError(err error) {
 }
 
 func (h *heaven) stopFlow() {
-	for i := len(h.beforeStopHandlers) - 1; i >= 0; i-- {
-		before := h.beforeStopHandlers[i]
-		err := before(h.cemetery)
+	for _, fn := range h.beforeStopHandlers {
+		err := fn(h.cemetery)
 		h.panicOnError(err)
 	}
 
-	for i := len(h.afterStopHandlers) - 1; i >= 0; i-- {
-		before := h.afterStopHandlers[i]
-		err := before(h.cemetery)
+	for _, fn := range h.afterStopHandlers {
+		err := fn(h.cemetery)
 		h.panicOnError(err)
 	}
 }
