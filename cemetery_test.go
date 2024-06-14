@@ -725,3 +725,41 @@ func Test_cemetery_getGonerContainerByType(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
+
+var afterReviveOrder = make([]int, 0)
+var startOrder = make([]int, 0)
+var stopOrder = make([]int, 0)
+
+type ordered struct {
+	Flag
+	order int
+}
+
+func (o *ordered) AfterRevive() error {
+	afterReviveOrder = append(afterReviveOrder, o.order)
+	return nil
+}
+
+func (o *ordered) Start(Cemetery) error {
+	startOrder = append(startOrder, o.order)
+	return nil
+}
+
+func (o *ordered) Stop(Cemetery) error {
+	stopOrder = append(stopOrder, o.order)
+	return nil
+}
+
+func TestOrder(t *testing.T) {
+	Prepare(func(cemetery Cemetery) error {
+		cemetery.
+			Bury(&ordered{order: 2}, Order(2)).
+			Bury(&ordered{order: 1}, Order(1)).
+			Bury(&ordered{order: 3}, Order(3))
+		return nil
+	}).Test(func() {})
+
+	assert.Equal(t, []int{1, 2, 3}, afterReviveOrder)
+	assert.Equal(t, []int{3, 2, 1}, startOrder)
+	assert.Equal(t, []int{1, 2, 3}, stopOrder)
+}
