@@ -1,0 +1,17 @@
+setting:
+  name: "default"
+  value: 100
+  isOK: true
+  time: 10h
+  person:
+    name: dapeng
+    age: 18
+    sex: male
+    self-introduction: "i am dapeng"
+  list:
+    - name: dapeng
+      age: 18
+      sex: male
+    - name: degfy
+      age: 20
+      sex: male

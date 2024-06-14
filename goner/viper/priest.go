@@ -1,10 +1,9 @@
-package properties
+package gone_viper
 
 import (
 	"github.com/gone-io/gone"
 )
 
 func Priest(cemetery gone.Cemetery) error {
-	cemetery.BuryOnce(NewConfigure())
-	return nil
+	return cemetery.ReplaceBury(NewConfigure())
 }
