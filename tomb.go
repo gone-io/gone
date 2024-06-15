@@ -5,7 +5,11 @@ import (
 )
 
 func NewTomb(goner Goner) Tomb {
-	return &tomb{goner: goner, defaultTypes: make(map[reflect.Type]void)}
+	return &tomb{
+		goner:        goner,
+		defaultTypes: make(map[reflect.Type]void),
+		order:        Order3,
+	}
 }
 
 type void struct{}

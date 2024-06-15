@@ -23,7 +23,16 @@ type router struct {
 	htmlTpl string `gone:"config,server.html-tpl-pattern"`
 	mode    string `gone:"config,server.mode,default=release"`
 
+	gone.Logger      `gone:"*"`
 	HandleProxyToGin `gone:"gone-gin-proxy"`
+}
+
+type writer struct {
+	write func(p []byte) (n int, err error)
+}
+
+func (w writer) Write(p []byte) (n int, err error) {
+	return w.write(p)
 }
 
 func (r *router) AfterRevive() gone.AfterReviveError {
@@ -32,6 +41,19 @@ func (r *router) AfterRevive() gone.AfterReviveError {
 
 	if r.htmlTpl != "" {
 		r.Engine.LoadHTMLGlob(r.htmlTpl)
+	}
+
+	gin.DefaultWriter = writer{
+		write: func(p []byte) (n int, err error) {
+			r.Debugf("%s", p)
+			return len(p), nil
+		},
+	}
+	gin.DefaultErrorWriter = writer{
+		write: func(p []byte) (n int, err error) {
+			r.Errorf("%s", p)
+			return len(p), nil
+		},
 	}
 	return nil
 }

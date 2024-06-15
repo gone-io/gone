@@ -13,7 +13,7 @@ func NewDb() gone.Goner {
 
 type db struct {
 	gone.Flag
-	gone.XormEngine `gone:"gone-xorm"`
+	gone.XormEngine `gone:"*"`
 }
 
 func (d *db) createUser(user *entity.User) error {

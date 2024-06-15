@@ -15,7 +15,7 @@ func NewAuth() (gone.Goner, gone.GonerId) {
 type authRouter struct {
 	gone.Flag
 	gone.IRouter
-	root gone.IRouter `gone:"gone-gin-router"`
+	root gone.RouteGroup `gone:"*"`
 
 	auth *middleware.AuthorizeMiddleware `gone:"*"`
 	pub  *middleware.PubMiddleware       `gone:"*"`

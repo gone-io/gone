@@ -15,7 +15,7 @@ func NewPubRouter() (gone.Goner, gone.GonerId) {
 type pubRouter struct {
 	gone.Flag
 	gone.IRouter
-	root gone.IRouter              `gone:"gone-gin-router"`
+	root gone.RouteGroup           `gone:"*"`
 	pub  *middleware.PubMiddleware `gone:"*"`
 }
 
