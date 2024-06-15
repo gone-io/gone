@@ -14,7 +14,7 @@ func NewAuthorizeMiddleware() gone.Goner {
 
 type AuthorizeMiddleware struct {
 	gone.Flag
-	gone.Logger `gone:"gone-logger"`
+	gone.Logger `gone:"*"`
 	userKey     string `gone:"config,auth.user-key"`
 }
 
