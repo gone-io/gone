@@ -10,7 +10,7 @@ import (
 func Test_Line(t *testing.T) {
 	t.Run("config default", func(t *testing.T) {
 		gone.TestAt(pointNameA, func(point *Point) {
-			assert.Equal(t, point.X, 1000)
+			assert.Equal(t, point.X, 0)
 			assert.Equal(t, point.Y, 200)
 		}, config.Priest, Priest)
 	})
@@ -28,7 +28,7 @@ func Test_Line(t *testing.T) {
 			Mock := func() gone.Goner {
 				return &Point{X: 20}
 			}
-			return cemetery.ReplaceBury(Mock(), pointNameA)
+			return cemetery.ReplaceBury(Mock(), gone.GonerId(pointNameA))
 		})
 	})
 }

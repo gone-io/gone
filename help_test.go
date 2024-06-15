@@ -70,8 +70,9 @@ func TestBlank(t *testing.T) {
 	id := GonerId("")
 	id.option()
 
-	isDefault := IsDefault(true)
-	isDefault.option()
+	d := defaultType{}
+	d.option()
+
 	order := Order(1)
 	order.option()
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func NewRedisPool() (gone.Angel, gone.GonerId, gone.GonerOption) {
-	return &pool{}, gone.IdGoneRedisPool, gone.IsDefault(true)
+	return &pool{}, gone.IdGoneRedisPool, gone.IsDefault(new(Pool))
 }
 
 type pool struct {

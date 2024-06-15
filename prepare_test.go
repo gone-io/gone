@@ -101,3 +101,60 @@ func TestPreparer_Serve1(t *testing.T) {
 		}()
 	})
 }
+
+func TestHooksOrder(t *testing.T) {
+	var orders []int
+	var funcs []func()
+
+	for i := 0; i < 3; i++ {
+		func(i int) {
+			funcs = append(funcs, func() {
+				orders = append(orders, i)
+			})
+		}(i)
+	}
+
+	t.Run("BeforeStart", func(t *testing.T) {
+		orders = nil
+		prepare := gone.Prepare()
+
+		for _, fn := range funcs {
+			prepare.BeforeStart(fn)
+		}
+		prepare.Run()
+		assert.Equal(t, []int{2, 1, 0}, orders)
+	})
+
+	t.Run("AfterStart", func(t *testing.T) {
+		orders = nil
+		prepare := gone.Prepare()
+
+		for _, fn := range funcs {
+			prepare.AfterStart(fn)
+		}
+		prepare.Run()
+		assert.Equal(t, []int{0, 1, 2}, orders)
+	})
+
+	t.Run("BeforeStop", func(t *testing.T) {
+		orders = nil
+		prepare := gone.Prepare()
+
+		for _, fn := range funcs {
+			prepare.BeforeStop(fn)
+		}
+		prepare.Run()
+		assert.Equal(t, []int{2, 1, 0}, orders)
+	})
+
+	t.Run("AfterStop", func(t *testing.T) {
+		orders = nil
+		prepare := gone.Prepare()
+
+		for _, fn := range funcs {
+			prepare.AfterStop(fn)
+		}
+		prepare.Run()
+		assert.Equal(t, []int{0, 1, 2}, orders)
+	})
+}

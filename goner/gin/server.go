@@ -10,11 +10,11 @@ import (
 	"sync"
 )
 
-func NewGinServer() (gone.Goner, gone.GonerId, gone.GonerOption, gone.GonerOption) {
+func NewGinServer() (gone.Goner, gone.GonerOption, gone.GonerOption) {
 	s := server{
 		createListener: createListener,
 	}
-	return &s, gone.IdGoneGin, gone.IsDefault(true), gone.Order2
+	return &s, gone.IdGoneGin, gone.Order2
 }
 
 func createListener(s *server) (err error) {
@@ -57,7 +57,7 @@ func (s *server) Start(cemetery gone.Cemetery) error {
 		Handler: s,
 	}
 
-	s.Infof("Server Listen At %s", s.address)
+	s.Infof("Server Listen At http://%s", s.address)
 	s.Go(s.serve)
 	return nil
 }

@@ -16,8 +16,8 @@ type Boss struct {
 func main() {
 	gone.
 		Prepare(func(cemetery gone.Cemetery) error {
-			cemetery.Bury(&Boss{Name: "Jim"}, "boss-jim")
-			cemetery.Bury(&Worker{Name: "Bob"}, "worker-bob")
+			cemetery.Bury(&Boss{Name: "Jim"}, gone.GonerId("boss-jim"))
+			cemetery.Bury(&Worker{Name: "Bob"}, gone.GonerId("worker-bob"))
 			return nil
 		}).
 		BeforeStart(func() {

@@ -5,7 +5,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewSugar() (gone.Goner, gone.GonerId, gone.IsDefault) {
+func NewSugar() (gone.Goner, gone.GonerId, gone.GonerOption) {
 	config := zap.NewDevelopmentConfig()
 	config.EncoderConfig.ConsoleSeparator = "|"
 	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
@@ -15,7 +15,7 @@ func NewSugar() (gone.Goner, gone.GonerId, gone.IsDefault) {
 	}
 	return &sugar{
 		SugaredLogger: logger.Sugar(),
-	}, gone.IdGoneLogger, true
+	}, gone.IdGoneLogger, gone.IsDefault(new(gone.Logger))
 }
 
 type sugar struct {

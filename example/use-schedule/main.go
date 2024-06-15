@@ -6,6 +6,7 @@ import (
 	"github.com/gone-io/gone/goner"
 	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/goner/schedule"
+	"time"
 )
 
 func priest(cemetery gone.Cemetery) error {
@@ -28,7 +29,7 @@ type sch struct {
 
 func (sch *sch) job1() {
 	//todo 定时任务逻辑
-	fmt.Println("job1 execute")
+	fmt.Printf("%v => job1 execute\n", time.Now())
 }
 
 func (sch *sch) Cron(run schedule.RunFuncOnceAt) {

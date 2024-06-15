@@ -101,6 +101,16 @@ func GetInterfaceType[T any](t *T) reflect.Type {
 	return reflect.TypeOf(t).Elem()
 }
 
+type defaultType struct {
+	t reflect.Type
+}
+
+func (d defaultType) option() {}
+
+func IsDefault[T any](t *T) GonerOption {
+	return defaultType{t: GetInterfaceType(t)}
+}
+
 func WrapNormalFnToProcess(fn any) Process {
 	return func(cemetery Cemetery) error {
 		args, err := cemetery.InjectFuncParameters(fn, nil, nil)

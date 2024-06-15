@@ -8,8 +8,8 @@ import (
 )
 
 // NewGinProxy 新建代理器
-func NewGinProxy() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &proxy{}, gone.IdGoneGinProxy, gone.IsDefault(true)
+func NewGinProxy() (gone.Goner, gone.GonerId) {
+	return &proxy{}, gone.IdGoneGinProxy
 }
 
 type proxy struct {
@@ -141,7 +141,7 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 	)
 
 	if err != nil {
-		panic(err)
+		p.Panicf("build Proxy func for \033[31m%s\033[0m error:\n\n%s", funcName, err)
 	}
 
 	fv := reflect.ValueOf(x)

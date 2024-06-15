@@ -30,7 +30,7 @@ func (c *Computer) Compute() {
 	println("1000 add 2000 is", c.adder.Add(1000, 2000))
 }
 
-// AfterRevive 复活后执行的函数
+// AfterRevive will execute after revive
 func (c *Computer) AfterRevive() gone.AfterReviveError {
 	// boot
 	c.Compute()

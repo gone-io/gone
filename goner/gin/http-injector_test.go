@@ -135,10 +135,11 @@ func Test_httpInjector_inject(t *testing.T) {
 		Uint16Slice []uint16
 		FloatSlice  []float32
 
-		Body      Body
-		BodyPtr   *Body
-		BodyMap   map[string]any
-		BodySlice []any
+		Body       Body
+		BodyPtr    *Body
+		StringBody string
+		BodyMap    map[string]any
+		BodySlice  []any
 	}{}
 
 	tests := []struct {
@@ -753,7 +754,7 @@ func Test_httpInjector_inject(t *testing.T) {
 
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 				assert.Error(t, err)
-				assert.Equal(t, err.(gone.Error).Msg(), unsupportedKindConfigure("Str").(gone.Error).Msg())
+				assert.Equal(t, err.(gone.Error).Msg(), unsupportedKindConfigure("Str", "x").(gone.Error).Msg())
 				return false
 			},
 
@@ -910,6 +911,32 @@ func Test_httpInjector_inject(t *testing.T) {
 					X: 100,
 					Y: stringVal,
 				}, req.Body)
+			},
+		},
+		{
+			name:      "inject by kind, inject body string",
+			fieldName: "StringBody",
+			kind:      keyBody,
+			key:       stringKey,
+			ctx:       &context,
+
+			before: func() {
+				body := Body{
+					X: 100,
+					Y: stringVal,
+				}
+				marshal, _ := json.Marshal(body)
+				context.Request.Body = io.NopCloser(bytes.NewBuffer(marshal))
+			},
+
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				assert.Nil(t, err)
+				return true
+			},
+
+			bindErr: func(t assert.TestingT, err error) {
+				assert.Nil(t, err)
+				assert.Equal(t, "{\"x\":100,\"y\":\"gone is best\"}", req.StringBody)
 			},
 		},
 		{

@@ -11,11 +11,11 @@ import (
 )
 
 func NewRedisCache() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &cache{}, gone.IdGoneRedisCache, gone.IsDefault(true)
+	return &cache{}, gone.IdGoneRedisCache, gone.IsDefault(new(Cache))
 }
 
 func NewRedisKey() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &cache{}, gone.IdGoneRedisKey, gone.IsDefault(true)
+	return &cache{}, gone.IdGoneRedisKey, gone.IsDefault(new(Key))
 }
 
 type cache struct {

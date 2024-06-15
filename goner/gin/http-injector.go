@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -11,10 +12,10 @@ import (
 	"strings"
 )
 
-func NewHttInjector() (gone.Goner, gone.GonerId, gone.GonerOption) {
+func NewHttInjector() (gone.Goner, gone.GonerId) {
 	return &httpInjector{
 		bindFuncs: make([]BindFieldFunc, 0),
-	}, gone.IdHttpInjector, gone.IsDefault(true)
+	}, gone.IdHttpInjector
 }
 
 type httpInjector struct {
@@ -88,14 +89,14 @@ const keyQuery = "query"
 const keyCookie = "cookie"
 
 func unsupportedAttributeType(fieldName string) error {
-	return gone.NewInnerErrorSkip(fmt.Sprintf("cannot inject %s，unsupported attribute type; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError, 2)
+	return gone.NewInnerErrorSkip(fmt.Sprintf("inject attribute %s failed; unsupported attribute type; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError, 2)
 }
-func unsupportedKindConfigure(fieldName string) error {
-	return gone.NewInnerErrorSkip(fmt.Sprintf("cannot inject %s，unsupported kind configure; ref doc: https://goner.fun/references/http-inject.html", fieldName), gone.InjectError, 2)
+func unsupportedKindConfigure(fieldName string, kind string) error {
+	return gone.NewInnerErrorSkip(fmt.Sprintf("inject attribute %s failed; unsupported kind(%s) configure; ref doc: https://goner.fun/references/http-inject.html", fieldName, kind), gone.InjectError, 2)
 }
 
 func cannotInjectBodyMoreThanOnce(fieldName string) error {
-	return gone.NewInnerErrorSkip(fmt.Sprintf("cannot inject %s，http body inject only support inject once; ref doc: https://goner.fun/en/references/http-inject.md", fieldName), gone.InjectError, 2)
+	return gone.NewInnerErrorSkip(fmt.Sprintf("inject attribute %s failed, http body injection kind only support inject once in each request; ref doc: https://goner.fun/en/references/http-inject.md", fieldName), gone.InjectError, 2)
 }
 
 func injectParseStringParameterError(k reflect.Kind, kind, key string, err error) gone.Error {
@@ -229,6 +230,17 @@ func (s *httpInjector) injectBody(kind, key string, field reflect.StructField) (
 			}
 			return nil
 		}, nil
+	case reflect.String:
+		return func(ctx *gin.Context, structVale reflect.Value) error {
+			v := fieldByIndexFromStructValue(structVale, field.Index, field.IsExported(), field.Type)
+			all, err := io.ReadAll(ctx.Request.Body)
+			if err != nil {
+				return NewParameterError(err.Error())
+			}
+			v.SetString(string(all))
+			return nil
+		}, nil
+
 	default:
 		return nil, unsupportedAttributeType(field.Name)
 	}
@@ -243,7 +255,7 @@ func (s *httpInjector) injectByKind(kind, key string, field reflect.StructField)
 	case keyBody:
 		return s.injectBody(kind, key, field)
 	default:
-		return nil, unsupportedKindConfigure(field.Name)
+		return nil, unsupportedKindConfigure(field.Name, kind)
 	}
 }
 
@@ -391,7 +403,7 @@ func (s *httpInjector) parseStringValueAndInject(kind, key string, field reflect
 			return context.Query(key), nil
 		}
 	default:
-		return nil, unsupportedKindConfigure(field.Name)
+		return nil, unsupportedKindConfigure(field.Name, kind)
 	}
 
 	bits := bitSize(t.Kind())
@@ -404,7 +416,7 @@ func (s *httpInjector) parseStringValueAndInject(kind, key string, field reflect
 			if err != nil {
 				return err
 			}
-			v.Set(reflect.ValueOf(value))
+			v.SetString(value)
 			return nil
 		}, nil
 
@@ -415,7 +427,7 @@ func (s *httpInjector) parseStringValueAndInject(kind, key string, field reflect
 			if err != nil {
 				return err
 			}
-			v.Set(reflect.ValueOf(stringToBool(value)))
+			v.SetBool(stringToBool(value))
 			return nil
 		}, nil
 	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:

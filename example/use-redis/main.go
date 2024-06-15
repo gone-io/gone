@@ -47,10 +47,10 @@ func (r *redisUser) UseCache() {
 		&getValue, //第二参数为指针，接收获取缓存的值，类型为any，可以是任意类型；从redis获取的值会被解码为传入的指针类型
 	)
 	if err != nil {
-		fmt.Printf("err:%v", err)
+		fmt.Printf("err: %v", err)
 		return
 	}
-	fmt.Printf("getValue:%v", getValue)
+	fmt.Printf("getValue: %v", getValue)
 }
 
 func (r *redisUser) LockTime() {

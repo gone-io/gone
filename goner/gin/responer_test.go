@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewGinResponser(t *testing.T) {
-	_, _, _ = NewGinResponser()
+	_, _ = NewGinResponser()
 }
 
 func (r *responser) Go(func())                         {}
@@ -162,7 +162,7 @@ func Test_responser_Failed(t *testing.T) {
 
 			ctx.EXPECT().String(gomock.Any(), gomock.Any()).Do(func(code int, format string, values ...any) {
 				assert.Equal(t, http.StatusBadRequest, code)
-				assert.Equal(t, "GoneError(code=1):test", format)
+				assert.Equal(t, "GoneError(code=1); test", format)
 			})
 			r.Failed(ctx, x)
 		})

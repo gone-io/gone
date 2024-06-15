@@ -9,31 +9,27 @@ import (
 
 //go:generate sh -c "mockgen -package=gone -self_package=github.com/gone-io/gone -source=interface.go -destination=mock_test.go"
 
-type Flag struct{}
-
-func (g *Flag) goneFlag() {}
-
 // Goner which is an abstraction of injectable objects: can inject other Goner, can be injected by other Goner.
 type Goner interface {
 	goneFlag()
-}
-
-type identity interface {
-	GetId() GonerId
 }
 
 type GonerOption interface {
 	option()
 }
 
+type Flag struct{}
+
+func (g *Flag) goneFlag() {}
+
+type identity interface {
+	GetId() GonerId
+}
+
 // GonerId Goner's id
 type GonerId string
 
 func (GonerId) option() {}
-
-type IsDefault bool
-
-func (IsDefault) option() {}
 
 type Order int
 
@@ -52,8 +48,8 @@ type Tomb interface {
 	GetGoner() Goner
 	GonerIsRevive(flags ...bool) bool
 
-	IsDefault() bool
-	SetDefault(isDefault bool) Tomb
+	SetDefault(reflect.Type) Tomb
+	IsDefault(reflect.Type) bool
 
 	GetOrder() Order
 	SetOrder(order Order) Tomb

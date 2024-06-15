@@ -5,14 +5,18 @@ import (
 )
 
 func NewTomb(goner Goner) Tomb {
-	return &tomb{goner: goner}
+	return &tomb{goner: goner, defaultTypes: make(map[reflect.Type]void)}
 }
 
+type void struct{}
+
+var voidValue void
+
 type tomb struct {
-	id         GonerId
-	goner      Goner
-	reviveFlag bool
-	isDefault  bool
+	id           GonerId
+	goner        Goner
+	reviveFlag   bool
+	defaultTypes map[reflect.Type]void
 
 	order Order
 }
@@ -60,12 +64,13 @@ func (tombs Tombs) GetTomByType(t reflect.Type) (filterTombs []Tomb) {
 	return
 }
 
-func (t *tomb) IsDefault() bool {
-	return t.isDefault
+func (t *tomb) IsDefault(T reflect.Type) bool {
+	_, existed := t.defaultTypes[T]
+	return existed
 }
 
-func (t *tomb) SetDefault(isDefault bool) Tomb {
-	t.isDefault = isDefault
+func (t *tomb) SetDefault(T reflect.Type) Tomb {
+	t.defaultTypes[T] = voidValue
 	return t
 }
 

@@ -11,7 +11,7 @@ import (
 )
 
 func NewConfigure() (gone.Goner, gone.GonerId, gone.GonerOption, gone.GonerOption) {
-	return &configure{}, gone.IdGoneConfigure, gone.IsDefault(true), gone.Order0
+	return &configure{}, gone.IdGoneConfigure, gone.IsDefault(new(gone.Configure)), gone.Order0
 }
 
 type configure struct {

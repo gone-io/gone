@@ -4,7 +4,7 @@ go 1.21
 
 toolchain go1.21.1
 
-require github.com/gone-io/gone v0.1.0
+require github.com/gone-io/gone v1.0.2
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
@@ -57,7 +57,7 @@ require (
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.20.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240314234333-6e1732d8331c // indirect
@@ -69,4 +69,4 @@ require (
 	xorm.io/xorm v1.3.2 // indirect
 )
 
-replace github.com/gone-io/gone v0.1.0 => ../../
+replace github.com/gone-io/gone v1.0.2 => ../../

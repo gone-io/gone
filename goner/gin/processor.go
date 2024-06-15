@@ -15,7 +15,7 @@ import (
 // `statRequestTime`，用于在日志中打印统计的请求耗时，可以通过设置配置项(`server.log.show-request-time=false`)来关闭
 // `accessLog`，用于在日志中打印请求、响应信息
 func NewGinProcessor() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &sysProcessor{}, gone.IdGoneGinProcessor, gone.IsDefault(true)
+	return &sysProcessor{}, gone.IdGoneGinProcessor, gone.Order1
 }
 
 type sysProcessor struct {
