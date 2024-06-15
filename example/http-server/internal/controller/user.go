@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/gin"
-	"github.com/gone-io/gone/goner/logrus"
 )
 
 //go:gone
@@ -26,20 +25,15 @@ func (ctr *user) Mount() gin.MountError {
 
 	ctr.pub.
 		GET("/test", func(in struct {
-			page     string `gone:"http,query=page"`
-			cookX    string `gone:"http,cookie=x"`
-			headerY  string `gone:"http,header=y"`
-			token    string `gone:"http,auth=Bearer"`
-			formData string `gone:"http,form=data"`
+			page    string `gone:"http,query=page"`
+			cookX   string `gone:"http,cookie=x"`
+			headerY string `gone:"http,header=y"`
 
-			host    string            `gone:"http,host"`
-			url     string            `gone:"http,url"`
-			path    string            `gone:"http,path"`
 			query   map[string]string `gone:"http,query"`
 			data    string            `gone:"http,body"`
-			context *gin.Context      `gone:"http,context"`
+			context *gin.Context      `gone:"http,x"`
 
-			log logrus.Logger `gone:"gone-logger"`
+			log gone.Logger `gone:"gone-logger"`
 		}) string {
 
 			fmt.Printf("%v", in)

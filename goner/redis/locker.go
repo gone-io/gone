@@ -17,7 +17,7 @@ end`
 var ErrorLockFailed = errors.New("not lock success")
 
 func NewRedisLocker() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &locker{}, gone.IdGoneRedisLocker, gone.IsDefault(true)
+	return &locker{}, gone.IdGoneRedisLocker, gone.IsDefault(new(Locker))
 }
 
 type locker struct {

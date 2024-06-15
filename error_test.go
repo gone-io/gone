@@ -73,7 +73,7 @@ func TestNewBusinessError(t *testing.T) {
 	assert.Equal(t, "error", businessError.Msg())
 	assert.Equal(t, 100, businessError.Code())
 	assert.Equal(t, data, businessError.Data())
-	assert.Equal(t, "GoneError(code=100):error", businessError.Error())
+	assert.Equal(t, "GoneError(code=100); error", businessError.Error())
 }
 
 func TestNewParameterError(t *testing.T) {

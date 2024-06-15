@@ -33,32 +33,30 @@ func GetGoneDefaultId(goner Goner) GonerId {
 }
 
 func (c *cemetery) bury(goner Goner, options ...GonerOption) Tomb {
-	t := NewTomb(goner)
-	var id GonerId
+	theTomb := NewTomb(goner)
 
 	for _, option := range options {
 		switch option.(type) {
 		case GonerId:
-			id = option.(GonerId)
-		case IsDefault:
-			t.SetDefault(bool(option.(IsDefault)))
+			theTomb.SetId(option.(GonerId))
+		case defaultType:
+			theTomb.SetDefault(option.(defaultType).t)
 		case Order:
-			t.SetOrder(option.(Order))
+			theTomb.SetOrder(option.(Order))
 		}
 	}
 
-	if id == "" {
-		id = GetGoneDefaultId(goner)
+	if theTomb.GetId() == "" {
+		theTomb.SetId(GetGoneDefaultId(goner))
 	}
 
-	_, ok := c.tombMap[id]
+	_, ok := c.tombMap[theTomb.GetId()]
 	if ok {
-		panic(GonerIdIsExistedError(id))
+		panic(GonerIdIsExistedError(theTomb.GetId()))
 	}
-
-	c.tombMap[id] = t.SetId(id)
-	c.tombs = append(c.tombs, t)
-	return t
+	c.tombMap[theTomb.GetId()] = theTomb
+	c.tombs = append(c.tombs, theTomb)
+	return theTomb
 }
 
 func (c *cemetery) Bury(goner Goner, options ...GonerOption) Cemetery {
@@ -68,11 +66,12 @@ func (c *cemetery) Bury(goner Goner, options ...GonerOption) Cemetery {
 
 func (c *cemetery) filterGonerIdFromOptions(options []GonerOption) GonerId {
 	var id GonerId
-
+loop:
 	for _, option := range options {
 		switch option.(type) {
 		case GonerId:
 			id = option.(GonerId)
+			break loop
 		}
 	}
 	return id
@@ -91,17 +90,26 @@ func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
 }
 
 func (c *cemetery) ReplaceBury(goner Goner, options ...GonerOption) (err error) {
-	var id = c.filterGonerIdFromOptions(options)
-	if id == "" {
+	newTomb := NewTomb(goner)
+
+	for _, option := range options {
+		switch option.(type) {
+		case GonerId:
+			newTomb.SetId(option.(GonerId))
+		case defaultType:
+			newTomb.SetDefault(option.(defaultType).t)
+		case Order:
+			newTomb.SetOrder(option.(Order))
+		}
+	}
+	if newTomb.GetId() == "" {
 		err = ReplaceBuryIdParamEmptyError()
 		return
 	}
 
-	oldTomb := c.tombMap[id]
-	replaceTomb := NewTomb(goner).SetId(id)
-	c.tombMap[id] = replaceTomb
+	oldTomb, buried := c.tombMap[newTomb.GetId()]
+	c.tombMap[newTomb.GetId()] = newTomb
 
-	buried := oldTomb != nil
 	var oldGoner Goner
 	if buried {
 		oldGoner = oldTomb.GetGoner()
@@ -113,12 +121,12 @@ func (c *cemetery) ReplaceBury(goner Goner, options ...GonerOption) (err error) 
 		}
 	}
 
-	c.tombs = append(c.tombs, replaceTomb)
-	_, err = c.reviveOneFromTomb(replaceTomb)
+	c.tombs = append(c.tombs, newTomb)
+	_, err = c.reviveOneFromTomb(newTomb)
 	if err != nil {
 		return err
 	}
-	return c.replaceTombsGonerField(id, goner, oldGoner, buried)
+	return c.replaceTombsGonerField(newTomb.GetId(), goner, oldGoner, buried)
 }
 
 func (c *cemetery) replaceTombsGonerField(id GonerId, newGoner, oldGoner Goner, buried bool) error {
@@ -252,7 +260,7 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 	t := field.Type
 	switch t.Kind() {
 
-	case reflect.Slice: //允许注入接口切片
+	case reflect.Slice: //support inject slice
 		tombs := c.GetTomByType(t.Elem())
 		for _, tomb := range tombs {
 			if t.Elem().Kind() == reflect.Struct {
@@ -264,8 +272,8 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 		}
 		suc = true
 
-	case reflect.Map: //允许注入接口Map
-		if t.Key().Kind() == reflect.String { //Map的key是string类型
+	case reflect.Map: //support inject map
+		if t.Key().Kind() == reflect.String { //key of map must be string
 			tombs := c.GetTomByType(t.Elem())
 
 			m := reflect.MakeMap(t)
@@ -346,7 +354,7 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 			v = BlackMagic(v)
 		}
 
-		//如果已经存在值，不再注入
+		//do not inject multiple times
 		if !v.IsZero() {
 			continue
 		}
@@ -354,7 +362,7 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 		var suc bool
 		var tmpDeps []Tomb
 
-		// 根据Id匹配
+		// inject by id
 		if tmpDeps, suc, err = c.reviveFieldById(tag, field, v); err != nil {
 			return
 		} else if suc {
@@ -362,13 +370,13 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 			continue
 		}
 
-		// 根据类型匹配
+		// inject by type
 		if tmpDeps, suc = c.reviveFieldByType(field, v, goneTypeName); suc {
 			deps = append(deps, tmpDeps...)
 			continue
 		}
 
-		// 特殊类型处理
+		// inject special types
 		if tmpDeps, suc = c.reviveSpecialTypeFields(field, v); suc {
 			deps = append(deps, tmpDeps...)
 			continue
@@ -406,26 +414,24 @@ var obsessionType = reflect.TypeOf(obsessionPtr).Elem()
 var obsessionPtr2 *Prophet2
 var obsessionType2 = reflect.TypeOf(obsessionPtr2).Elem()
 
-func (c *cemetery) prophesy() error {
-	var tombs = c.GetTomByType(obsessionType)
+func (c *cemetery) prophesy() (err error) {
+	var tombs Tombs = c.GetTomByType(obsessionType)
+	tombs = append(tombs, c.GetTomByType(obsessionType2)...)
+	sort.Sort(tombs)
 
 	for _, tomb := range tombs {
-		obsession := tomb.GetGoner().(Prophet)
-		err := obsession.AfterRevive()
+		goner := tomb.GetGoner()
+		switch goner.(type) {
+		case Prophet:
+			err = goner.(Prophet).AfterRevive()
+		case Prophet2:
+			err = goner.(Prophet2).AfterRevive()
+		}
+
 		if err != nil {
 			return err
 		}
 	}
-
-	tombs = c.GetTomByType(obsessionType2)
-	for _, tomb := range tombs {
-		obsession := tomb.GetGoner().(Prophet2)
-		err := obsession.AfterRevive()
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -442,9 +448,9 @@ func (c *cemetery) getGonerContainerByType(t reflect.Type, name string) Tomb {
 	if len(tombs) > 0 {
 		var container Tomb
 
-		for _, t := range tombs {
-			if t.IsDefault() {
-				container = t
+		for _, tmp := range tombs {
+			if tmp.IsDefault(t) {
+				container = tmp
 				break
 			}
 		}

@@ -6,8 +6,8 @@ import (
 
 var _defaultLogger = &defaultLogger{Logger: new(log.Logger)}
 
-func NewSimpleLogger() (Goner, GonerId, IsDefault) {
-	return _defaultLogger, IdGoneLogger, true
+func NewSimpleLogger() (Goner, GonerId, GonerOption) {
+	return _defaultLogger, IdGoneLogger, IsDefault(new(Logger))
 }
 
 func GetSimpleLogger() Logger {

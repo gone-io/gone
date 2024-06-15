@@ -144,13 +144,15 @@ func Test_proxy_Proxy(t *testing.T) {
 			t.Run("Inject Error", func(t *testing.T) {
 				defer func() {
 					err := recover()
-					assert.Error(t, err.(error))
+					assert.NotNil(t, err)
 				}()
 
 				injector.EXPECT().StartBindFuncs()
+
 				proxy.ProxyForMiddleware(func(in struct {
 					x gone.Logger `gone:"xxx"`
 				}) {
+
 				})
 
 			})

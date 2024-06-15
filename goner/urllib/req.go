@@ -9,7 +9,7 @@ import (
 const TraceIdHeaderKey = "X-Trace-ID"
 
 func NewReq() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &r{}, gone.IdGoneReq, gone.IsDefault(true)
+	return &r{}, gone.IdGoneReq, gone.IsDefault(new(Client))
 }
 
 type r struct {

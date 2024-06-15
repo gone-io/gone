@@ -13,7 +13,7 @@ import (
 )
 
 func NewConfigure() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &configure{}, gone.IdGoneConfigure, gone.IsDefault(true)
+	return &configure{}, gone.IdGoneConfigure, gone.IsDefault(new(gone.Configure))
 }
 
 type configure struct {

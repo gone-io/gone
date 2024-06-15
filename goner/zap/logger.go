@@ -10,8 +10,8 @@ import (
 )
 import "gopkg.in/natefinch/lumberjack.v2"
 
-func NewZapLogger() (gone.Goner, gone.GonerId, gone.IsDefault) {
-	return &log{}, "zap", true
+func NewZapLogger() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &log{}, "zap", gone.IsDefault(new(Logger))
 }
 
 type log struct {

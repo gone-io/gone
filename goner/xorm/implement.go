@@ -9,7 +9,7 @@ import (
 func NewXormEngine() (gone.Angel, gone.GonerId, gone.GonerOption, gone.GonerOption) {
 	return &engine{
 		newFunc: newEngine,
-	}, gone.IdGoneXorm, gone.IsDefault(true), gone.Order3
+	}, gone.IdGoneXorm, gone.IsDefault(new(gone.XormEngine)), gone.Order3
 }
 
 func newEngine(driverName string, dataSourceName string) (xorm.EngineInterface, error) {

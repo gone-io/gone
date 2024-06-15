@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func NewSchedule() (gone.Goner, gone.GonerId, gone.GonerOption, gone.GonerOption) {
-	return &schedule{}, gone.IdGoneSchedule, gone.IsDefault(true), gone.Order4
+func NewSchedule() (gone.Goner, gone.GonerId, gone.GonerOption) {
+	return &schedule{}, gone.IdGoneSchedule, gone.Order4
 }
 
 type schedule struct {
@@ -46,7 +46,7 @@ func (s *schedule) Start(gone.Cemetery) error {
 			if err != nil {
 				panic("cron.AddFunc for " + string(jobName) + " err:" + err.Error())
 			}
-			s.Infof("Add cron item: %s :%s", spec, jobName)
+			s.Infof("Add cron item: %s => %s : %s", spec, jobName, gone.GetFuncName(fn))
 		})
 	}
 	s.cronTab.Start()

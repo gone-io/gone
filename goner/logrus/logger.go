@@ -13,7 +13,7 @@ func NewLogger() (gone.Goner, gone.GonerId, gone.GonerOption) {
 		Logger: logrus.StandardLogger(),
 	}
 	log.ResetLog()
-	return log, gone.IdGoneLogger, gone.IsDefault(true)
+	return log, gone.IdGoneLogger, gone.IsDefault(new(gone.Logger))
 }
 
 type logger struct {

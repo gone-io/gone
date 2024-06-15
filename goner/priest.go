@@ -57,7 +57,7 @@ func RedisPriest(cemetery gone.Cemetery) error {
 }
 
 func SchedulePriest(cemetery gone.Cemetery) error {
-	_ = BasePriest(cemetery)
+	_ = RedisPriest(cemetery)
 	_ = schedule.Priest(cemetery)
 	return nil
 }

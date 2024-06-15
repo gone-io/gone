@@ -23,8 +23,8 @@ func New(priests ...Priest) Heaven {
 	h.
 		cemetery.
 		Bury(NewSimpleLogger()).
-		Bury(&h, IdGoneHeaven, IsDefault(true)).
-		Bury(cemetery, IdGoneCemetery, IsDefault(true))
+		Bury(&h, IdGoneHeaven, IsDefault(new(Heaven))).
+		Bury(cemetery, IdGoneCemetery, IsDefault(new(Cemetery)))
 	return &h
 }
 

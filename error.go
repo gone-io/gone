@@ -31,7 +31,7 @@ type defaultErr struct {
 }
 
 func (e *defaultErr) Error() string {
-	return fmt.Sprintf("GoneError(code=%v):%s", e.Code(), e.Msg())
+	return fmt.Sprintf("GoneError(code=%v); %s", e.Code(), e.Msg())
 }
 
 func (e *defaultErr) Msg() string {
@@ -96,7 +96,7 @@ type iError struct {
 
 func (e *iError) Error() string {
 	msg := e.defaultErr.Error()
-	return fmt.Sprintf("%s\n%s", msg, e.trace)
+	return fmt.Sprintf("%s\n\n%s", msg, e.trace)
 }
 
 func (e *iError) Stack() []byte {
