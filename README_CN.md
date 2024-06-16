@@ -13,19 +13,22 @@
 <img src="docs/assert/logo.png" width = "150" alt="logo" align=center />
 
 - [Gone](#gone)
+	- [Gone 是什么？](#gone-是什么)
+	- [特性](#特性)
+	- [依赖注入与启动](#依赖注入与启动)
 	- [🌐Web服务](#web服务)
 	- [💡概念](#概念)
 	- [🌰 更多例子：](#-更多例子)
 	- [🪜🧰🛠️ 组件库（👉🏻 更多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）](#️-组件库-更多组件正在开发中-ヾﾉﾞ)
 	- [📚完整文档](#完整文档)
 
-
-# Gone 是什么？
+# Gone
+## Gone 是什么？
 Gone 是一个轻量级的golang依赖注入框架；内置了一系列Goners组件用于快速开发微服务。
 
 ![img.png](docs/assert/plan.png)
 
-# 特性
+## 特性
 - 定义Goner接口，对依赖进行抽象
 - 依赖注入
   - 注入Goners

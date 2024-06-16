@@ -1,5 +1,5 @@
 <p align="left">
-   English&nbsp ｜&nbsp <a href="README_CN.md">中文</a>
+   English&nbsp ｜&nbsp <a href="https://github.com/gone-io/gone/blob/main/README_CN.md">中文</a>
 </p>
 
 [![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE) 
@@ -14,6 +14,9 @@
 
 
 - [Gone](#gone)
+	- [What Is Gone?](#what-is-gone)
+	- [Features](#features)
+	- [Dependency Injection and Startup](#dependency-injection-and-startup)
 	- [🌐Web Service](#web-service)
 	- [💡Concepts](#concepts)
 	- [🌰 More Examples:](#-more-examples)
@@ -22,9 +25,86 @@
 
 
 # Gone
+## What Is Gone?
 
+Gone is a lightweight golang dependency injection framework; a series of Goners components are built in for rapid development of micro services.
 
-First and foremost, Gone is a lightweight, Golang-based dependency injection framework inspired by the Spring Framework in Java. Secondly, the Gone framework includes a series of built-in components that provide a complete set of web development solutions through these components, offering services configuration, logging, tracing, service calls, database access, message middleware, and other commonly used microservice capabilities.
+![img.png](docs/assert/plan.png)
+## Features
+- Define the Goner interface to abstract dependencies.
+- Dependency Injection:
+    - Inject Goners.
+    - Inject function arguments.
+- Modular, detachable design.
+- Startup process control.
+- Testing support.
+- Built-in components:
+    - goner/config, supports dependency injection of configuration parameters.
+    - goner/tracer, adds TraceId to call chains, supports link tracing.
+    - goner/logrus, goner/zap, supports log recording.
+    - goner/gin, integrates with the gin framework to provide HTTP request parameter dependency injection.
+    - goner/viper, used to parse various configuration files.
+    - ...
+
+## Dependency Injection and Startup
+Here's an example:
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gone-io/gone"
+)
+
+type Worker struct {
+	gone.Flag // Anonymously embedding gone.Flag structure makes it a Goner, it can be injected as a dependency into other Goners or receive injections from other Goners.
+	Name      string
+}
+
+func (w *Worker) Work() {
+	fmt.Printf("I am %s, and I am working\n", w.Name)
+}
+
+type Manager struct {
+	gone.Flag                         // Anonymously embedding gone.Flag structure makes it a Goner, it can be injected as a dependency into other Goners or receive injections from other Goners.
+	*Worker   `gone:"manager-worker"` // Named injection GonerId="manager-worker" for Worker instance.
+	workers   []*Worker               `gone:"*"` // Inject all Workers into an array.
+}
+
+func (m *Manager) Manage() {
+	fmt.Printf("I am %s, and I am managing\n", m.Name)
+	for _, worker := range m.workers {
+		worker.Work()
+	}
+}
+
+func main() {
+	managerRole := &Manager{}
+
+	managerWorker := &Worker{Name: "Scott"}
+	ordinaryWorker1 := &Worker{Name: "Alice"}
+	ordinaryWorker2 := &Worker{Name: "Bob"}
+
+	gone.
+		Prepare(func(cemetery gone.Cemetery) error {
+			cemetery.
+				Bury(managerRole).
+				Bury(managerWorker, gone.GonerId("manager-worker")).
+				Bury(ordinaryWorker1).
+				Bury(ordinary, ordinaryWorker2)
+			return nil
+		}).
+		// Run method supports dependency injection of parameters in its function.
+		Run(func(manager *Manager) {
+			manager.Manage()
+		})
+}
+```
+Summary:
+1. In the Gone framework, dependencies are abstracted as Goners, which can be injected into each other.
+2. By anonymously embedding the gone.Flag, the structure implements the Goner interface.
+3. Before starting, load all Goners into the framework using the Bury function.
+4. Use the Run method to start, where the function supports dependency injection of parameters.
 
 [Full Documentation](https://goner.fun/)
 

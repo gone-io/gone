@@ -31,4 +31,19 @@ func Test_Line(t *testing.T) {
 			return cemetery.ReplaceBury(Mock(), gone.GonerId(pointNameA))
 		})
 	})
+
+	t.Run("Prepare.Test", func(t *testing.T) {
+		gone.
+			Prepare(Priest).
+			Test(func(
+				line *Line, //注入gone框架中注册的类型
+
+				in struct { //注入匿名结构体
+					point *Point `gone:"example-test-point-a"`
+				},
+			) {
+				assert.Equal(t, line.A.Y, 200)
+				assert.Equal(t, in.point.Y, 200)
+			})
+	})
 }

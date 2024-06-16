@@ -59,28 +59,35 @@ type Tomb interface {
 type Cemetery interface {
 	Goner
 
-	//Bury a Goner to the Cemetery
+	// Bury a Goner to the Cemetery
 	Bury(Goner, ...GonerOption) Cemetery
 
-	//BuryOnce a Goner to the Cemetery, if the Goner is already in the Cemetery, it will be ignored
+	// BuryOnce a Goner to the Cemetery, if the Goner is already in the Cemetery, it will be ignored
 	BuryOnce(goner Goner, options ...GonerOption) Cemetery
 
-	//ReplaceBury replace the Goner in the Cemetery with a new Goner
+	// ReplaceBury replace the Goner in the Cemetery with a new Goner
 	ReplaceBury(goner Goner, options ...GonerOption) error
 
-	//ReviveOne Revive a Goner from the Cemetery
+	// ReviveOne Revive a Goner from the Cemetery
 	ReviveOne(goner any) (deps []Tomb, err error)
 
-	//ReviveAllFromTombs Revive all Goner from the Cemetery
+	// ReviveAllFromTombs Revive all Goner from the Cemetery
 	ReviveAllFromTombs() error
 
-	//GetTomById return the Tomb by the GonerId
+	// GetTomById return the Tomb by the GonerId
 	GetTomById(GonerId) Tomb
 
-	//GetTomByType return the Tombs by the GonerType
+	// GetTomByType return the Tombs by the GonerType
 	GetTomByType(reflect.Type) []Tomb
 
-	InjectFuncParameters(fn any, injectBefore func(pt reflect.Type, i int) any, injectAfter func(pt reflect.Type, i int)) (args []reflect.Value, err error)
+	// InjectFuncParameters used for inject func parameters，which will construct parameters for a func；return constructed parameters reflect.Value Slice；
+	// InjectFuncParameters accept two hook functions:  injectBefore and injectAfter，and hook function can be nil.
+	// The ith parameter will be ignored by injecting process if injectBefore(x, i) returned is not nil, and the result of injectBefore(x, i) will be added to args.
+	InjectFuncParameters(
+		fn any,
+		injectBefore func(pt reflect.Type, i int) any,
+		injectAfter func(pt reflect.Type, i int),
+	) (args []reflect.Value, err error)
 }
 
 // Priest A function which has A Cemetery parameter, and return an error. use for Burying Goner
