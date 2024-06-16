@@ -13,21 +13,99 @@
 <img src="docs/assert/logo.png" width = "150" alt="logo" align=center />
 
 - [Gone](#gone)
+	- [Gone 是什么？](#gone-是什么)
+	- [特性](#特性)
+	- [依赖注入与启动](#依赖注入与启动)
 	- [🌐Web服务](#web服务)
 	- [💡概念](#概念)
 	- [🌰 更多例子：](#-更多例子)
 	- [🪜🧰🛠️ 组件库（👉🏻 更多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）](#️-组件库-更多组件正在开发中-ヾﾉﾞ)
 	- [📚完整文档](#完整文档)
 
-
 # Gone
+## Gone 是什么？
+Gone 是一个轻量级的golang依赖注入框架；内置了一系列Goners组件用于快速开发微服务。
 
+![img.png](docs/assert/plan.png)
 
-Gone首先是一个轻量的，基于Golang的，依赖注入框架，灵感来源于Java中的Spring Framework；其次，Gone框架中包含了一系列内置组件，通过这些组件提供一整套Web开发方案，提供服务配置、日志追踪、服务调用、数据库访问、消息中间件等微服务常用能力。
+## 特性
+- 定义Goner接口，对依赖进行抽象
+- 依赖注入
+  - 注入Goners
+  - 注入函数参数
+- 模块化，可拆卸设计
+- 启动流程控制
+- 测试支持
+- 内置组件
+  - goner/config，支持配置参数的依赖注入
+  - goner/tracer，给调用链路增加TraceId，支持链路追踪
+  - goner/logrus、goner/zap，支持日志记录
+  - goner/gin，集成gin框架，提供HTTP请求参数的依赖注入
+  - goner/viper，用于解析多种配置文件
+  - ...
+
+## 依赖注入与启动
+看一个例子：
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gone-io/gone"
+)
+
+type Worker struct {
+	gone.Flag //匿名嵌入了 gone.Flag的结构体就是一个 Goner，可以被作为依赖注入到其他Goner，或者接收其他 Goner 的注入
+	Name      string
+}
+
+func (w *Worker) Work() {
+	fmt.Printf("I am %s, and I am working\n", w.Name)
+}
+
+type Manager struct {
+	gone.Flag                         //匿名嵌入了 gone.Flag的结构体就是一个 Goner，可以被作为依赖注入到其他Goner，或者接收其他 Goner 的注入
+	*Worker   `gone:"manager-worker"` //具名注入 GonerId="manager-worker" 的 Worker 实例
+	workers   []*Worker               `gone:"*"` //将所有Worker注入到一个数组
+}
+
+func (m *Manager) Manage() {
+	fmt.Printf("I am %s, and I am managing\n", m.Name)
+	for _, worker := range m.workers {
+		worker.Work()
+	}
+}
+
+func main() {
+	managerRole := &Manager{}
+
+	managerWorker := &Worker{Name: "Scott"}
+	ordinaryWorker1 := &Worker{Name: "Alice"}
+	ordinaryWorker2 := &Worker{Name: "Bob"}
+
+	gone.
+		Prepare(func(cemetery gone.Cemetery) error {
+			cemetery.
+				Bury(managerRole).
+				Bury(managerWorker, gone.GonerId("manager-worker")).
+				Bury(ordinaryWorker1).
+				Bury(ordinaryWorker2)
+			return nil
+		}).
+		//Run方法中的函数支持参数的依赖注入
+		Run(func(manager *Manager) {
+			manager.Manage()
+		})
+}
+```
+总结：
+1. 在Gone框架中，依赖被抽象为 Goner，Goner 之间可以互相注入
+2. 在结构体中匿名嵌入 gone.Flag，结构体就实现了 Goner接口
+3. 在启动前，将所有 Goners 通过 Bury函数加载到框架中
+4. 使用Run方法启动，Run方法中的函数支持参数的依赖注入
 
 [完整文档](https://goner.fun/zh/)
 
-下面使用Gone来编写一个Web服务吧！
 
 ## 🌐Web服务
 ```go
