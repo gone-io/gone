@@ -10,7 +10,7 @@
 [![Release](https://img.shields.io/github/release/gone-io/gone.svg?style=flat-square)](https://github.com/gone-io/gone/releases)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)  
 
-<img src="docs/assert/logo.png" width = "150" alt="logo" align=center />
+<img src="docs/assert/logo.png" width = "150" alt="logo" />
 
 - [Gone](#gone)
 	- [Gone 是什么？](#gone-是什么)
@@ -21,12 +21,15 @@
 	- [🌰 更多例子：](#-更多例子)
 	- [🪜🧰🛠️ 组件库（👉🏻 更多组件正在开发中...，💪🏻 ヾ(◍°∇°◍)ﾉﾞ，🖖🏻）](#️-组件库-更多组件正在开发中-ヾﾉﾞ)
 	- [📚完整文档](#完整文档)
+	- [贡献](#贡献)
+	- [联系方式](#联系方式)
+	- [许可证](#许可证)
 
 # Gone
 ## Gone 是什么？
 Gone 是一个轻量级的golang依赖注入框架；内置了一系列Goners组件用于快速开发微服务。
 
-![img.png](docs/assert/plan.png)
+<img src="docs/assert/plan.png" width = "400" alt="plan"/>
 
 ## 特性
 - 定义Goner接口，对依赖进行抽象
@@ -201,3 +204,16 @@ curl -X POST 'http://localhost:8080/hello' \
   封装了 `github.com/imroc/req/v3`，用于发送http请求，打通了server和client的traceId
 
 ## 📚[完整文档](https://goner.fun/zh/)
+
+## 贡献
+如果您发现了错误或有功能请求，可以随时[提交问题](https://github.com/gone-io/gone/issues/new)，同时欢迎[提交拉取请求](https://github.com/gone-io/gone/pulls)。
+
+## 联系方式
+如果您有任何问题，欢迎通过以下方式联系我们：
+- [Github 讨论](https://github.com/gone-io/gone/discussions)
+- 扫码加微信，暗号：gone
+
+  <img src="docs/assert/qr_dapeng.png" width = "250" alt="dapeng wx qr code"/>
+
+## 许可证
+`gone` 在 MIT 许可证下发布，详情请参阅 [LICENSE](./LICENSE) 文件。
