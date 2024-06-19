@@ -9,7 +9,10 @@ import (
 func Priest(cemetery gone.Cemetery) error {
 	t := cemetery.GetTomById(gone.IdGoneLogger)
 	if t != nil && t.GetGoner().(gone.Logger) != gone.GetSimpleLogger() {
-		t.GetGoner().(gone.Logger).Warn("logger is loaded, logrus logger not used")
+		_, ok := t.GetGoner().(*logger)
+		if !ok {
+			t.GetGoner().(gone.Logger).Warn("logger is loaded, logrus logger not used")
+		}
 		return nil
 	}
 	_ = config.Priest(cemetery)

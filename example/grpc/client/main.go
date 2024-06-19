@@ -27,20 +27,21 @@ func (c *helloClient) Stub(conn *grpc.ClientConn) {
 }
 
 func main() {
-	gone.Prepare(func(cemetery gone.Cemetery) error {
-		_ = goner.BasePriest(cemetery)
-		_ = goner.GrpcClientPriest(cemetery)
+	gone.
+		Prepare(func(cemetery gone.Cemetery) error {
+			_ = goner.GrpcClientPriest(cemetery)
 
-		cemetery.Bury(&helloClient{})
-		return nil
-	}).AfterStart(func(in struct {
-		hello *helloClient `gone:"*"`
-	}) {
-		say, err := in.hello.Say(context.Background(), &proto.SayRequest{Name: "gone"})
-		if err != nil {
-			log.Printf("er:%v", err)
-			return
-		}
-		log.Printf("say result: %s", say.Message)
-	}).Run()
+			cemetery.Bury(&helloClient{})
+			return nil
+		}).
+		Run(func(in struct {
+			hello *helloClient `gone:"*"`
+		}) {
+			say, err := in.hello.Say(context.Background(), &proto.SayRequest{Name: "gone"})
+			if err != nil {
+				log.Printf("er:%v", err)
+				return
+			}
+			log.Printf("say result: %s", say.Message)
+		})
 }

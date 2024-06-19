@@ -26,12 +26,13 @@ func (s *server) RegisterGrpcServer(server *grpc.Server) {
 }
 
 func main() {
-	gone.Prepare(func(cemetery gone.Cemetery) error {
-		_ = goner.BasePriest(cemetery)
-		_ = cmux.Priest(cemetery)
-		_ = goner.GrpcServerPriest(cemetery)
+	gone.
+		Prepare(func(cemetery gone.Cemetery) error {
+			_ = cmux.Priest(cemetery)
+			_ = goner.GrpcServerPriest(cemetery)
 
-		cemetery.Bury(&server{})
-		return nil
-	}).Serve()
+			cemetery.Bury(&server{})
+			return nil
+		}).
+		Serve()
 }
