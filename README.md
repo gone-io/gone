@@ -22,6 +22,9 @@
 	- [🌰 More Examples:](#-more-examples)
 	- [🪜🧰🛠️ Component Library (👉🏻 More components are under development... 💪🏻 ヾ(◍°∇°◍)ﾉﾞ 🖖🏻)](#️-component-library--more-components-are-under-development--ヾﾉﾞ-)
 	- [📚Full Documentation](#full-documentation)
+	- [Contributing](#contributing)
+	- [Contact](#contact)
+	- [License](#license)
 
 
 # Gone
@@ -29,7 +32,8 @@
 
 Gone is a lightweight golang dependency injection framework; a series of Goners components are built in for rapid development of micro services.
 
-![img.png](docs/assert/plan.png)
+<img src="docs/assert/plan.png" width = "400" alt="plan"/>
+
 ## Features
 - Define the Goner interface to abstract dependencies.
 - Dependency Injection:
@@ -205,3 +209,13 @@ In Gone, components are abstracted as Goners, whose properties can inject other 
   encapsulates `github.com/imroc/req/v3`, used for sending HTTP requests, and connects the traceId between server and client
 
 ## 📚[Full Documentation](https://goner.fun/)
+
+## Contributing
+If you have a bug report or feature request, you can [open an issue](https://github.com/gone-io/gone/issues/new), and [pull requests](https://github.com/gone-io/gone/pulls) are also welcome.
+
+## Contact
+If you have questions, feel free to reach out to us in the following ways:
+- [Github Discussion](https://github.com/gone-io/gone/discussions)
+
+## License
+`gone` released under MIT license, refer [LICENSE](./LICENSE) file.
