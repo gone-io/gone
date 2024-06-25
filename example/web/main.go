@@ -9,7 +9,7 @@ import (
 
 type controller struct {
 	gone.Flag
-	router gin.IRouter `gone:"gone-gin-router"` //inject gin router Goner, which is wrapped of `gin.Engine`
+	router gin.RouteGroup `gone:"*"` //inject gin router Goner, which is wrapped of `gin.Engine`
 }
 
 // Mount use for  mounting the router of gin framework

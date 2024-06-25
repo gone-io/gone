@@ -111,6 +111,7 @@ func IsDefault[T any](t *T) GonerOption {
 	return defaultType{t: GetInterfaceType(t)}
 }
 
+// WrapNormalFnToProcess warp a func to Process
 func WrapNormalFnToProcess(fn any) Process {
 	return func(cemetery Cemetery) error {
 		args, err := cemetery.InjectFuncParameters(fn, nil, nil)
@@ -161,6 +162,7 @@ type timeUseRecord struct {
 
 var mapRecord = make(map[string]*timeUseRecord)
 
+// TimeStat record the time of function and avg time
 func TimeStat(name string, start time.Time, logs ...func(format string, args ...any)) {
 	since := time.Since(start)
 	if mapRecord[name] == nil {
@@ -222,6 +224,7 @@ func TestAt[T Goner](id GonerId, fn func(goner T), priests ...Priest) {
 	}, priests...)
 }
 
+// NewBuryMockCemeteryForTest make a new Cemetery for test
 func NewBuryMockCemeteryForTest() Cemetery {
 	return newCemetery()
 }
