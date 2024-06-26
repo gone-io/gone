@@ -6,7 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/internal/json"
+	"golang.org/x/time/rate"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -56,12 +58,36 @@ type SysMiddleware struct {
 	useTracer bool `gone:"config,server.use-tracer,default=true"`
 
 	isAfterProxy bool `gone:"config,server.is-after-proxy,default=false"`
+
+	enableLimit bool       `gone:"config,server.req.enable-limit,default=false"`
+	limit       rate.Limit `gone:"config,server.req.limit,default=100"`
+	burst       int        `gone:"config,server.req.limit-burst,default=300"`
+
+	limiter *rate.Limiter
+}
+
+func (m *SysMiddleware) AfterRevive() error {
+	if m.enableLimit {
+		m.limiter = rate.NewLimiter(m.limit, m.burst)
+	}
+	return nil
+}
+
+func (m *SysMiddleware) allow() bool {
+	if m.enableLimit {
+		return m.limiter.Allow()
+	}
+	return true
 }
 
 func (m *SysMiddleware) Process(context *gin.Context) {
 	if m.healthCheckUrl != "" && context.Request.URL.Path == m.healthCheckUrl {
 		context.AbortWithStatus(200)
 		return
+	}
+
+	if !m.allow() {
+		m.resHandler.Failed(context, gone.NewError(http.StatusTooManyRequests, "too many requests", http.StatusTooManyRequests))
 	}
 
 	traceId := context.GetHeader(gone.TraceIdHeaderKey)
