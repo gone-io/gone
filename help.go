@@ -37,12 +37,12 @@ const (
 
 	// IdGoneGin , IdGoneGinRouter , IdGoneGinProcessor, IdGoneGinProxy, IdGoneGinResponser, IdHttpInjector;
 	// The GonerIds of Goners in goner/gin, which integrates gin framework for web request.
-	IdGoneGin          GonerId = "gone-gin"
-	IdGoneGinRouter    GonerId = "gone-gin-router"
-	IdGoneGinProcessor GonerId = "gone-gin-processor"
-	IdGoneGinProxy     GonerId = "gone-gin-proxy"
-	IdGoneGinResponser GonerId = "gone-gin-responser"
-	IdHttpInjector     GonerId = "http"
+	IdGoneGin              GonerId = "gone-gin"
+	IdGoneGinRouter        GonerId = "gone-gin-router"
+	IdGoneGinSysMiddleware GonerId = "gone-gin-sys-middleware"
+	IdGoneGinProxy         GonerId = "gone-gin-proxy"
+	IdGoneGinResponser     GonerId = "gone-gin-responser"
+	IdHttpInjector         GonerId = "http"
 
 	// IdGoneXorm , The GonerId of XormEngine Goner, which is for xorm engine.
 	IdGoneXorm GonerId = "gone-xorm"
@@ -60,6 +60,11 @@ const (
 
 	// IdGoneReq , The GonerId of urllib.Client Goner, which is for request in goner/urllib.
 	IdGoneReq GonerId = "gone-urllib"
+)
+
+const (
+	RequestIdHeaderKey = "X-Request-ID"
+	TraceIdHeaderKey   = "X-Trace-ID"
 )
 
 // PanicTrace used for getting panic stack

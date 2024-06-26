@@ -130,3 +130,7 @@ type HttInjector interface {
 	StartBindFuncs()
 	BindFuncs() BindStructFunc
 }
+
+type Middleware interface {
+	Process(ctx *gin.Context)
+}

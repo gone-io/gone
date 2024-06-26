@@ -8,7 +8,7 @@ func Priest(cemetery gone.Cemetery) error {
 	cemetery.
 		BuryOnce(NewGinProxy()).
 		BuryOnce(NewGinRouter()).
-		BuryOnce(NewGinProcessor()).
+		BuryOnce(NewSysMiddleware()).
 		BuryOnce(NewGinResponser()).
 		BuryOnce(NewGinServer()).
 		BuryOnce(NewHttInjector())

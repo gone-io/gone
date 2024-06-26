@@ -1,9 +1,9 @@
 package gin
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/golang/mock/gomock"
+	"github.com/gone-io/gone/internal/json"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"strings"

@@ -1,11 +1,11 @@
 package redis
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/internal/json"
 	"strings"
 	"time"
 )

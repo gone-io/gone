@@ -1,12 +1,12 @@
 package redis
 
 import (
-	"encoding/json"
 	"github.com/gomodule/redigo/redis"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/goner/logrus"
 	"github.com/gone-io/gone/goner/tracer"
+	"github.com/gone-io/gone/internal/json"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
