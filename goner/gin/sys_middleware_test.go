@@ -2,8 +2,10 @@ package gin
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/time/rate"
 	"testing"
 )
 
@@ -220,4 +222,97 @@ func TestCustomResponseWrite(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, "testtest2", blw.body.String())
+}
+
+func TestSysMiddleware_AfterRevive(t *testing.T) {
+	type fields struct {
+		enableLimit bool
+		limit       rate.Limit
+		burst       int
+		limiter     *rate.Limiter
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "test",
+			fields: fields{
+				enableLimit: true,
+				limit:       2,
+				burst:       10,
+			},
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.Nil(t, err)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &SysMiddleware{
+				enableLimit: tt.fields.enableLimit,
+				limit:       tt.fields.limit,
+				burst:       tt.fields.burst,
+				limiter:     tt.fields.limiter,
+			}
+			tt.wantErr(t, m.AfterRevive(), fmt.Sprintf("AfterRevive()"))
+		})
+	}
+}
+
+func TestSysMiddleware_allow(t *testing.T) {
+	type fields struct {
+		enableLimit bool
+		limit       rate.Limit
+		burst       int
+		limiter     *rate.Limiter
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		before func(*SysMiddleware)
+		want   bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				enableLimit: true,
+				limit:       2,
+				burst:       10,
+			},
+			before: func(middleware *SysMiddleware) {
+				err := middleware.AfterRevive()
+				assert.Nil(t, err)
+			},
+			want: true,
+		},
+		{
+			name: "test",
+			fields: fields{
+				enableLimit: true,
+				limit:       0,
+				burst:       0,
+			},
+			before: func(middleware *SysMiddleware) {
+				err := middleware.AfterRevive()
+				assert.Nil(t, err)
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &SysMiddleware{
+				enableLimit: tt.fields.enableLimit,
+				limit:       tt.fields.limit,
+				burst:       tt.fields.burst,
+				limiter:     tt.fields.limiter,
+			}
+			if tt.before != nil {
+				tt.before(m)
+			}
+			assert.Equalf(t, tt.want, m.allow(), "allow()")
+		})
+	}
 }
