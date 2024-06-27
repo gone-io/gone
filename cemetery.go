@@ -32,19 +32,23 @@ func GetGoneDefaultId(goner Goner) GonerId {
 	return GonerId(fmt.Sprintf("%s#%d", pkgName, reflect.ValueOf(goner).Elem().UnsafeAddr()))
 }
 
-func (c *cemetery) bury(goner Goner, options ...GonerOption) Tomb {
-	theTomb := NewTomb(goner)
-
+func buildTomb(goner Goner, options ...GonerOption) Tomb {
+	newTomb := NewTomb(goner)
 	for _, option := range options {
 		switch option.(type) {
 		case GonerId:
-			theTomb.SetId(option.(GonerId))
+			newTomb.SetId(option.(GonerId))
 		case defaultType:
-			theTomb.SetDefault(option.(defaultType).t)
+			newTomb.SetDefault(option.(defaultType).t)
 		case Order:
-			theTomb.SetOrder(option.(Order))
+			newTomb.SetOrder(option.(Order))
 		}
 	}
+	return newTomb
+}
+
+func (c *cemetery) bury(goner Goner, options ...GonerOption) Tomb {
+	theTomb := buildTomb(goner, options...)
 
 	if theTomb.GetId() == "" {
 		theTomb.SetId(GetGoneDefaultId(goner))
@@ -90,18 +94,7 @@ func (c *cemetery) BuryOnce(goner Goner, options ...GonerOption) Cemetery {
 }
 
 func (c *cemetery) ReplaceBury(goner Goner, options ...GonerOption) (err error) {
-	newTomb := NewTomb(goner)
-
-	for _, option := range options {
-		switch option.(type) {
-		case GonerId:
-			newTomb.SetId(option.(GonerId))
-		case defaultType:
-			newTomb.SetDefault(option.(defaultType).t)
-		case Order:
-			newTomb.SetOrder(option.(Order))
-		}
-	}
+	newTomb := buildTomb(goner, options...)
 	if newTomb.GetId() == "" {
 		err = ReplaceBuryIdParamEmptyError()
 		return

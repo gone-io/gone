@@ -166,3 +166,66 @@ func TestToError(t *testing.T) {
 		assert.Equal(t, "100", toError.Msg())
 	})
 }
+
+func TestBError_GetStatusCode(t *testing.T) {
+	type fields struct {
+		err  Error
+		data any
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   int
+	}{
+		{
+			name: "default",
+			fields: fields{
+				err:  NewBusinessError("error", 100),
+				data: nil,
+			},
+			want: http.StatusOK,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &BError{
+				err:  tt.fields.err,
+				data: tt.fields.data,
+			}
+			assert.Equalf(t, tt.want, e.GetStatusCode(), "GetStatusCode()")
+		})
+	}
+}
+
+func Test_defaultErr_GetStatusCode(t *testing.T) {
+	type fields struct {
+		code       int
+		msg        string
+		statusCode int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   int
+	}{
+		{
+			name: "default",
+			fields: fields{
+				code:       500,
+				msg:        "error",
+				statusCode: http.StatusOK,
+			},
+			want: http.StatusOK,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &defaultErr{
+				code:       tt.fields.code,
+				msg:        tt.fields.msg,
+				statusCode: tt.fields.statusCode,
+			}
+			assert.Equalf(t, tt.want, e.GetStatusCode(), "GetStatusCode()")
+		})
+	}
+}
