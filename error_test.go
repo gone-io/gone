@@ -3,6 +3,7 @@ package gone
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"strings"
 	"testing"
 )
@@ -33,7 +34,7 @@ func TestNewBusinessError(t *testing.T) {
 				ext: []any{},
 			},
 			want: BError{
-				err: NewError(0, "error"),
+				err: NewError(0, "error", http.StatusOK),
 			},
 		},
 		{
@@ -43,7 +44,7 @@ func TestNewBusinessError(t *testing.T) {
 				ext: []any{100},
 			},
 			want: BError{
-				err: NewError(100, "error"),
+				err: NewError(100, "error", http.StatusOK),
 			},
 		},
 		{
@@ -53,7 +54,7 @@ func TestNewBusinessError(t *testing.T) {
 				ext: []any{100, data},
 			},
 			want: BError{
-				err:  NewError(100, "error"),
+				err:  NewError(100, "error", http.StatusOK),
 				data: data,
 			},
 		},
@@ -92,7 +93,7 @@ func TestNewParameterError(t *testing.T) {
 				msg: "error",
 				ext: []int{},
 			},
-			want: defaultErr{msg: "error", code: 400},
+			want: defaultErr{msg: "error", code: 400, statusCode: http.StatusBadRequest},
 		},
 		{
 			name: "single parameter",
@@ -100,7 +101,7 @@ func TestNewParameterError(t *testing.T) {
 				msg: "error",
 				ext: []int{401},
 			},
-			want: defaultErr{msg: "error", code: 401},
+			want: defaultErr{msg: "error", code: 401, statusCode: http.StatusBadRequest},
 		},
 	}
 	for _, tt := range tests {

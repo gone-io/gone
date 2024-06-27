@@ -29,7 +29,7 @@ func TestSSE(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		err = sse.WriteError(gone.NewError(100, "error"))
+		err = sse.WriteError(gone.NewError(100, "error", http.StatusInternalServerError))
 		assert.Nil(t, err)
 
 		err = sse.End()

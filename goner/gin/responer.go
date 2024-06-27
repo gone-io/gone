@@ -86,6 +86,10 @@ func (r *responser) Failed(ctx XContext, oErr error) {
 	err := ToError(oErr)
 	if !r.returnWrappedData {
 		var iErr gone.InnerError
+		if err == nil {
+			noneWrappedData(ctx, nil, http.StatusBadRequest)
+			return
+		}
 		if errors.As(err, &iErr) {
 			ctx.String(http.StatusInternalServerError, iErr.Msg())
 			r.Errorf("inner Error: %s(code=%d)\n%s", iErr.Msg(), iErr.Code(), iErr.Stack())
