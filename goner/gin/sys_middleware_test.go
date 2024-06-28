@@ -3,9 +3,17 @@ package gin
 import (
 	"bytes"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/logrus"
+	"github.com/gone-io/gone/internal/json"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/time/rate"
+	"io"
+	"net/http"
+	"net/url"
 	"testing"
 )
 
@@ -315,4 +323,228 @@ func TestSysMiddleware_allow(t *testing.T) {
 			assert.Equalf(t, tt.want, m.allow(), "allow()")
 		})
 	}
+}
+
+func TestSysMiddleware_Process(t *testing.T) {
+	t.Run("healthCheckUrl", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+
+		writer := NewMockResponseWriter(controller)
+		writer.EXPECT().WriteHeader(http.StatusOK)
+		writer.EXPECT().WriteHeaderNow()
+
+		Url, _ := url.Parse("/health")
+		context := gin.Context{
+			Request: &http.Request{
+				URL: Url,
+			},
+			Writer: writer,
+		}
+
+		middleware := SysMiddleware{
+			healthCheckUrl: "/health",
+		}
+
+		middleware.Process(&context)
+	})
+
+	t.Run("limited", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+
+		xHeader := http.Header{}
+		writer := NewMockResponseWriter(controller)
+		writer.EXPECT().WriteHeader(http.StatusTooManyRequests)
+		writer.EXPECT().Header().Return(xHeader)
+		writer.EXPECT().Write(gomock.Any())
+
+		context := gin.Context{
+			Writer: writer,
+		}
+		middleware := SysMiddleware{}
+
+		gone.Prepare(func(cemetery gone.Cemetery) error {
+			cemetery.Bury(&middleware)
+			cemetery.Bury(NewGinResponser())
+			return logrus.Priest(cemetery)
+		}).Test(func(middleware *SysMiddleware) {
+
+			middleware.enableLimit = true
+			middleware.limiter = rate.NewLimiter(0, 0)
+
+			middleware.Process(&context)
+		})
+	})
+
+	t.Run("use-tracer", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+
+		h := http.Header{}
+		traceId := uuid.New().String()
+		h.Set(gone.TraceIdHeaderKey, traceId)
+		context := gin.Context{
+			Request: &http.Request{
+				Header: h,
+			},
+		}
+		middleware := SysMiddleware{}
+
+		gone.Prepare(func(cemetery gone.Cemetery) error {
+			cemetery.Bury(&middleware)
+			cemetery.Bury(NewGinResponser())
+			return logrus.Priest(cemetery)
+		}).Test(func(middleware *SysMiddleware, tracer gone.Tracer) {
+			middleware.showRequestLog = false
+			middleware.showResponseLog = false
+			middleware.showRequestTime = false
+
+			var xTraceId string
+			testInProcess = func(context *gin.Context) {
+				xTraceId = tracer.GetTraceId()
+
+			}
+			middleware.Process(&context)
+			assert.Equal(t, traceId, xTraceId)
+
+			middleware.useTracer = false
+			middleware.Process(&context)
+			assert.Equal(t, "", xTraceId)
+		})
+	})
+}
+
+func TestSysMiddleware_requestLog(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	gone.Prepare(func(cemetery gone.Cemetery) error {
+		cemetery.Bury(&SysMiddleware{})
+		cemetery.Bury(NewGinResponser())
+		return logrus.Priest(cemetery)
+	}).Test(func(middleware *SysMiddleware, tracer gone.Tracer) {
+		t.Run("X", func(t *testing.T) {
+			logger := NewMockLogger(controller)
+			logger.EXPECT().Infof(gomock.Any(), gomock.All()).Do(func(format string, args ...any) {
+				assert.Equal(t, "[%s] %s", format)
+				assert.Equal(t, "request", args[0])
+				s := args[1].(string)
+
+				assert.Contains(t, s, "referer")
+				assert.Contains(t, s, "body")
+				assert.Contains(t, s, "request-id")
+				assert.Contains(t, s, "ip")
+				assert.Contains(t, s, "method=POST")
+				assert.Contains(t, s, "path=/health")
+				assert.Contains(t, s, "user-agent")
+			})
+
+			middleware.logger = logger
+			middleware.logDataMaxLength = 5
+
+			Url, _ := url.Parse("http://localhost/health")
+			xHeader := http.Header{}
+			xHeader.Set("content-type", "application/json")
+			context := gin.Context{
+				Request: &http.Request{
+					URL:        Url,
+					Body:       io.NopCloser(bytes.NewBufferString("{\"data\":\"ok\"}")),
+					Header:     xHeader,
+					RemoteAddr: "127.0.0.1",
+					Method:     "POST",
+				},
+			}
+			middleware.requestLog(&context)
+		})
+	})
+}
+
+func TestSysMiddleware_responseLog(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	gone.Prepare(func(cemetery gone.Cemetery) error {
+		cemetery.Bury(&SysMiddleware{})
+		cemetery.Bury(NewGinResponser())
+		return logrus.Priest(cemetery)
+	}).Test(func(middleware *SysMiddleware, tracer gone.Tracer) {
+		t.Run("X", func(t *testing.T) {
+			logger := NewMockLogger(controller)
+			logger.EXPECT().Infof(gomock.Any(), gomock.All()).Do(func(format string, args ...any) {
+				assert.Equal(t, "[%s] %s", format)
+				assert.Equal(t, "response", args[0])
+				s := args[1].(string)
+
+				assert.Contains(t, s, "body")
+				assert.Contains(t, s, "method=POST")
+				assert.Contains(t, s, "path=/health")
+				assert.Contains(t, s, "content-type")
+				assert.Contains(t, s, "status=200")
+			})
+
+			writer := NewMockResponseWriter(controller)
+			writer.EXPECT().WriteHeader(http.StatusOK)
+			xHeader := http.Header{}
+			writer.EXPECT().Header().Return(xHeader).AnyTimes()
+			writer.EXPECT().Write(gomock.Any())
+			writer.EXPECT().Status().Return(http.StatusOK)
+
+			middleware.logger = logger
+			middleware.logDataMaxLength = 5
+
+			Url, _ := url.Parse("http://localhost/health")
+			context := gin.Context{
+				Request: &http.Request{
+					URL:    Url,
+					Method: "POST",
+				},
+				Writer: writer,
+			}
+			middleware.responseLog(&context, func() {
+				context.JSON(http.StatusOK, gin.H{"code": 0, "msg": "ok"})
+			})
+		})
+	})
+}
+
+func TestSysMiddleware_log(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	t.Run("json", func(t *testing.T) {
+		logger := NewMockLogger(controller)
+		logger.EXPECT().Infof(gomock.Any(), gomock.All()).Do(func(format string, args ...any) {
+			assert.Equal(t, "%s", format)
+			b := args[0].([]byte)
+
+			m := make(map[string]any)
+			err := json.Unmarshal(b, &m)
+			assert.Nil(t, err)
+			assert.Equal(t, "ok", m["data"])
+			assert.Equal(t, "test", m["type"])
+		})
+
+		middleware := SysMiddleware{logger: logger, logFormat: "json"}
+
+		middleware.log("test", map[string]any{
+			"data": "ok",
+		})
+	})
+	t.Run("console", func(t *testing.T) {
+		logger := NewMockLogger(controller)
+		logger.EXPECT().Infof(gomock.Any(), gomock.All()).Do(func(format string, args ...any) {
+			assert.Equal(t, "[%s] %s", format)
+			assert.Equal(t, "test", args[0])
+			s := args[1].(string)
+			assert.Contains(t, s, "data")
+		})
+
+		middleware := SysMiddleware{logger: logger, logFormat: "console"}
+
+		middleware.log("test", map[string]any{
+			"data": "ok",
+		})
+	})
+
 }

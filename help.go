@@ -63,8 +63,8 @@ const (
 )
 
 const (
-	RequestIdHeaderKey = "X-Request-ID"
-	TraceIdHeaderKey   = "X-Trace-ID"
+	RequestIdHeaderKey = "X-Request-Id"
+	TraceIdHeaderKey   = "X-Trace-Id"
 )
 
 // PanicTrace used for getting panic stack

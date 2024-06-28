@@ -24,7 +24,6 @@ type SysMiddleware struct {
 
 	logger     gone.Logger `gone:"*"`
 	tracer     gone.Tracer `gone:"*"`
-	router     IRouter     `gone:"*"`
 	resHandler Responser   `gone:"*"`
 
 	// healthCheckUrl 健康检查路劲
@@ -33,7 +32,7 @@ type SysMiddleware struct {
 	// 配置后，能够在该路劲提供一个http-status等于200的空响应
 	healthCheckUrl string `gone:"config,server.health-check"`
 
-	logFormat string `gone:"server.log.format,default=console"`
+	logFormat string `gone:"config,server.log.format,default=console"`
 
 	// showRequestTime 展示请求时间
 	// 对应配置项为：`server.log.show-request-time`
@@ -49,11 +48,11 @@ type SysMiddleware struct {
 	logUserAgent     bool `gone:"config,server.log.user-agent,default=true"`
 	logReferer       bool `gone:"config,server.log.referer,default=true"`
 
-	requestBodyLogContentTypes string `gone:"config,server.log.show-request-body-for-content-types,default=application/json,application/xml,application/x-www-form-urlencoded"`
+	requestBodyLogContentTypes string `gone:"config,server.log.show-request-body-for-content-types,default=application/json;application/xml;application/x-www-form-urlencoded"`
 
 	showResponseLog bool `gone:"config,server.log.show-response-log,default=true"`
 
-	responseBodyLogContentTypes string `gone:"config,server.log.show-response-body-for-content-types,default=application/json,application/xml,application/x-www-form-urlencoded"`
+	responseBodyLogContentTypes string `gone:"config,server.log.show-response-body-for-content-types,default=application/json;application/xml;application/x-www-form-urlencoded"`
 
 	useTracer bool `gone:"config,server.use-tracer,default=true"`
 
@@ -80,6 +79,8 @@ func (m *SysMiddleware) allow() bool {
 	return true
 }
 
+const TooManyRequests = "Too Many Requests"
+
 func (m *SysMiddleware) Process(context *gin.Context) {
 	if m.healthCheckUrl != "" && context.Request.URL.Path == m.healthCheckUrl {
 		context.AbortWithStatus(200)
@@ -87,11 +88,12 @@ func (m *SysMiddleware) Process(context *gin.Context) {
 	}
 
 	if !m.allow() {
-		m.resHandler.Failed(context, gone.NewError(http.StatusTooManyRequests, "too many requests", http.StatusTooManyRequests))
+		m.resHandler.Failed(context, gone.NewError(http.StatusTooManyRequests, TooManyRequests, http.StatusTooManyRequests))
+		return
 	}
 
-	traceId := context.GetHeader(gone.TraceIdHeaderKey)
 	if m.useTracer {
+		traceId := context.GetHeader(gone.TraceIdHeaderKey)
 		m.tracer.SetTraceId(traceId, func() {
 			m.process(context)
 		})
@@ -100,10 +102,21 @@ func (m *SysMiddleware) Process(context *gin.Context) {
 	}
 }
 
+var testInProcess func(context *gin.Context)
+
 func (m *SysMiddleware) process(context *gin.Context) {
 	defer m.stat(context, time.Now())
 	defer m.recover(context)
 
+	m.requestLog(context)
+	m.responseLog(context, context.Next)
+
+	if testInProcess != nil {
+		testInProcess(context)
+	}
+}
+
+func (m *SysMiddleware) requestLog(context *gin.Context) {
 	if m.showRequestLog {
 		logMap := make(map[string]any)
 
@@ -119,7 +132,7 @@ func (m *SysMiddleware) process(context *gin.Context) {
 			} else {
 				remoteIP = context.RemoteIP()
 			}
-			logMap["remote-ip"] = remoteIP
+			logMap["ip"] = remoteIP
 		}
 
 		logMap["method"] = context.Request.Method
@@ -150,12 +163,14 @@ func (m *SysMiddleware) process(context *gin.Context) {
 
 		m.log("request", logMap)
 	}
+}
 
+func (m *SysMiddleware) responseLog(context *gin.Context, next func()) {
 	if m.showResponseLog {
 		crw := &CustomResponseWriter{body: bytes.NewBufferString(""), ResponseWriter: context.Writer}
 		context.Writer = crw
 
-		context.Next()
+		next()
 
 		logMap := make(map[string]any)
 		logMap["method"] = context.Request.Method
@@ -165,6 +180,7 @@ func (m *SysMiddleware) process(context *gin.Context) {
 		contentType := context.Writer.Header().Get("Content-Type")
 		logMap["content-type"] = contentType
 
+		contentType = strings.Split(contentType, ";")[0]
 		if strings.Contains(m.responseBodyLogContentTypes, contentType) {
 			data := crw.body.String()
 			if m.logDataMaxLength > 0 && len(data) > m.logDataMaxLength {
@@ -177,7 +193,7 @@ func (m *SysMiddleware) process(context *gin.Context) {
 		}
 		m.log("response", logMap)
 	} else {
-		context.Next()
+		next()
 	}
 }
 
