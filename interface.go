@@ -176,6 +176,8 @@ type Error interface {
 	error
 	Msg() string
 	Code() int
+
+	GetStatusCode() int
 }
 
 // InnerError which has stack, and which is used for Internal error

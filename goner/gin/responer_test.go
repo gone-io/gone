@@ -1,9 +1,9 @@
 package gin
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/golang/mock/gomock"
+	"github.com/gone-io/gone/internal/json"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"strings"
@@ -161,7 +161,7 @@ func Test_responser_Failed(t *testing.T) {
 			x := NewBusinessError("test", 1, "test-data")
 
 			ctx.EXPECT().String(gomock.Any(), gomock.Any()).Do(func(code int, format string, values ...any) {
-				assert.Equal(t, http.StatusBadRequest, code)
+				assert.Equal(t, http.StatusOK, code)
 				assert.Equal(t, "GoneError(code=1); test", format)
 			})
 			r.Failed(ctx, x)

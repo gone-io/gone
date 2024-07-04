@@ -37,12 +37,12 @@ const (
 
 	// IdGoneGin , IdGoneGinRouter , IdGoneGinProcessor, IdGoneGinProxy, IdGoneGinResponser, IdHttpInjector;
 	// The GonerIds of Goners in goner/gin, which integrates gin framework for web request.
-	IdGoneGin          GonerId = "gone-gin"
-	IdGoneGinRouter    GonerId = "gone-gin-router"
-	IdGoneGinProcessor GonerId = "gone-gin-processor"
-	IdGoneGinProxy     GonerId = "gone-gin-proxy"
-	IdGoneGinResponser GonerId = "gone-gin-responser"
-	IdHttpInjector     GonerId = "http"
+	IdGoneGin              GonerId = "gone-gin"
+	IdGoneGinRouter        GonerId = "gone-gin-router"
+	IdGoneGinSysMiddleware GonerId = "gone-gin-sys-middleware"
+	IdGoneGinProxy         GonerId = "gone-gin-proxy"
+	IdGoneGinResponser     GonerId = "gone-gin-responser"
+	IdHttpInjector         GonerId = "http"
 
 	// IdGoneXorm , The GonerId of XormEngine Goner, which is for xorm engine.
 	IdGoneXorm GonerId = "gone-xorm"
@@ -60,6 +60,11 @@ const (
 
 	// IdGoneReq , The GonerId of urllib.Client Goner, which is for request in goner/urllib.
 	IdGoneReq GonerId = "gone-urllib"
+)
+
+const (
+	RequestIdHeaderKey = "X-Request-Id"
+	TraceIdHeaderKey   = "X-Trace-Id"
 )
 
 // PanicTrace used for getting panic stack
@@ -111,6 +116,7 @@ func IsDefault[T any](t *T) GonerOption {
 	return defaultType{t: GetInterfaceType(t)}
 }
 
+// WrapNormalFnToProcess warp a func to Process
 func WrapNormalFnToProcess(fn any) Process {
 	return func(cemetery Cemetery) error {
 		args, err := cemetery.InjectFuncParameters(fn, nil, nil)
@@ -161,6 +167,7 @@ type timeUseRecord struct {
 
 var mapRecord = make(map[string]*timeUseRecord)
 
+// TimeStat record the time of function and avg time
 func TimeStat(name string, start time.Time, logs ...func(format string, args ...any)) {
 	since := time.Since(start)
 	if mapRecord[name] == nil {
@@ -222,6 +229,7 @@ func TestAt[T Goner](id GonerId, fn func(goner T), priests ...Priest) {
 	}, priests...)
 }
 
+// NewBuryMockCemeteryForTest make a new Cemetery for test
 func NewBuryMockCemeteryForTest() Cemetery {
 	return newCemetery()
 }

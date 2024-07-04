@@ -1,9 +1,9 @@
 package redis
 
 import (
-	"encoding/json"
 	"github.com/gomodule/redigo/redis"
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/internal/json"
 )
 
 type hash struct {

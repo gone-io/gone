@@ -25,31 +25,44 @@ type router struct {
 
 	gone.Logger      `gone:"*"`
 	HandleProxyToGin `gone:"gone-gin-proxy"`
+	middlewares      []Middleware `gone:"*"`
 }
 
-type writer struct {
+type logWriter struct {
 	write func(p []byte) (n int, err error)
 }
 
-func (w writer) Write(p []byte) (n int, err error) {
+func (w logWriter) Write(p []byte) (n int, err error) {
 	return w.write(p)
+}
+
+func (r *router) getMiddlewaresFunc() (list []gin.HandlerFunc) {
+	for _, middleware := range r.middlewares {
+		list = append(list, middleware.Process)
+	}
+	return list
 }
 
 func (r *router) AfterRevive() gone.AfterReviveError {
 	gin.SetMode(r.mode)
 	r.Engine = gin.New()
 
+	//use middlewares
+	if wares := r.getMiddlewaresFunc(); len(wares) > 0 {
+		r.Engine.Use(r.getMiddlewaresFunc()...)
+	}
+
 	if r.htmlTpl != "" {
 		r.Engine.LoadHTMLGlob(r.htmlTpl)
 	}
 
-	gin.DefaultWriter = writer{
+	gin.DefaultWriter = logWriter{
 		write: func(p []byte) (n int, err error) {
 			r.Debugf("%s", p)
 			return len(p), nil
 		},
 	}
-	gin.DefaultErrorWriter = writer{
+	gin.DefaultErrorWriter = logWriter{
 		write: func(p []byte) (n int, err error) {
 			r.Errorf("%s", p)
 			return len(p), nil

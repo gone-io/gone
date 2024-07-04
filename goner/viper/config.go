@@ -1,10 +1,10 @@
 package gone_viper
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/config"
+	"github.com/gone-io/gone/internal/json"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"reflect"

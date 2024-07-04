@@ -56,6 +56,6 @@ func TestGetConfSettings(t *testing.T) {
 	os.Args = append(os.Args, "-conf=x-config")
 
 	configs := GetConfSettings(true)
-	assert.Equal(t, 16, len(configs))
-	assert.Equal(t, "x-config", configs[15].ConfigPath)
+	assert.Equal(t, 20, len(configs))
+	assert.Equal(t, "x-config", configs[19].ConfigPath)
 }

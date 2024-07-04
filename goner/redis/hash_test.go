@@ -1,9 +1,9 @@
 package redis
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/internal/json"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"

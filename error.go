@@ -21,13 +21,18 @@ func (e *BError) Code() int {
 func (e *BError) Error() string {
 	return e.err.Error()
 }
+func (e *BError) GetStatusCode() int {
+	return e.err.GetStatusCode()
+}
+
 func (e *BError) Data() any {
 	return e.data
 }
 
 type defaultErr struct {
-	code int
-	msg  string
+	code       int
+	msg        string
+	statusCode int
 }
 
 func (e *defaultErr) Error() string {
@@ -41,9 +46,13 @@ func (e *defaultErr) Code() int {
 	return e.code
 }
 
+func (e *defaultErr) GetStatusCode() int {
+	return e.statusCode
+}
+
 // NewError create a error
-func NewError(code int, msg string) Error {
-	return &defaultErr{code: code, msg: msg}
+func NewError(code int, msg string, statusCode int) Error {
+	return &defaultErr{code: code, msg: msg, statusCode: statusCode}
 }
 
 // NewParameterError create a Parameter error
@@ -52,7 +61,7 @@ func NewParameterError(msg string, ext ...int) Error {
 	if len(ext) > 0 {
 		code = ext[0]
 	}
-	return NewError(code, msg)
+	return NewError(code, msg, http.StatusBadRequest)
 }
 
 // NewBusinessError create a business error
@@ -69,7 +78,7 @@ func NewBusinessError(msg string, ext ...any) BusinessError {
 		data = ext[1]
 	}
 
-	return &BError{err: NewError(code, msg), data: data}
+	return &BError{err: NewError(code, msg, http.StatusOK), data: data}
 }
 
 // ToError translate any type to An Error
@@ -108,7 +117,10 @@ func NewInnerError(msg string, code int) Error {
 }
 
 func NewInnerErrorSkip(msg string, code int, skip int) Error {
-	return &iError{defaultErr: &defaultErr{code: code, msg: msg}, trace: PanicTrace(2, skip)}
+	return &iError{
+		defaultErr: &defaultErr{code: code, msg: msg, statusCode: http.StatusInternalServerError},
+		trace:      PanicTrace(2, skip),
+	}
 }
 
 // Error Code：1001~1999 used for gone framework.

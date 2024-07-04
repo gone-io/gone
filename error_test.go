@@ -3,6 +3,7 @@ package gone
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"strings"
 	"testing"
 )
@@ -33,7 +34,7 @@ func TestNewBusinessError(t *testing.T) {
 				ext: []any{},
 			},
 			want: BError{
-				err: NewError(0, "error"),
+				err: NewError(0, "error", http.StatusOK),
 			},
 		},
 		{
@@ -43,7 +44,7 @@ func TestNewBusinessError(t *testing.T) {
 				ext: []any{100},
 			},
 			want: BError{
-				err: NewError(100, "error"),
+				err: NewError(100, "error", http.StatusOK),
 			},
 		},
 		{
@@ -53,7 +54,7 @@ func TestNewBusinessError(t *testing.T) {
 				ext: []any{100, data},
 			},
 			want: BError{
-				err:  NewError(100, "error"),
+				err:  NewError(100, "error", http.StatusOK),
 				data: data,
 			},
 		},
@@ -92,7 +93,7 @@ func TestNewParameterError(t *testing.T) {
 				msg: "error",
 				ext: []int{},
 			},
-			want: defaultErr{msg: "error", code: 400},
+			want: defaultErr{msg: "error", code: 400, statusCode: http.StatusBadRequest},
 		},
 		{
 			name: "single parameter",
@@ -100,7 +101,7 @@ func TestNewParameterError(t *testing.T) {
 				msg: "error",
 				ext: []int{401},
 			},
-			want: defaultErr{msg: "error", code: 401},
+			want: defaultErr{msg: "error", code: 401, statusCode: http.StatusBadRequest},
 		},
 	}
 	for _, tt := range tests {
@@ -164,4 +165,67 @@ func TestToError(t *testing.T) {
 		assert.Equal(t, 500, toError.Code())
 		assert.Equal(t, "100", toError.Msg())
 	})
+}
+
+func TestBError_GetStatusCode(t *testing.T) {
+	type fields struct {
+		err  Error
+		data any
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   int
+	}{
+		{
+			name: "default",
+			fields: fields{
+				err:  NewBusinessError("error", 100),
+				data: nil,
+			},
+			want: http.StatusOK,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &BError{
+				err:  tt.fields.err,
+				data: tt.fields.data,
+			}
+			assert.Equalf(t, tt.want, e.GetStatusCode(), "GetStatusCode()")
+		})
+	}
+}
+
+func Test_defaultErr_GetStatusCode(t *testing.T) {
+	type fields struct {
+		code       int
+		msg        string
+		statusCode int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   int
+	}{
+		{
+			name: "default",
+			fields: fields{
+				code:       500,
+				msg:        "error",
+				statusCode: http.StatusOK,
+			},
+			want: http.StatusOK,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &defaultErr{
+				code:       tt.fields.code,
+				msg:        tt.fields.msg,
+				statusCode: tt.fields.statusCode,
+			}
+			assert.Equalf(t, tt.want, e.GetStatusCode(), "GetStatusCode()")
+		})
+	}
 }

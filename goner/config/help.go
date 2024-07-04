@@ -65,6 +65,17 @@ type ConfSetting struct {
 	ConfigName string
 }
 
+func lookForModDir(workDir string) string {
+	if workDir == "/" {
+		return ""
+	}
+	modFile := path.Join(workDir, "go.mod")
+	if _, err := os.Stat(modFile); os.IsNotExist(err) {
+		return lookForModDir(path.Dir(workDir))
+	}
+	return workDir
+}
+
 // GetConfSettings get config settings
 func GetConfSettings(isInTestKit bool) (configs []ConfSetting) {
 	var configPaths []string
@@ -77,7 +88,16 @@ func GetConfSettings(isInTestKit bool) (configs []ConfSetting) {
 	configPaths = append(configPaths, path.Join(MustGetWorkDir(), ConPath))
 
 	if isInTestKit {
-		configPaths = append(configPaths, path.Join(workDir, "testdata", ConPath))
+		dir := lookForModDir(workDir)
+		if dir != "" {
+			dir = path.Join(dir, ConPath)
+			configPaths = append(configPaths, dir)
+		}
+
+		testDataConfig := path.Join(workDir, "testdata", ConPath)
+		if testDataConfig != dir {
+			configPaths = append(configPaths, testDataConfig)
+		}
 	}
 
 	settingConfPath := GetConfDir()

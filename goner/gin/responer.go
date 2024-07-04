@@ -86,13 +86,16 @@ func (r *responser) Failed(ctx XContext, oErr error) {
 	err := ToError(oErr)
 	if !r.returnWrappedData {
 		var iErr gone.InnerError
+		if err == nil {
+			noneWrappedData(ctx, nil, http.StatusBadRequest)
+			return
+		}
 		if errors.As(err, &iErr) {
 			ctx.String(http.StatusInternalServerError, iErr.Msg())
 			r.Errorf("inner Error: %s(code=%d)\n%s", iErr.Msg(), iErr.Code(), iErr.Stack())
 			return
 		}
-
-		noneWrappedData(ctx, err, http.StatusBadRequest)
+		noneWrappedData(ctx, err, err.GetStatusCode())
 		return
 	}
 
@@ -103,17 +106,17 @@ func (r *responser) Failed(ctx XContext, oErr error) {
 
 	var bErr BusinessError
 	if errors.As(err, &bErr) {
-		ctx.JSON(http.StatusOK, wrapFunc(bErr.Code(), bErr.Msg(), bErr.Data()))
+		ctx.JSON(bErr.GetStatusCode(), wrapFunc(bErr.Code(), bErr.Msg(), bErr.Data()))
 		return
 	}
 
 	var iErr gone.InnerError
 	if errors.As(err, &iErr) {
-		ctx.JSON(http.StatusInternalServerError, wrapFunc(iErr.Code(), "Internal Server Error", nil))
+		ctx.JSON(iErr.GetStatusCode(), wrapFunc(iErr.Code(), "Internal Server Error", nil))
 		r.Errorf("inner Error: %s(code=%d)\n%s", iErr.Msg(), iErr.Code(), iErr.Stack())
 		return
 	}
-	ctx.JSON(http.StatusBadRequest, wrapFunc(err.Code(), err.Msg(), error(nil)))
+	ctx.JSON(err.GetStatusCode(), wrapFunc(err.Code(), err.Msg(), error(nil)))
 }
 
 func (r *responser) ProcessResults(context XContext, writer gin.ResponseWriter, last bool, funcName string, results ...any) {
