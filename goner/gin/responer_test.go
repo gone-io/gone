@@ -259,6 +259,7 @@ func Test_responser_ProcessResults(t *testing.T) {
 	writer := NewMockResponseWriter(controller)
 
 	ctx.EXPECT().JSON(gomock.Any(), gomock.Any()).AnyTimes()
+	ctx.EXPECT().Abort().AnyTimes()
 
 	t.Run("last=false", func(t *testing.T) {
 		writer.EXPECT().Written().Return(false).AnyTimes()
