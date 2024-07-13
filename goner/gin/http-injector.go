@@ -438,6 +438,10 @@ func (s *httpInjector) parseStringValueAndInject(kind, key string, field reflect
 				return err
 			}
 
+			if value == "" {
+				v.SetInt(0)
+				return nil
+			}
 			def, err := strconv.ParseInt(value, 10, bits)
 			if err != nil {
 				return injectParseStringParameterError(t.Kind(), kind, key, err)
@@ -454,7 +458,10 @@ func (s *httpInjector) parseStringValueAndInject(kind, key string, field reflect
 			if err != nil {
 				return err
 			}
-
+			if value == "" {
+				v.SetUint(0)
+				return nil
+			}
 			def, err := strconv.ParseUint(value, 10, bits)
 			if err != nil {
 				return injectParseStringParameterError(t.Kind(), kind, key, err)
@@ -471,7 +478,10 @@ func (s *httpInjector) parseStringValueAndInject(kind, key string, field reflect
 			if err != nil {
 				return err
 			}
-
+			if value == "" {
+				v.SetFloat(0)
+				return nil
+			}
 			def, err := strconv.ParseFloat(value, bits)
 			if err != nil {
 				return injectParseStringParameterError(t.Kind(), kind, key, err)
