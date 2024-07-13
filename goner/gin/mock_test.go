@@ -134,6 +134,18 @@ func (m *MockXContext) EXPECT() *MockXContextMockRecorder {
 	return m.recorder
 }
 
+// Abort mocks base method.
+func (m *MockXContext) Abort() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Abort")
+}
+
+// Abort indicates an expected call of Abort.
+func (mr *MockXContextMockRecorder) Abort() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Abort", reflect.TypeOf((*MockXContext)(nil).Abort))
+}
+
 // JSON mocks base method.
 func (m *MockXContext) JSON(code int, obj any) {
 	m.ctrl.T.Helper()
@@ -276,4 +288,40 @@ func (m *MockHttInjector) StartBindFuncs() {
 func (mr *MockHttInjectorMockRecorder) StartBindFuncs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartBindFuncs", reflect.TypeOf((*MockHttInjector)(nil).StartBindFuncs))
+}
+
+// MockMiddleware is a mock of Middleware interface.
+type MockMiddleware struct {
+	goneMock.Flag
+	ctrl     *gomock.Controller
+	recorder *MockMiddlewareMockRecorder
+}
+
+// MockMiddlewareMockRecorder is the mock recorder for MockMiddleware.
+type MockMiddlewareMockRecorder struct {
+	mock *MockMiddleware
+}
+
+// NewMockMiddleware creates a new mock instance.
+func NewMockMiddleware(ctrl *gomock.Controller) *MockMiddleware {
+	mock := &MockMiddleware{ctrl: ctrl}
+	mock.recorder = &MockMiddlewareMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMiddleware) EXPECT() *MockMiddlewareMockRecorder {
+	return m.recorder
+}
+
+// Process mocks base method.
+func (m *MockMiddleware) Process(ctx *gin.Context) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Process", ctx)
+}
+
+// Process indicates an expected call of Process.
+func (mr *MockMiddlewareMockRecorder) Process(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*MockMiddleware)(nil).Process), ctx)
 }
