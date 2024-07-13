@@ -120,6 +120,14 @@ func (r *responser) Failed(ctx XContext, oErr error) {
 }
 
 func (r *responser) ProcessResults(context XContext, writer gin.ResponseWriter, last bool, funcName string, results ...any) {
+	for _, result := range results {
+		if err, ok := result.(error); ok {
+			r.Failed(context, err)
+			context.Abort()
+			return
+		}
+	}
+
 	isNotEnd := false
 	for _, result := range results {
 		if result == nil {

@@ -106,6 +106,7 @@ type HandleProxyToGin interface {
 type XContext interface {
 	JSON(code int, obj any)
 	String(code int, format string, values ...any)
+	Abort()
 }
 
 type WrappedDataFunc func(code int, msg string, data any) any
