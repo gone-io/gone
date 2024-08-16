@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -109,11 +110,18 @@ func (p *Pkg) generateFuncContent(isSelfModule bool) string {
 	return ""
 }
 
+func normal(pkgPath string) string {
+	if runtime.GOOS == "windows" {
+		return strings.ReplaceAll(pkgPath, "\\", "/")
+	}
+	return pkgPath
+}
+
 func (p *Pkg) genImportContent() string {
 	if path.Base(p.PkgPath) != p.Name {
-		return fmt.Sprintf("    %s \"%s\"", p.Name, p.PkgPath)
+		return fmt.Sprintf("    %s \"%s\"", p.Name, normal(p.PkgPath))
 	} else {
-		return fmt.Sprintf("    \"%s\"", p.PkgPath)
+		return fmt.Sprintf("    \"%s\"", normal(p.PkgPath))
 	}
 }
 
