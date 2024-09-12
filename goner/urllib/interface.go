@@ -6,6 +6,7 @@ import "github.com/imroc/req/v3"
 
 type Client interface {
 	R() *req.Request
+	C() *req.Client
 }
 
 type Res[T any] struct {
