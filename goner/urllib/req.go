@@ -35,3 +35,9 @@ func (r *r) AfterRevive() gone.AfterReviveError {
 
 	return nil
 }
+
+func (r *r) C() *req.Client {
+	c := req.C()
+	c.WrapRoundTripFunc(r.trip)
+	return c
+}
