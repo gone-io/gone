@@ -30,7 +30,7 @@ func action(ctx *cli.Context) error {
 	return doAction(ctx.String("f"), ctx.String("o"))
 }
 
-func doAction(fromfile, outfile string) error {
+func doAction(fromFile, outfile string) error {
 	err := os.MkdirAll(filepath.Dir(outfile), os.ModePerm)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func doAction(fromfile, outfile string) error {
 	if isInputFromPipe() {
 		return patchMock(os.Stdin, outFile)
 	} else {
-		file, e := getFile(fromfile)
+		file, e := getFile(fromFile)
 		if e != nil {
 			return e
 		}
