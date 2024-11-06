@@ -58,6 +58,16 @@ func (p *Preparer) Bury(goner Goner) *Preparer {
 	return p.Load(goner)
 }
 
+func (p *Preparer) LoadPriest(priests ...Priest) *Preparer {
+	for _, priest := range priests {
+		err := priest(p.heaven.GetCemetery())
+		if err != nil {
+			panic(err)
+		}
+	}
+	return p
+}
+
 func Prepare(priests ...Priest) *Preparer {
 	h := New(priests...)
 
