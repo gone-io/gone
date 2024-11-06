@@ -47,6 +47,10 @@ type heaven struct {
 	afterStopSignalWaitSecond int
 }
 
+func (h *heaven) GetCemetery() Cemetery {
+	return h.cemetery
+}
+
 func (h *heaven) SetAfterStopSignalWaitSecond(sec int) {
 	h.afterStopSignalWaitSecond = sec
 }

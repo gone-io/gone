@@ -50,6 +50,14 @@ func (p *Preparer) Serve(fns ...any) {
 		Stop()
 }
 
+func (p *Preparer) Load(goner Goner) *Preparer {
+	p.heaven.GetCemetery().Bury(goner)
+	return p
+}
+func (p *Preparer) Bury(goner Goner) *Preparer {
+	return p.Load(goner)
+}
+
 func Prepare(priests ...Priest) *Preparer {
 	h := New(priests...)
 
@@ -57,6 +65,8 @@ func Prepare(priests ...Priest) *Preparer {
 		heaven: h,
 	}
 }
+
+var Default = Prepare()
 
 /*
 Run A Gone Program；

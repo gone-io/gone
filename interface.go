@@ -127,6 +127,8 @@ type Heaven interface {
 	AfterStop(Process) Heaven
 
 	SetAfterStopSignalWaitSecond(sec int)
+
+	GetCemetery() Cemetery
 }
 
 type AfterReviveError error
