@@ -51,7 +51,11 @@ func (p *Preparer) Serve(fns ...any) {
 }
 
 func (p *Preparer) Load(goner Goner) *Preparer {
-	p.heaven.GetCemetery().Bury(goner)
+	if gonerWithId, ok := goner.(NamedGoner); ok {
+		p.heaven.GetCemetery().Bury(goner, gonerWithId.GetGonerId())
+	} else {
+		p.heaven.GetCemetery().Bury(goner)
+	}
 	return p
 }
 func (p *Preparer) Bury(goner Goner) *Preparer {

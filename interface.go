@@ -268,3 +268,7 @@ type Configure interface {
 	//Get the value from config system
 	Get(key string, v any, defaultVal string) error
 }
+
+type NamedGoner interface {
+	GetGonerId() GonerId
+}
