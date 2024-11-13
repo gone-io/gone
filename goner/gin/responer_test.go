@@ -2,9 +2,9 @@ package gin
 
 import (
 	"errors"
-	"github.com/golang/mock/gomock"
 	"github.com/gone-io/gone/internal/json"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"net/http"
 	"strings"
 	"testing"

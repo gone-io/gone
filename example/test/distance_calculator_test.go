@@ -2,9 +2,9 @@ package test
 
 import (
 	"example/test/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/gone-io/gone"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"testing"
 )
 

@@ -1,13 +1,13 @@
 package schedule
 
 import (
-	"github.com/golang/mock/gomock"
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/goner/logrus"
 	"github.com/gone-io/gone/goner/redis"
 	"github.com/gone-io/gone/goner/tracer"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"sync"
 	"testing"
 	"time"
