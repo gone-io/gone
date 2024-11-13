@@ -50,6 +50,33 @@ Gone is a lightweight golang dependency injection framework; a series of Goners 
     - goner/viper, used to parse various configuration files.
     - ...
 
+## Quick Start
+1. Install [gonectr](https://github.com/gone-io/gonectr) and [mockgen](https://github.com/uber-go/mock/tree/main)
+    ```bash
+    go install github.com/gone-io/gonectr@latest
+    go install go.uber.org/mock/mockgen@latest
+    ```
+2. Create a new project
+    ```bash
+    gonectr create myproject
+    ```
+3. Run the project
+    ```bash
+    cd myproject
+    gonectr run ./cmd/server
+    ```
+    Or use run Make command if you have installed [make](https://www.gnu.org/software/make/):
+    ```bash
+    cd myproject
+    make run
+    ```
+    Or with docker compose:
+    ```bash
+    cd myproject
+    docker compose build
+    docker compose up
+    ```
+
 ## Dependency Injection and Startup
 Here's an example:
 ```go

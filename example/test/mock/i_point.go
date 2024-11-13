@@ -8,7 +8,7 @@ import (
 	goneMock "github.com/gone-io/gone"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockIPoint is a mock of IPoint interface.

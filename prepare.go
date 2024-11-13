@@ -50,6 +50,28 @@ func (p *Preparer) Serve(fns ...any) {
 		Stop()
 }
 
+func (p *Preparer) Load(goner Goner) *Preparer {
+	if gonerWithId, ok := goner.(NamedGoner); ok {
+		p.heaven.GetCemetery().Bury(goner, gonerWithId.GetGonerId())
+	} else {
+		p.heaven.GetCemetery().Bury(goner)
+	}
+	return p
+}
+func (p *Preparer) Bury(goner Goner) *Preparer {
+	return p.Load(goner)
+}
+
+func (p *Preparer) LoadPriest(priests ...Priest) *Preparer {
+	for _, priest := range priests {
+		err := priest(p.heaven.GetCemetery())
+		if err != nil {
+			panic(err)
+		}
+	}
+	return p
+}
+
 func Prepare(priests ...Priest) *Preparer {
 	h := New(priests...)
 
@@ -57,6 +79,8 @@ func Prepare(priests ...Priest) *Preparer {
 		heaven: h,
 	}
 }
+
+var Default = Prepare()
 
 /*
 Run A Gone Program；

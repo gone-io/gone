@@ -16,7 +16,7 @@ func newEngine(driverName string, dataSourceName string) (xorm.EngineInterface, 
 	return xorm.NewEngine(driverName, dataSourceName)
 }
 
-//go:generate mockgen -package xorm  xorm.io/xorm EngineInterface > ./engine_mock_test.go
+//go:generate mockgen -package xorm -destination=./engine_mock_test.go xorm.io/xorm EngineInterface
 type engine struct {
 	gone.Flag
 	xorm.EngineInterface

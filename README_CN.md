@@ -47,6 +47,33 @@ Gone 是一个轻量级的golang依赖注入框架；内置了一系列Goners组
   - goner/viper，用于解析多种配置文件
   - ...
 
+## 快速开始
+1. 安装 [gonectr](https://github.com/gone-io/gonectr) 和 [mockgen](https://github.com/uber-go/mock/tree/main)
+    ```bash
+    go install github.com/gone-io/gonectr@latest
+    go install go.uber.org/mock/mockgen@latest
+    ```
+2. 创建一个项目
+    ```bash
+    gonectr create myproject
+    ```
+3. 运行项目
+    ```bash
+    cd myproject
+    gonectr run ./cmd/server
+    ```
+   或者，使用make命令运行，如果你已经安装[make](https://www.gnu.org/software/make/):
+    ```bash
+    cd myproject
+    make run
+    ```
+   或者使用docker compose来运行:
+    ```bash
+    cd myproject
+    docker compose build
+    docker compose up
+    ```
+
 ## 依赖注入与启动
 看一个例子：
 ```go

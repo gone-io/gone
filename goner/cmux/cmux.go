@@ -70,7 +70,7 @@ func (s *server) Start(gone.Cemetery) error {
 		mutex.Unlock()
 		s.processStartError(err)
 	})
-	<-time.After(10 * time.Millisecond)
+	<-time.After(20 * time.Millisecond)
 	return err
 }
 func (s *server) processStartError(err error) {

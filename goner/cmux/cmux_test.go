@@ -2,10 +2,10 @@ package cmux
 
 import (
 	"errors"
-	"github.com/golang/mock/gomock"
 	"github.com/gone-io/gone"
 	Cmux "github.com/soheilhy/cmux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"net"
 	"testing"
 )
