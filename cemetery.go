@@ -284,6 +284,8 @@ func (c *cemetery) reviveSpecialTypeFields(field reflect.StructField, v reflect.
 			v.Set(m)
 			suc = true
 		}
+	default:
+		suc = false
 	}
 	return
 }
