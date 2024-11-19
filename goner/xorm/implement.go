@@ -16,18 +16,28 @@ func newEngine(driverName string, dataSourceName string) (xorm.EngineInterface, 
 	return xorm.NewEngine(driverName, dataSourceName)
 }
 
+type ClusterNodeConf struct {
+	DriverName string `properties:"driver-name" mapstructure:"driver-name"`
+	DSN        string `properties:"dsn" mapstructure:"dsn"`
+}
+
 //go:generate mockgen -package xorm -destination=./engine_mock_test.go xorm.io/xorm EngineInterface
 type engine struct {
 	gone.Flag
 	xorm.EngineInterface
 	gone.Logger `gone:"gone-logger"`
 
-	driverName   string        `gone:"config,database.driver-name"`
-	dsn          string        `gone:"config,database.dsn"`
-	maxIdleCount int           `gone:"config,database.max-idle-count"`
-	maxOpen      int           `gone:"config,database.max-open"`
-	maxLifetime  time.Duration `gone:"config,database.max-lifetime"`
-	showSql      bool          `gone:"config,database.showSql,default=false"`
+	driverName    string             `gone:"config,database.driver-name"`
+	dsn           string             `gone:"config,database.dsn"`
+	maxIdleCount  int                `gone:"config,database.max-idle-count"`
+	maxOpen       int                `gone:"config,database.max-open"`
+	maxLifetime   time.Duration      `gone:"config,database.max-lifetime"`
+	showSql       bool               `gone:"config,database.showSql,default=false"`
+	enableCluster bool               `gone:"config,database.cluster.enable,default=false"`
+	masterConf    *ClusterNodeConf   `gone:"config,database.cluster.master"`
+	slavesConf    []*ClusterNodeConf `gone:"config,database.cluster.slaves"`
+
+	group *xorm.EngineGroup
 
 	newFunc func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
 }
@@ -49,10 +59,39 @@ func (e *engine) create() error {
 		return gone.NewInnerError("duplicate call Start()", gone.StartError)
 	}
 
-	var err error
-	e.EngineInterface, err = e.newFunc(e.driverName, e.dsn)
-	if err != nil {
-		return gone.NewInnerError(err.Error(), gone.StartError)
+	if e.enableCluster {
+		if e.masterConf == nil {
+			return gone.NewInnerError("master config(database.cluster.master) is nil", gone.StartError)
+		}
+
+		if len(e.slavesConf) == 0 {
+			return gone.NewInnerError("slaves config(database.cluster.slaves) is nil", gone.StartError)
+		}
+		master, err := e.newFunc(e.masterConf.DriverName, e.masterConf.DSN)
+		if err != nil {
+			return gone.NewInnerError(err.Error(), gone.StartError)
+		}
+
+		slaves := make([]*xorm.Engine, 0, len(e.slavesConf))
+		for _, slave := range e.slavesConf {
+			slaveEngine, err := e.newFunc(slave.DriverName, slave.DSN)
+			if err != nil {
+				return gone.NewInnerError(err.Error(), gone.StartError)
+			}
+			slaves = append(slaves, slaveEngine.(*xorm.Engine))
+		}
+
+		e.group, err = xorm.NewEngineGroup(master, slaves)
+		if err != nil {
+			return gone.NewInnerError(err.Error(), gone.StartError)
+		}
+		e.EngineInterface = e.group
+	} else {
+		var err error
+		e.EngineInterface, err = e.newFunc(e.driverName, e.dsn)
+		if err != nil {
+			return gone.NewInnerError(err.Error(), gone.StartError)
+		}
 	}
 	return nil
 }
@@ -65,7 +104,11 @@ func (e *engine) config() {
 }
 
 func (e *engine) Stop(gone.Cemetery) error {
-	return e.EngineInterface.(*xorm.Engine).Close()
+	if e.group != nil {
+		return e.group.Close()
+	} else {
+		return e.EngineInterface.(*xorm.Engine).Close()
+	}
 }
 
 func (e *engine) Sqlx(sql string, args ...any) *xorm.Session {
