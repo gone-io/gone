@@ -3,8 +3,6 @@ package xorm
 import (
 	"fmt"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"strconv"
 	"strings"
