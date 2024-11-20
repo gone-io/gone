@@ -7,13 +7,18 @@ import (
 )
 
 func NewXormEngine() (gone.Angel, gone.GonerId, gone.GonerOption, gone.GonerOption) {
-	return &engine{
-		newFunc: newEngine,
+	return &wrappedEngine{
+		newFunc:    newEngine,
+		newSession: newSession,
 	}, gone.IdGoneXorm, gone.IsDefault(new(gone.XormEngine)), gone.Order3
 }
 
 func newEngine(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 	return xorm.NewEngine(driverName, dataSourceName)
+}
+
+func newSession(eng xorm.EngineInterface) XInterface {
+	return eng.NewSession()
 }
 
 type ClusterNodeConf struct {
@@ -22,7 +27,7 @@ type ClusterNodeConf struct {
 }
 
 //go:generate mockgen -package xorm -destination=./engine_mock_test.go xorm.io/xorm EngineInterface
-type engine struct {
+type wrappedEngine struct {
 	gone.Flag
 	xorm.EngineInterface
 	gone.Logger `gone:"gone-logger"`
@@ -40,13 +45,15 @@ type engine struct {
 	group *xorm.EngineGroup
 
 	newFunc func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
+
+	newSession func(xorm.EngineInterface) XInterface
 }
 
-func (e *engine) GetOriginEngine() xorm.EngineInterface {
+func (e *wrappedEngine) GetOriginEngine() xorm.EngineInterface {
 	return e.EngineInterface
 }
 
-func (e *engine) Start(gone.Cemetery) error {
+func (e *wrappedEngine) Start(gone.Cemetery) error {
 	err := e.create()
 	if err != nil {
 		return err
@@ -54,7 +61,7 @@ func (e *engine) Start(gone.Cemetery) error {
 	e.config()
 	return e.Ping()
 }
-func (e *engine) create() error {
+func (e *wrappedEngine) create() error {
 	if e.EngineInterface != nil {
 		return gone.NewInnerError("duplicate call Start()", gone.StartError)
 	}
@@ -96,14 +103,14 @@ func (e *engine) create() error {
 	return nil
 }
 
-func (e *engine) config() {
+func (e *wrappedEngine) config() {
 	e.SetConnMaxLifetime(e.maxLifetime)
 	e.SetMaxOpenConns(e.maxOpen)
 	e.SetMaxIdleConns(e.maxIdleCount)
 	e.SetLogger(&dbLogger{Logger: e.Logger, showSql: e.showSql})
 }
 
-func (e *engine) Stop(gone.Cemetery) error {
+func (e *wrappedEngine) Stop(gone.Cemetery) error {
 	if e.group != nil {
 		return e.group.Close()
 	} else {
@@ -111,7 +118,7 @@ func (e *engine) Stop(gone.Cemetery) error {
 	}
 }
 
-func (e *engine) Sqlx(sql string, args ...any) *xorm.Session {
+func (e *wrappedEngine) Sqlx(sql string, args ...any) *xorm.Session {
 	sql, args = sqlDeal(sql, args...)
 	return e.SQL(sql, args...)
 }

@@ -7,6 +7,6 @@ import (
 func Priest(cemetery gone.Cemetery) error {
 	xormEngine, id, option, g := NewXormEngine()
 	cemetery.BuryOnce(xormEngine, id, option, g)
-	cemetery.BuryOnce(NewProvider(xormEngine.(*engine)))
+	cemetery.BuryOnce(NewProvider(xormEngine.(*wrappedEngine)))
 	return nil
 }

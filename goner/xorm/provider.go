@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func NewProvider(engine *engine) (gone.Vampire, gone.GonerOption) {
+func NewProvider(engine *wrappedEngine) (gone.Vampire, gone.GonerOption) {
 	return &provider{
 		engine: engine,
 	}, gone.GonerId("xorm")
@@ -16,7 +16,7 @@ func NewProvider(engine *engine) (gone.Vampire, gone.GonerOption) {
 
 type provider struct {
 	gone.Flag
-	engine      *engine
+	engine      *wrappedEngine
 	gone.Logger `gone:"*"`
 }
 
@@ -31,7 +31,7 @@ func (e *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 	switch v.Type() {
 	case xormInterface:
 		if conf == "master" {
-			v.Set(reflect.ValueOf(&engine{
+			v.Set(reflect.ValueOf(&wrappedEngine{
 				EngineInterface: e.engine.group.Master(),
 			}))
 			return nil
@@ -45,7 +45,7 @@ func (e *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 				slaves := e.engine.group.Slaves()
 				if int(i) < len(slaves) {
 					v.Set(reflect.ValueOf(
-						&engine{
+						&wrappedEngine{
 							EngineInterface: slaves[i],
 						},
 					))
@@ -63,7 +63,7 @@ func (e *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 		engines := e.engine.group.Slaves()
 		xormEngines := make([]gone.XormEngine, 0, len(engines))
 		for _, eng := range engines {
-			xormEngines = append(xormEngines, &engine{
+			xormEngines = append(xormEngines, &wrappedEngine{
 				EngineInterface: eng,
 			})
 		}

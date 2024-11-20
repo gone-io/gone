@@ -11,12 +11,6 @@ import (
 	"xorm.io/xorm"
 )
 
-var x func() XInterface
-
-func (e *engine) NewSession() XInterface {
-	return x()
-}
-
 func Test_session(t *testing.T) {
 	gone.Prepare(func(cemetery gone.Cemetery) error {
 		_ = config.Priest(cemetery)
@@ -30,21 +24,20 @@ func Test_session(t *testing.T) {
 			controller := gomock.NewController(t)
 			defer controller.Finish()
 
-			x = func() XInterface {
-				session := NewMockXInterface(controller)
-				session.EXPECT().Begin().Return(nil)
-				session.EXPECT().Close().Return(nil)
-				session.EXPECT().Commit().Return(nil)
-
-				return session
-			}
-
 			engineInterface := NewMockEngineInterface(controller)
 
-			e := engine{
+			e := wrappedEngine{
 				Logger: in.logger,
 				newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 					return engineInterface, nil
+				},
+				newSession: func(engineInterface xorm.EngineInterface) XInterface {
+					session := NewMockXInterface(controller)
+					session.EXPECT().Begin().Return(nil)
+					session.EXPECT().Close().Return(nil)
+					session.EXPECT().Commit().Return(nil)
+
+					return session
 				},
 			}
 
@@ -62,21 +55,20 @@ func Test_session(t *testing.T) {
 			controller := gomock.NewController(t)
 			defer controller.Finish()
 
-			x = func() XInterface {
-				session := NewMockXInterface(controller)
-				session.EXPECT().Begin().Return(nil)
-				session.EXPECT().Close().Return(errors.New("error"))
-				session.EXPECT().Commit().Return(nil)
-
-				return session
-			}
-
 			engineInterface := NewMockEngineInterface(controller)
 
-			e := engine{
+			e := wrappedEngine{
 				Logger: in.logger,
 				newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 					return engineInterface, nil
+				},
+				newSession: func(engineInterface xorm.EngineInterface) XInterface {
+					session := NewMockXInterface(controller)
+					session.EXPECT().Begin().Return(nil)
+					session.EXPECT().Close().Return(errors.New("error"))
+					session.EXPECT().Commit().Return(nil)
+
+					return session
 				},
 			}
 
@@ -94,21 +86,20 @@ func Test_session(t *testing.T) {
 			controller := gomock.NewController(t)
 			defer controller.Finish()
 
-			x = func() XInterface {
-				session := NewMockXInterface(controller)
-				session.EXPECT().Begin().Return(nil)
-				session.EXPECT().Close().Return(nil)
-				session.EXPECT().Rollback().Return(nil)
-
-				return session
-			}
-
 			engineInterface := NewMockEngineInterface(controller)
 
-			e := engine{
+			e := wrappedEngine{
 				Logger: in.logger,
 				newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 					return engineInterface, nil
+				},
+				newSession: func(engineInterface xorm.EngineInterface) XInterface {
+					session := NewMockXInterface(controller)
+					session.EXPECT().Begin().Return(nil)
+					session.EXPECT().Close().Return(nil)
+					session.EXPECT().Rollback().Return(nil)
+
+					return session
 				},
 			}
 
@@ -126,20 +117,19 @@ func Test_session(t *testing.T) {
 			controller := gomock.NewController(t)
 			defer controller.Finish()
 
-			x = func() XInterface {
-				session := NewMockXInterface(controller)
-				session.EXPECT().Begin().Return(errors.New("error"))
-				session.EXPECT().Close().Return(nil)
-
-				return session
-			}
-
 			engineInterface := NewMockEngineInterface(controller)
 
-			e := engine{
+			e := wrappedEngine{
 				Logger: in.logger,
 				newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 					return engineInterface, nil
+				},
+				newSession: func(engineInterface xorm.EngineInterface) XInterface {
+					session := NewMockXInterface(controller)
+					session.EXPECT().Begin().Return(errors.New("error"))
+					session.EXPECT().Close().Return(nil)
+
+					return session
 				},
 			}
 
@@ -166,23 +156,22 @@ func Test_session(t *testing.T) {
 					}
 				}()
 
-				x = func() XInterface {
-					session := NewMockXInterface(controller)
-					session.EXPECT().Begin().Return(nil)
-					session.EXPECT().Close().Return(nil)
-					session.EXPECT().Rollback().Do(func() {
-						panic("error")
-					}).Return(nil)
-
-					return session
-				}
-
 				engineInterface := NewMockEngineInterface(controller)
 
-				e := engine{
+				e := wrappedEngine{
 					Logger: in.logger,
 					newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 						return engineInterface, nil
+					},
+					newSession: func(engineInterface xorm.EngineInterface) XInterface {
+						session := NewMockXInterface(controller)
+						session.EXPECT().Begin().Return(nil)
+						session.EXPECT().Close().Return(nil)
+						session.EXPECT().Rollback().Do(func() {
+							panic("error")
+						}).Return(nil)
+
+						return session
 					},
 				}
 
@@ -202,21 +191,20 @@ func Test_session(t *testing.T) {
 				controller := gomock.NewController(t)
 				defer controller.Finish()
 
-				x = func() XInterface {
-					session := NewMockXInterface(controller)
-					session.EXPECT().Begin().Return(nil)
-					session.EXPECT().Close().Return(nil)
-					session.EXPECT().Rollback().Return(errors.New("error"))
-
-					return session
-				}
-
 				engineInterface := NewMockEngineInterface(controller)
 
-				e := engine{
+				e := wrappedEngine{
 					Logger: in.logger,
 					newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 						return engineInterface, nil
+					},
+					newSession: func(engineInterface xorm.EngineInterface) XInterface {
+						session := NewMockXInterface(controller)
+						session.EXPECT().Begin().Return(nil)
+						session.EXPECT().Close().Return(nil)
+						session.EXPECT().Rollback().Return(errors.New("error"))
+
+						return session
 					},
 				}
 
@@ -235,21 +223,20 @@ func Test_session(t *testing.T) {
 				controller := gomock.NewController(t)
 				defer controller.Finish()
 
-				x = func() XInterface {
-					session := NewMockXInterface(controller)
-					session.EXPECT().Begin().Return(nil)
-					session.EXPECT().Close().Return(nil)
-					session.EXPECT().Rollback().Return(nil)
-
-					return session
-				}
-
 				engineInterface := NewMockEngineInterface(controller)
 
-				e := engine{
+				e := wrappedEngine{
 					Logger: in.logger,
 					newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 						return engineInterface, nil
+					},
+					newSession: func(engineInterface xorm.EngineInterface) XInterface {
+						session := NewMockXInterface(controller)
+						session.EXPECT().Begin().Return(nil)
+						session.EXPECT().Close().Return(nil)
+						session.EXPECT().Rollback().Return(nil)
+
+						return session
 					},
 				}
 
