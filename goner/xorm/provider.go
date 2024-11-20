@@ -24,7 +24,7 @@ var xormInterface = gone.GetInterfaceType(new(gone.XormEngine))
 var xormInterfaceSlice = gone.GetInterfaceType(new([]gone.XormEngine))
 
 func (e *provider) Suck(conf string, v reflect.Value) gone.SuckError {
-	if !e.engine.enableCluster {
+	if !e.engine.conf.EnableCluster {
 		return gone.NewInnerError("cluster is not enabled, xorm only support cluster", gone.InjectError)
 	}
 

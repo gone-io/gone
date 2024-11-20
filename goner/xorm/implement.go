@@ -26,27 +26,29 @@ type ClusterNodeConf struct {
 	DSN        string `properties:"dsn" mapstructure:"dsn"`
 }
 
+type Conf struct {
+	DriverName    string             `properties:"driver-name" mapstructure:"driver-name"`
+	Dsn           string             `properties:"dsn" mapstructure:"dsn"`
+	MaxIdleCount  int                `properties:"max-idle-count" mapstructure:"max-idle-count"`
+	MaxOpen       int                `properties:"max-open" mapstructure:"max-open"`
+	MaxLifetime   time.Duration      `properties:"max-lifetime" mapstructure:"max-lifetime"`
+	ShowSql       bool               `properties:"show-sql" mapstructure:"show-sql"`
+	EnableCluster bool               `properties:"cluster.enable" mapstructure:"cluster.enable"`
+	MasterConf    *ClusterNodeConf   `properties:"cluster.master" mapstructure:"cluster.master"`
+	SlavesConf    []*ClusterNodeConf `properties:"cluster.slaves" mapstructure:"cluster.slaves"`
+}
+
 //go:generate mockgen -package xorm -destination=./engine_mock_test.go xorm.io/xorm EngineInterface
 type wrappedEngine struct {
 	gone.Flag
 	xorm.EngineInterface
-	gone.Logger `gone:"gone-logger"`
-
-	driverName    string             `gone:"config,database.driver-name"`
-	dsn           string             `gone:"config,database.dsn"`
-	maxIdleCount  int                `gone:"config,database.max-idle-count"`
-	maxOpen       int                `gone:"config,database.max-open"`
-	maxLifetime   time.Duration      `gone:"config,database.max-lifetime"`
-	showSql       bool               `gone:"config,database.showSql,default=false"`
-	enableCluster bool               `gone:"config,database.cluster.enable,default=false"`
-	masterConf    *ClusterNodeConf   `gone:"config,database.cluster.master"`
-	slavesConf    []*ClusterNodeConf `gone:"config,database.cluster.slaves"`
-
 	group *xorm.EngineGroup
 
-	newFunc func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
-
+	newFunc    func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
 	newSession func(xorm.EngineInterface) XInterface
+
+	gone.Logger `gone:"gone-logger"`
+	conf        *Conf `gone:"config,database"`
 }
 
 func (e *wrappedEngine) GetOriginEngine() xorm.EngineInterface {
@@ -66,21 +68,21 @@ func (e *wrappedEngine) create() error {
 		return gone.NewInnerError("duplicate call Start()", gone.StartError)
 	}
 
-	if e.enableCluster {
-		if e.masterConf == nil {
+	if e.conf.EnableCluster {
+		if e.conf.MasterConf == nil {
 			return gone.NewInnerError("master config(database.cluster.master) is nil", gone.StartError)
 		}
 
-		if len(e.slavesConf) == 0 {
+		if len(e.conf.SlavesConf) == 0 {
 			return gone.NewInnerError("slaves config(database.cluster.slaves) is nil", gone.StartError)
 		}
-		master, err := e.newFunc(e.masterConf.DriverName, e.masterConf.DSN)
+		master, err := e.newFunc(e.conf.MasterConf.DriverName, e.conf.MasterConf.DSN)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
 		}
 
-		slaves := make([]*xorm.Engine, 0, len(e.slavesConf))
-		for _, slave := range e.slavesConf {
+		slaves := make([]*xorm.Engine, 0, len(e.conf.SlavesConf))
+		for _, slave := range e.conf.SlavesConf {
 			slaveEngine, err := e.newFunc(slave.DriverName, slave.DSN)
 			if err != nil {
 				return gone.NewInnerError(err.Error(), gone.StartError)
@@ -95,7 +97,7 @@ func (e *wrappedEngine) create() error {
 		e.EngineInterface = e.group
 	} else {
 		var err error
-		e.EngineInterface, err = e.newFunc(e.driverName, e.dsn)
+		e.EngineInterface, err = e.newFunc(e.conf.DriverName, e.conf.Dsn)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
 		}
@@ -104,10 +106,10 @@ func (e *wrappedEngine) create() error {
 }
 
 func (e *wrappedEngine) config() {
-	e.SetConnMaxLifetime(e.maxLifetime)
-	e.SetMaxOpenConns(e.maxOpen)
-	e.SetMaxIdleConns(e.maxIdleCount)
-	e.SetLogger(&dbLogger{Logger: e.Logger, showSql: e.showSql})
+	e.SetConnMaxLifetime(e.conf.MaxLifetime)
+	e.SetMaxOpenConns(e.conf.MaxOpen)
+	e.SetMaxIdleConns(e.conf.MaxIdleCount)
+	e.SetLogger(&dbLogger{Logger: e.Logger, showSql: e.conf.ShowSql})
 }
 
 func (e *wrappedEngine) Stop(gone.Cemetery) error {
