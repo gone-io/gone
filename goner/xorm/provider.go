@@ -84,7 +84,7 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 		}
 
 		db = newWrappedEngine()
-		db.conf = &config
+		db.conf = config
 		db.masterConf = &masterConf
 		db.slavesConf = slavesConf
 

@@ -111,7 +111,7 @@ func Test_provider_Suck(t *testing.T) {
 				session := NewMockXInterface(controller)
 				return session
 			},
-			conf: &Conf{
+			conf: Conf{
 				EnableCluster: true,
 			},
 			masterConf: &ClusterNodeConf{

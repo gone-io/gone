@@ -51,7 +51,7 @@ type wrappedEngine struct {
 	newSession func(xorm.EngineInterface) XInterface
 
 	log  gone.Logger `gone:"gone-logger"`
-	conf *Conf       `gone:"config,database"`
+	conf Conf        `gone:"config,database"`
 
 	masterConf *ClusterNodeConf   `gone:"config,database.cluster.master"`
 	slavesConf []*ClusterNodeConf `gone:"config,database.cluster.slaves"`
