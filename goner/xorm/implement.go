@@ -27,32 +27,36 @@ func newSession(eng xorm.EngineInterface) XInterface {
 }
 
 type ClusterNodeConf struct {
-	DriverName string `properties:"driver-name" mapstructure:"driver-name"`
-	DSN        string `properties:"dsn" mapstructure:"dsn"`
+	DriverName string `properties:"driver-name,default=driver" mapstructure:"driver-name"`
+	DSN        string `properties:"dsn,default=dsn" mapstructure:"dsn"`
 }
 
 type Conf struct {
-	DriverName    string             `properties:"driver-name" mapstructure:"driver-name"`
-	Dsn           string             `properties:"dsn" mapstructure:"dsn"`
-	MaxIdleCount  int                `properties:"max-idle-count" mapstructure:"max-idle-count"`
-	MaxOpen       int                `properties:"max-open" mapstructure:"max-open"`
-	MaxLifetime   time.Duration      `properties:"max-lifetime" mapstructure:"max-lifetime"`
-	ShowSql       bool               `properties:"show-sql" mapstructure:"show-sql"`
-	EnableCluster bool               `properties:"cluster.enable" mapstructure:"cluster.enable"`
-	MasterConf    *ClusterNodeConf   `properties:"cluster.master" mapstructure:"cluster.master"`
-	SlavesConf    []*ClusterNodeConf `properties:"cluster.slaves" mapstructure:"cluster.slaves"`
+	DriverName    string        `properties:"driver-name,default=driver" mapstructure:"driver-name"`
+	Dsn           string        `properties:"dsn,default=dsn" mapstructure:"dsn"`
+	MaxIdleCount  int           `properties:"max-idle-count,default=5" mapstructure:"max-idle-count"`
+	MaxOpen       int           `properties:"max-open,default=20" mapstructure:"max-open"`
+	MaxLifetime   time.Duration `properties:"max-lifetime,default=10m" mapstructure:"max-lifetime"`
+	ShowSql       bool          `properties:"show-sql,default=true" mapstructure:"show-sql"`
+	EnableCluster bool          `properties:"cluster.enable,default=false" mapstructure:"cluster.enable"`
 }
 
 //go:generate mockgen -package xorm -destination=./engine_mock_test.go xorm.io/xorm EngineInterface
 type wrappedEngine struct {
 	gone.Flag
 	xorm.EngineInterface
+	group *xorm.EngineGroup
 
 	newFunc    func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
 	newSession func(xorm.EngineInterface) XInterface
 
 	log  gone.Logger `gone:"gone-logger"`
 	conf *Conf       `gone:"config,database"`
+
+	masterConf *ClusterNodeConf   `gone:"config,database.cluster.master"`
+	slavesConf []*ClusterNodeConf `gone:"config,database.cluster.slaves"`
+
+	unitTest bool
 }
 
 func (e *wrappedEngine) GetOriginEngine() xorm.EngineInterface {
@@ -64,6 +68,9 @@ func (e *wrappedEngine) Start(gone.Cemetery) error {
 	if err != nil {
 		return err
 	}
+	if e.unitTest {
+		return nil
+	}
 	e.config()
 	return e.Ping()
 }
@@ -73,20 +80,20 @@ func (e *wrappedEngine) create() error {
 	}
 
 	if e.conf.EnableCluster {
-		if e.conf.MasterConf == nil {
+		if e.masterConf == nil {
 			return gone.NewInnerError("master config(database.cluster.master) is nil", gone.StartError)
 		}
 
-		if len(e.conf.SlavesConf) == 0 {
+		if len(e.slavesConf) == 0 {
 			return gone.NewInnerError("slaves config(database.cluster.slaves) is nil", gone.StartError)
 		}
-		master, err := e.newFunc(e.conf.MasterConf.DriverName, e.conf.MasterConf.DSN)
+		master, err := e.newFunc(e.masterConf.DriverName, e.masterConf.DSN)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
 		}
 
-		slaves := make([]*xorm.Engine, 0, len(e.conf.SlavesConf))
-		for _, slave := range e.conf.SlavesConf {
+		slaves := make([]*xorm.Engine, 0, len(e.slavesConf))
+		for _, slave := range e.slavesConf {
 			slaveEngine, err := e.newFunc(slave.DriverName, slave.DSN)
 			if err != nil {
 				return gone.NewInnerError(err.Error(), gone.StartError)
@@ -94,10 +101,11 @@ func (e *wrappedEngine) create() error {
 			slaves = append(slaves, slaveEngine.(*xorm.Engine))
 		}
 
-		e.EngineInterface, err = xorm.NewEngineGroup(master, slaves)
+		e.group, err = xorm.NewEngineGroup(master, slaves)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
 		}
+		e.EngineInterface = e.group
 	} else {
 		var err error
 		e.EngineInterface, err = e.newFunc(e.conf.DriverName, e.conf.Dsn)
@@ -116,6 +124,9 @@ func (e *wrappedEngine) config() {
 }
 
 func (e *wrappedEngine) Stop(gone.Cemetery) error {
+	if e.unitTest {
+		return nil
+	}
 	return e.EngineInterface.(io.Closer).Close()
 }
 

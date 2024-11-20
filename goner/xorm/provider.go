@@ -19,6 +19,8 @@ func NewProvider(engine *wrappedEngine) (gone.Vampire, gone.GonerOption) {
 
 	return &provider{
 		engineMap: engineMap,
+		newFunc:   engine.newFunc,
+		unitTest:  engine.unitTest,
 	}, gone.GonerId("xorm")
 }
 
@@ -30,6 +32,9 @@ type provider struct {
 	cemetery  gone.Cemetery  `gone:"*"`
 	configure gone.Configure `gone:"*"`
 	log       gone.Logger    `gone:"*"`
+
+	newFunc  func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
+	unitTest bool
 }
 
 var xormInterface = gone.GetInterfaceType(new(gone.XormEngine))
@@ -66,8 +71,27 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 			return gone.NewInnerError("failed to get config for cluster: "+clusterName, gone.InjectError)
 		}
 
+		var masterConf ClusterNodeConf
+		err = p.configure.Get(clusterName+".cluster.master", &masterConf, "")
+		if err != nil {
+			return gone.NewInnerError("failed to get master config for cluster: "+clusterName, gone.InjectError)
+		}
+
+		var slavesConf []*ClusterNodeConf
+		err = p.configure.Get(clusterName+".cluster.slaves", &slavesConf, "")
+		if err != nil {
+			return gone.NewInnerError("failed to get slaves config for cluster: "+clusterName, gone.InjectError)
+		}
+
 		db = newWrappedEngine()
 		db.conf = &config
+		db.masterConf = &masterConf
+		db.slavesConf = slavesConf
+
+		//for test
+		db.newFunc = p.newFunc
+		db.unitTest = p.unitTest
+
 		err = db.Start(p.cemetery)
 		if err != nil {
 			return gone.NewInnerError("failed to start xorm engine for cluster: "+clusterName, gone.InjectError)
@@ -78,6 +102,7 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 				return engine.Stop(cemetery)
 			}
 		}(db))
+
 		p.engineMap[clusterName] = db
 	}
 
@@ -86,7 +111,7 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 			return gone.NewInnerError(fmt.Sprintf("database(name=%s) is not enable cluster, cannot inject []gone.XormEngine", clusterName), gone.InjectError)
 		}
 
-		engines := db.EngineInterface.(*xorm.EngineGroup).Slaves()
+		engines := db.group.Slaves()
 		xormEngines := make([]gone.XormEngine, 0, len(engines))
 		for _, eng := range engines {
 			xormEngines = append(xormEngines, &wrappedEngine{
@@ -104,7 +129,7 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 			}
 
 			v.Set(reflect.ValueOf(&wrappedEngine{
-				EngineInterface: db.EngineInterface.(*xorm.EngineGroup).Master(),
+				EngineInterface: db.group.Master(),
 			}))
 			return nil
 		}
@@ -114,10 +139,10 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 				return gone.NewInnerError(fmt.Sprintf("database(name=%s) is not enable cluster, cannot inject slave into gone.XormEngine", clusterName), gone.InjectError)
 			}
 
-			slaves := db.EngineInterface.(*xorm.EngineGroup).Slaves()
+			slaves := db.group.Slaves()
 			var index int64
 			var err error
-			if slaveIndex == "" {
+			if slaveIndex != "" {
 				index, err = strconv.ParseInt(slaveIndex, 10, 64)
 				if err != nil || index < 0 || index >= int64(len(slaves)) {
 					return gone.NewInnerError(fmt.Sprintf("invalid slave index: %s, must be greater than or equal to 0 and less than %d ", slaveIndex, len(slaves)), gone.InjectError)
