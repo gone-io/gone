@@ -51,8 +51,8 @@ type wrappedEngine struct {
 	newFunc    func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
 	newSession func(xorm.EngineInterface) XInterface
 
-	gone.Logger `gone:"gone-logger"`
-	conf        *Conf `gone:"config,database"`
+	log  gone.Logger `gone:"gone-logger"`
+	conf *Conf       `gone:"config,database"`
 }
 
 func (e *wrappedEngine) GetOriginEngine() xorm.EngineInterface {
@@ -112,7 +112,7 @@ func (e *wrappedEngine) config() {
 	e.SetConnMaxLifetime(e.conf.MaxLifetime)
 	e.SetMaxOpenConns(e.conf.MaxOpen)
 	e.SetMaxIdleConns(e.conf.MaxIdleCount)
-	e.SetLogger(&dbLogger{Logger: e.Logger, showSql: e.conf.ShowSql})
+	e.SetLogger(&dbLogger{Logger: e.log, showSql: e.conf.ShowSql})
 }
 
 func (e *wrappedEngine) Stop(gone.Cemetery) error {

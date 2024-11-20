@@ -33,7 +33,7 @@ func Test_engine(t *testing.T) {
 		engineInterface.EXPECT().SQL(gomock.Any(), gomock.Any()).Return(nil)
 
 		e := wrappedEngine{
-			Logger: in.logger,
+			log: in.logger,
 			newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 				return nil, errors.New("test")
 			},

@@ -47,7 +47,7 @@ func (e *wrappedEngine) Transaction(fn func(session Interface) error) error {
 			rollback := func() {
 				rollbackErr := session.Rollback()
 				if rollbackErr != nil {
-					e.Errorf("rollback err:%v", rollbackErr)
+					e.log.Errorf("rollback err:%v", rollbackErr)
 					err = rollbackErr
 				}
 			}
@@ -56,13 +56,13 @@ func (e *wrappedEngine) Transaction(fn func(session Interface) error) error {
 			defer func(e *wrappedEngine, id uint, session XInterface) {
 				err := e.delTransaction(id, session)
 				if err != nil {
-					e.Errorf("del session err:%v", err)
+					e.log.Errorf("del session err:%v", err)
 				}
 			}(e, gid, session)
 			defer func() {
 				if info := recover(); info != nil {
-					e.Errorf("session rollback for panic: %s", info)
-					e.Errorf("%s", gone.PanicTrace(2, 1))
+					e.log.Errorf("session rollback for panic: %s", info)
+					e.log.Errorf("%s", gone.PanicTrace(2, 1))
 					if !isRollback {
 						rollback()
 						err = gone.NewInnerError(fmt.Sprintf("%s", info), gone.DbRollForPanic)
@@ -80,7 +80,7 @@ func (e *wrappedEngine) Transaction(fn func(session Interface) error) error {
 			if err == nil {
 				err = session.Commit()
 			} else {
-				e.Errorf("session rollback for err: %v", err)
+				e.log.Errorf("session rollback for err: %v", err)
 				isRollback = true
 				rollback()
 			}

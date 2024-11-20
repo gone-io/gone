@@ -27,7 +27,7 @@ func Test_session(t *testing.T) {
 			engineInterface := NewMockEngineInterface(controller)
 
 			e := wrappedEngine{
-				Logger: in.logger,
+				log: in.logger,
 				newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 					return engineInterface, nil
 				},
@@ -58,7 +58,7 @@ func Test_session(t *testing.T) {
 			engineInterface := NewMockEngineInterface(controller)
 
 			e := wrappedEngine{
-				Logger: in.logger,
+				log: in.logger,
 				newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 					return engineInterface, nil
 				},
@@ -89,7 +89,7 @@ func Test_session(t *testing.T) {
 			engineInterface := NewMockEngineInterface(controller)
 
 			e := wrappedEngine{
-				Logger: in.logger,
+				log: in.logger,
 				newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 					return engineInterface, nil
 				},
@@ -120,7 +120,7 @@ func Test_session(t *testing.T) {
 			engineInterface := NewMockEngineInterface(controller)
 
 			e := wrappedEngine{
-				Logger: in.logger,
+				log: in.logger,
 				newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 					return engineInterface, nil
 				},
@@ -159,7 +159,7 @@ func Test_session(t *testing.T) {
 				engineInterface := NewMockEngineInterface(controller)
 
 				e := wrappedEngine{
-					Logger: in.logger,
+					log: in.logger,
 					newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 						return engineInterface, nil
 					},
@@ -194,7 +194,7 @@ func Test_session(t *testing.T) {
 				engineInterface := NewMockEngineInterface(controller)
 
 				e := wrappedEngine{
-					Logger: in.logger,
+					log: in.logger,
 					newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 						return engineInterface, nil
 					},
@@ -226,7 +226,7 @@ func Test_session(t *testing.T) {
 				engineInterface := NewMockEngineInterface(controller)
 
 				e := wrappedEngine{
-					Logger: in.logger,
+					log: in.logger,
 					newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 						return engineInterface, nil
 					},
