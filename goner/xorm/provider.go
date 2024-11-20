@@ -6,61 +6,87 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"xorm.io/xorm"
 )
 
+const clusterKey = "db"
+const defaultCluster = "database"
+
 func NewProvider(engine *wrappedEngine) (gone.Vampire, gone.GonerOption) {
+	var engineMap = make(map[string]*wrappedEngine)
+	engineMap[""] = engine
+	engineMap[defaultCluster] = engine
+
 	return &provider{
-		engine: engine,
+		engineMap: engineMap,
 	}, gone.GonerId("xorm")
 }
 
 type provider struct {
 	gone.Flag
-	engine      *wrappedEngine
-	gone.Logger `gone:"*"`
+	engineMap map[string]*wrappedEngine
+
+	heaven    gone.Heaven    `gone:"*"`
+	cemetery  gone.Cemetery  `gone:"*"`
+	configure gone.Configure `gone:"*"`
+	log       gone.Logger    `gone:"*"`
 }
 
 var xormInterface = gone.GetInterfaceType(new(gone.XormEngine))
 var xormInterfaceSlice = gone.GetInterfaceType(new([]gone.XormEngine))
 
-func (e *provider) Suck(conf string, v reflect.Value) gone.SuckError {
-	if !e.engine.conf.EnableCluster {
-		return gone.NewInnerError("cluster is not enabled, xorm only support cluster", gone.InjectError)
+func confMap(conf string) map[string]string {
+	conf = strings.TrimSpace(conf)
+	specs := strings.Split(conf, ",")
+	m := make(map[string]string)
+	for _, spec := range specs {
+		spec = strings.TrimSpace(spec)
+		pairs := strings.Split(spec, "=")
+		if len(pairs) == 1 {
+			m[pairs[0]] = ""
+		} else if len(pairs) > 1 {
+			m[pairs[0]] = pairs[1]
+		}
+	}
+	return m
+}
+
+func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
+	m := confMap(conf)
+	clusterName := m[clusterKey]
+	if clusterName == "" {
+		clusterName = defaultCluster
 	}
 
-	switch v.Type() {
-	case xormInterface:
-		if conf == "master" {
-			v.Set(reflect.ValueOf(&wrappedEngine{
-				EngineInterface: e.engine.group.Master(),
-			}))
-			return nil
-		} else {
-			if strings.HasPrefix(conf, "slave") {
-				slaveIndex := strings.TrimPrefix(conf, "slave")
-				i, err := strconv.ParseInt(slaveIndex, 10, 64)
-				if err != nil {
-					return gone.NewInnerError("invalid slave index: "+slaveIndex, gone.InjectError)
-				}
-				slaves := e.engine.group.Slaves()
-				if int(i) < len(slaves) {
-					v.Set(reflect.ValueOf(
-						&wrappedEngine{
-							EngineInterface: slaves[i],
-						},
-					))
-					return nil
-				}
+	db := p.engineMap[clusterName]
+	if db == nil {
+		var config Conf
+		err := p.configure.Get(clusterName, &config, "")
+		if err != nil {
+			return gone.NewInnerError("failed to get config for cluster: "+clusterName, gone.InjectError)
+		}
+
+		db = newWrappedEngine()
+		db.conf = &config
+		err = db.Start(p.cemetery)
+		if err != nil {
+			return gone.NewInnerError("failed to start xorm engine for cluster: "+clusterName, gone.InjectError)
+		}
+
+		p.heaven.BeforeStop(func(engine *wrappedEngine) func(cemetery gone.Cemetery) error {
+			return func(cemetery gone.Cemetery) error {
+				return engine.Stop(cemetery)
 			}
-		}
-		return gone.NewInnerError(fmt.Sprintf("invalid xorm interface conf: %s, only support master、salve{Index}", conf), gone.InjectError)
+		}(db))
+		p.engineMap[clusterName] = db
+	}
 
-	case xormInterfaceSlice:
-		if conf != "" {
-			e.Warnf("ignore xorm interface slice conf: %s", conf)
+	if v.Type() == xormInterfaceSlice {
+		if !db.conf.EnableCluster {
+			return gone.NewInnerError(fmt.Sprintf("database(name=%s) is not enable cluster, cannot inject []gone.XormEngine", clusterName), gone.InjectError)
 		}
 
-		engines := e.engine.group.Slaves()
+		engines := db.EngineInterface.(*xorm.EngineGroup).Slaves()
 		xormEngines := make([]gone.XormEngine, 0, len(engines))
 		for _, eng := range engines {
 			xormEngines = append(xormEngines, &wrappedEngine{
@@ -69,9 +95,44 @@ func (e *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 		}
 		v.Set(reflect.ValueOf(xormEngines))
 		return nil
-	default:
-		return gone.CannotFoundGonerByTypeError(v.Type())
 	}
+
+	if v.Type() == xormInterface {
+		if _, ok := m["master"]; ok {
+			if !db.conf.EnableCluster {
+				return gone.NewInnerError(fmt.Sprintf("database(name=%s) is not enable cluster, cannot inject master into gone.XormEngine", clusterName), gone.InjectError)
+			}
+
+			v.Set(reflect.ValueOf(&wrappedEngine{
+				EngineInterface: db.EngineInterface.(*xorm.EngineGroup).Master(),
+			}))
+			return nil
+		}
+
+		if slaveIndex, ok := m["slave"]; ok {
+			if !db.conf.EnableCluster {
+				return gone.NewInnerError(fmt.Sprintf("database(name=%s) is not enable cluster, cannot inject slave into gone.XormEngine", clusterName), gone.InjectError)
+			}
+
+			slaves := db.EngineInterface.(*xorm.EngineGroup).Slaves()
+			var index int64
+			var err error
+			if slaveIndex == "" {
+				index, err = strconv.ParseInt(slaveIndex, 10, 64)
+				if err != nil || index < 0 || index >= int64(len(slaves)) {
+					return gone.NewInnerError(fmt.Sprintf("invalid slave index: %s, must be greater than or equal to 0 and less than %d ", slaveIndex, len(slaves)), gone.InjectError)
+				}
+			}
+
+			v.Set(reflect.ValueOf(&wrappedEngine{
+				EngineInterface: slaves[index],
+			}))
+			return nil
+		}
+		v.Set(reflect.ValueOf(db))
+		return nil
+	}
+	return gone.CannotFoundGonerByTypeError(v.Type())
 }
 
 //database.cluster.enable=true

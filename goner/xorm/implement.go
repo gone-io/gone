@@ -2,15 +2,20 @@ package xorm
 
 import (
 	"github.com/gone-io/gone"
+	"io"
 	"time"
 	"xorm.io/xorm"
 )
 
 func NewXormEngine() (gone.Angel, gone.GonerId, gone.GonerOption, gone.GonerOption) {
+	return newWrappedEngine(), gone.IdGoneXorm, gone.IsDefault(new(gone.XormEngine)), gone.Order3
+}
+
+func newWrappedEngine() *wrappedEngine {
 	return &wrappedEngine{
 		newFunc:    newEngine,
 		newSession: newSession,
-	}, gone.IdGoneXorm, gone.IsDefault(new(gone.XormEngine)), gone.Order3
+	}
 }
 
 func newEngine(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
@@ -42,7 +47,6 @@ type Conf struct {
 type wrappedEngine struct {
 	gone.Flag
 	xorm.EngineInterface
-	group *xorm.EngineGroup
 
 	newFunc    func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
 	newSession func(xorm.EngineInterface) XInterface
@@ -90,11 +94,10 @@ func (e *wrappedEngine) create() error {
 			slaves = append(slaves, slaveEngine.(*xorm.Engine))
 		}
 
-		e.group, err = xorm.NewEngineGroup(master, slaves)
+		e.EngineInterface, err = xorm.NewEngineGroup(master, slaves)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
 		}
-		e.EngineInterface = e.group
 	} else {
 		var err error
 		e.EngineInterface, err = e.newFunc(e.conf.DriverName, e.conf.Dsn)
@@ -113,11 +116,7 @@ func (e *wrappedEngine) config() {
 }
 
 func (e *wrappedEngine) Stop(gone.Cemetery) error {
-	if e.group != nil {
-		return e.group.Close()
-	} else {
-		return e.EngineInterface.(*xorm.Engine).Close()
-	}
+	return e.EngineInterface.(io.Closer).Close()
 }
 
 func (e *wrappedEngine) Sqlx(sql string, args ...any) *xorm.Session {
