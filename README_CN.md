@@ -232,6 +232,11 @@ curl -X POST 'http://localhost:8080/hello' \
 
 ## 📚[完整文档](https://goner.fun/zh/)
 
+## 更新记录
+### v1.1.1
+- goner/xorm 支持集群 和 多数据库，最新文档：https://goner.fun/zh/references/xorm.html
+- 新增 goner/gorm，封装`gorm.io/gorm`，用于数据库的访问，暂时只支持mysql，完善中...
+
 ## 贡献
 如果您发现了错误或有功能请求，可以随时[提交问题](https://github.com/gone-io/gone/issues/new)，同时欢迎[提交拉取请求](https://github.com/gone-io/gone/pulls)。
 

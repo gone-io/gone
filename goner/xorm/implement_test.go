@@ -32,8 +32,8 @@ func Test_engine(t *testing.T) {
 		engineInterface.EXPECT().Ping()
 		engineInterface.EXPECT().SQL(gomock.Any(), gomock.Any()).Return(nil)
 
-		e := engine{
-			Logger: in.logger,
+		e := wrappedEngine{
+			log: in.logger,
 			newFunc: func(driverName string, dataSourceName string) (xorm.EngineInterface, error) {
 				return nil, errors.New("test")
 			},
@@ -50,7 +50,7 @@ func Test_engine(t *testing.T) {
 		assert.NoError(t, err)
 
 		originEngine := e.GetOriginEngine()
-		assert.Equalf(t, engineInterface, originEngine, "origin engine is not equal")
+		assert.Equalf(t, engineInterface, originEngine, "origin wrappedEngine is not equal")
 
 		_ = e.Sqlx("select * from user where id = ?", 1)
 

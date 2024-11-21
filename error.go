@@ -90,11 +90,11 @@ func ToError(input any) Error {
 	case Error:
 		return input.(Error)
 	case error:
-		return NewInnerError(input.(error).Error(), http.StatusInternalServerError)
+		return NewInnerErrorSkip(input.(error).Error(), http.StatusInternalServerError, 2)
 	case string:
-		return NewInnerError(input.(string), http.StatusInternalServerError)
+		return NewInnerErrorSkip(input.(string), http.StatusInternalServerError, 2)
 	default:
-		return NewInnerError(fmt.Sprintf("%v", input), http.StatusInternalServerError)
+		return NewInnerErrorSkip(fmt.Sprintf("%v", input), http.StatusInternalServerError, 2)
 	}
 }
 

@@ -21,24 +21,24 @@ type XInterface interface {
 }
 
 // ============================================================================
-func (e *engine) getTransaction(id uint) (XInterface, bool) {
+func (e *wrappedEngine) getTransaction(id uint) (XInterface, bool) {
 	session, suc := sessionMap.Load(id)
 	if suc {
 		return session.(XInterface), false
 	} else {
-		s := e.NewSession()
+		s := e.newSession(e)
 		sessionMap.Store(id, s)
 		return s, true
 	}
 }
 
-func (e *engine) delTransaction(id uint, session XInterface) error {
+func (e *wrappedEngine) delTransaction(id uint, session XInterface) error {
 	defer sessionMap.Delete(id)
 	return session.Close()
 }
 
 // Transaction 事物处理 不允许在事物中新开协程，否则事物会失效
-func (e *engine) Transaction(fn func(session Interface) error) error {
+func (e *wrappedEngine) Transaction(fn func(session Interface) error) error {
 	var err error
 	gls.EnsureGoroutineId(func(gid uint) {
 		session, isNew := e.getTransaction(gid)
@@ -47,22 +47,22 @@ func (e *engine) Transaction(fn func(session Interface) error) error {
 			rollback := func() {
 				rollbackErr := session.Rollback()
 				if rollbackErr != nil {
-					e.Errorf("rollback err:%v", rollbackErr)
+					e.log.Errorf("rollback err:%v", rollbackErr)
 					err = rollbackErr
 				}
 			}
 
 			isRollback := false
-			defer func(e *engine, id uint, session XInterface) {
+			defer func(e *wrappedEngine, id uint, session XInterface) {
 				err := e.delTransaction(id, session)
 				if err != nil {
-					e.Errorf("del session err:%v", err)
+					e.log.Errorf("del session err:%v", err)
 				}
 			}(e, gid, session)
 			defer func() {
 				if info := recover(); info != nil {
-					e.Errorf("session rollback for panic: %s", info)
-					e.Errorf("%s", gone.PanicTrace(2, 1))
+					e.log.Errorf("session rollback for panic: %s", info)
+					e.log.Errorf("%s", gone.PanicTrace(2, 1))
 					if !isRollback {
 						rollback()
 						err = gone.NewInnerError(fmt.Sprintf("%s", info), gone.DbRollForPanic)
@@ -80,7 +80,7 @@ func (e *engine) Transaction(fn func(session Interface) error) error {
 			if err == nil {
 				err = session.Commit()
 			} else {
-				e.Errorf("session rollback for err: %v", err)
+				e.log.Errorf("session rollback for err: %v", err)
 				isRollback = true
 				rollback()
 			}

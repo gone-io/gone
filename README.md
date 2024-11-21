@@ -240,6 +240,12 @@ In Gone, components are abstracted as Goners, whose properties can inject other 
 ## Contributing
 If you have a bug report or feature request, you can [open an issue](https://github.com/gone-io/gone/issues/new), and [pull requests](https://github.com/gone-io/gone/pulls) are also welcome.
 
+## Changelog
+### v1.1.1
+- `goner/xorm` now supports clustering and multiple databases. Latest documentation: https://goner.fun/references/xorm.html
+- Added `goner/gorm`, a wrapper for `gorm.io/gorm` for database access. Currently, only MySQL is supported, and improvements are ongoing.
+
+
 ## Contact
 If you have questions, feel free to reach out to us in the following ways:
 - [Github Discussion](https://github.com/gone-io/gone/discussions)
