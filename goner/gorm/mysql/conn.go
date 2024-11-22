@@ -11,8 +11,8 @@ type dial struct {
 	gorm.Dialector
 
 	DriverName                    string `gone:"config,gorm.mysql.driver-name"`
-	ServerVersion                 string `gone:"config,gorm.mysql.server-version"`
 	DSN                           string `gone:"config,gorm.mysql.dsn"`
+	ServerVersion                 string `gone:"config,gorm.mysql.server-version"`
 	SkipInitializeWithVersion     bool   `gone:"config,gorm.mysql.skip-initialize-with-version"`
 	DefaultStringSize             uint   `gone:"config,gorm.mysql.default-string-size"`
 	DefaultDatetimePrecision      *int   `gone:"config,gorm.mysql.default-datetime-precision"`
@@ -30,6 +30,10 @@ type dial struct {
 }
 
 func (d *dial) AfterRevive() error {
+	if d.Dialector != nil {
+		return gone.NewInnerError("gorm.mysql.dialer has been initialized", gone.StartError)
+	}
+
 	d.Dialector = mysql.New(mysql.Config{
 		DriverName:                    d.DriverName,
 		ServerVersion:                 d.ServerVersion,
