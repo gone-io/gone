@@ -56,11 +56,19 @@ type wrappedEngine struct {
 	masterConf *ClusterNodeConf   `gone:"config,database.cluster.master"`
 	slavesConf []*ClusterNodeConf `gone:"config,database.cluster.slaves"`
 
+	policy   xorm.GroupPolicy
 	unitTest bool
 }
 
 func (e *wrappedEngine) GetOriginEngine() xorm.EngineInterface {
 	return e.EngineInterface
+}
+
+func (e *wrappedEngine) SetPolicy(policy xorm.GroupPolicy) {
+	e.policy = policy
+	if e.group != nil {
+		e.group.SetPolicy(policy)
+	}
 }
 
 func (e *wrappedEngine) Start(gone.Cemetery) error {
@@ -87,6 +95,7 @@ func (e *wrappedEngine) create() error {
 		if len(e.slavesConf) == 0 {
 			return gone.NewInnerError("slaves config(database.cluster.slaves) is nil", gone.StartError)
 		}
+
 		master, err := e.newFunc(e.masterConf.DriverName, e.masterConf.DSN)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
@@ -101,7 +110,7 @@ func (e *wrappedEngine) create() error {
 			slaves = append(slaves, slaveEngine.(*xorm.Engine))
 		}
 
-		e.group, err = xorm.NewEngineGroup(master, slaves)
+		e.group, err = xorm.NewEngineGroup(master, slaves, e.policy)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
 		}
