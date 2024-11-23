@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -80,10 +81,71 @@ func (c *configure) get(key string, value any, defaultVale string) error {
 	return getConf(key, el, c.conf)
 }
 
+func getNameAndDefault(field reflect.StructField, tagName string) (name string, defaultValue string) {
+	tag := field.Tag.Get(tagName)
+	if tag == "" {
+		tag = field.Name
+	}
+	specs := strings.Split(tag, ",")
+	name = specs[0]
+
+	if len(specs) > 1 {
+		for _, s := range specs {
+			split := strings.SplitAfterN(s, "=", 2)
+			if len(split) == 2 && split[0] == "default=" {
+				defaultValue = split[1]
+				break
+			}
+		}
+	}
+	return
+}
+
+func DefaultValueDecoderConfig(decoderConfig *mapstructure.DecoderConfig) {
+	decoderConfig.DecodeHook = mapstructure.ComposeDecodeHookFunc(
+		func(from reflect.Type, to reflect.Type, data any) (any, error) {
+			if from.Kind() == reflect.Map && to.Kind() == reflect.Struct {
+				dataMap, ok := data.(map[string]any)
+				if !ok {
+					return data, nil
+				}
+				var setDefaultValue func(to reflect.Type, v map[string]any)
+
+				setDefaultValue = func(to reflect.Type, v map[string]any) {
+					fieldNum := to.NumField()
+					for i := 0; i < fieldNum; i++ {
+						field := to.Field(i)
+						if !field.IsExported() {
+							continue
+						}
+						name, defaultValue := getNameAndDefault(field, decoderConfig.TagName)
+						_, has := v[name]
+
+						if !has {
+							if field.Type.Kind() == reflect.Struct {
+								m := map[string]any{}
+								setDefaultValue(field.Type, m)
+								v[name] = m
+							} else if defaultValue != "" {
+								v[name] = defaultValue
+							}
+						}
+					}
+				}
+				setDefaultValue(to, dataMap)
+			}
+			return data, nil
+		},
+		decoderConfig.DecodeHook,
+	)
+}
+
 func getConf(key string, v reflect.Value, vConf *viper.Viper) error {
 	switch v.Kind() {
 	default:
-		err := vConf.UnmarshalKey(key, v.Addr().Interface())
+		err := vConf.UnmarshalKey(key, v.Addr().Interface(),
+			DefaultValueDecoderConfig,
+		)
 		if err != nil {
 			return gone.ToError(err)
 		}

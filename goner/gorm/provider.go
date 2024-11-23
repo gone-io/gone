@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func NewGorm() (gone.Goner, gone.GonerOption) {
-	return &iGorm{}, gone.GonerId("gorm")
+func NewGorm() (gone.Goner, gone.GonerOption, gone.GonerOption) {
+	return &iGorm{}, gone.GonerId("gorm"), gone.Provide(&gorm.DB{})
 }
 
 type iGorm struct {

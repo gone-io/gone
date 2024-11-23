@@ -116,6 +116,27 @@ func IsDefault[T any](t *T) GonerOption {
 	return defaultType{t: GetInterfaceType(t)}
 }
 
+type provideType struct {
+	t []reflect.Type
+}
+
+func (d provideType) option() {}
+
+func Provide(objs ...any) GonerOption {
+	m := make(map[reflect.Type]any)
+
+	for _, o := range objs {
+		m[reflect.TypeOf(o)] = o
+	}
+	p := provideType{
+		t: make([]reflect.Type, 0),
+	}
+	for o, _ := range m {
+		p.t = append(p.t, o)
+	}
+	return p
+}
+
 // WrapNormalFnToProcess warp a func to Process
 func WrapNormalFnToProcess(fn any) Process {
 	return func(cemetery Cemetery) error {

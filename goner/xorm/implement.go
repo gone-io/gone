@@ -27,18 +27,17 @@ func newSession(eng xorm.EngineInterface) XInterface {
 }
 
 type ClusterNodeConf struct {
-	DriverName string `properties:"driver-name,default=driver" mapstructure:"driver-name"`
-	DSN        string `properties:"dsn,default=dsn" mapstructure:"dsn"`
+	DriverName string `properties:"driver-name,default=" mapstructure:"driver-name"`
+	DSN        string `properties:"dsn,default=" mapstructure:"dsn,default=yyyy"`
 }
 
 type Conf struct {
-	DriverName    string        `properties:"driver-name,default=driver" mapstructure:"driver-name"`
-	Dsn           string        `properties:"dsn,default=dsn" mapstructure:"dsn"`
-	MaxIdleCount  int           `properties:"max-idle-count,default=5" mapstructure:"max-idle-count"`
-	MaxOpen       int           `properties:"max-open,default=20" mapstructure:"max-open"`
-	MaxLifetime   time.Duration `properties:"max-lifetime,default=10m" mapstructure:"max-lifetime"`
-	ShowSql       bool          `properties:"show-sql,default=true" mapstructure:"show-sql"`
-	EnableCluster bool          `properties:"cluster.enable,default=false" mapstructure:"cluster.enable"`
+	DriverName   string        `properties:"driver-name,default=" mapstructure:"driver-name"`
+	Dsn          string        `properties:"dsn,default=" mapstructure:"dsn"`
+	MaxIdleCount int           `properties:"max-idle-count,default=5" mapstructure:"max-idle-count,default=5"`
+	MaxOpen      int           `properties:"max-open,default=20" mapstructure:"max-open,default=20"`
+	MaxLifetime  time.Duration `properties:"max-lifetime,default=10m" mapstructure:"max-lifetime,default=10m"`
+	ShowSql      bool          `properties:"show-sql,default=true" mapstructure:"show-sql,default=true"`
 }
 
 //go:generate mockgen -package xorm -destination=./engine_mock_test.go xorm.io/xorm EngineInterface
@@ -50,17 +49,25 @@ type wrappedEngine struct {
 	newFunc    func(driverName string, dataSourceName string) (xorm.EngineInterface, error)
 	newSession func(xorm.EngineInterface) XInterface
 
-	log  gone.Logger `gone:"gone-logger"`
-	conf Conf        `gone:"config,database"`
+	log           gone.Logger        `gone:"gone-logger"`
+	conf          Conf               `gone:"config,database"`
+	enableCluster bool               `gone:"config,database.cluster.enable,default=false"`
+	masterConf    *ClusterNodeConf   `gone:"config,database.cluster.master"`
+	slavesConf    []*ClusterNodeConf `gone:"config,database.cluster.slaves"`
 
-	masterConf *ClusterNodeConf   `gone:"config,database.cluster.master"`
-	slavesConf []*ClusterNodeConf `gone:"config,database.cluster.slaves"`
-
+	policy   xorm.GroupPolicy
 	unitTest bool
 }
 
 func (e *wrappedEngine) GetOriginEngine() xorm.EngineInterface {
 	return e.EngineInterface
+}
+
+func (e *wrappedEngine) SetPolicy(policy xorm.GroupPolicy) {
+	e.policy = policy
+	if e.group != nil {
+		e.group.SetPolicy(policy)
+	}
 }
 
 func (e *wrappedEngine) Start(gone.Cemetery) error {
@@ -79,7 +86,7 @@ func (e *wrappedEngine) create() error {
 		return gone.NewInnerError("duplicate call Start()", gone.StartError)
 	}
 
-	if e.conf.EnableCluster {
+	if e.enableCluster {
 		if e.masterConf == nil {
 			return gone.NewInnerError("master config(database.cluster.master) is nil", gone.StartError)
 		}
@@ -87,6 +94,7 @@ func (e *wrappedEngine) create() error {
 		if len(e.slavesConf) == 0 {
 			return gone.NewInnerError("slaves config(database.cluster.slaves) is nil", gone.StartError)
 		}
+
 		master, err := e.newFunc(e.masterConf.DriverName, e.masterConf.DSN)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
@@ -101,7 +109,7 @@ func (e *wrappedEngine) create() error {
 			slaves = append(slaves, slaveEngine.(*xorm.Engine))
 		}
 
-		e.group, err = xorm.NewEngineGroup(master, slaves)
+		e.group, err = xorm.NewEngineGroup(master, slaves, e.policy)
 		if err != nil {
 			return gone.NewInnerError(err.Error(), gone.StartError)
 		}

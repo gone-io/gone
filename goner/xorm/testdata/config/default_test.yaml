@@ -1,0 +1,11 @@
+user.database:
+  cluster:
+    enable: true
+    master:
+      driver-name: mysql
+      dsn: db3
+    slaves:
+      - driver-name: mysql
+        dsn: db4
+      - driver-name: postgresql
+        dsn: db5

@@ -71,6 +71,12 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 			return gone.NewInnerError("failed to get config for cluster: "+clusterName, gone.InjectError)
 		}
 
+		var enableCluster bool
+		err = p.configure.Get(clusterName+".cluster.enable", &enableCluster, "false")
+		if err != nil {
+			return gone.NewInnerError("failed to get cluster enable config for cluster: "+clusterName, gone.InjectError)
+		}
+
 		var masterConf ClusterNodeConf
 		err = p.configure.Get(clusterName+".cluster.master", &masterConf, "")
 		if err != nil {
@@ -85,6 +91,7 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 
 		db = newWrappedEngine()
 		db.conf = config
+		db.enableCluster = enableCluster
 		db.masterConf = &masterConf
 		db.slavesConf = slavesConf
 
@@ -107,7 +114,7 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 	}
 
 	if v.Type() == xormInterfaceSlice {
-		if !db.conf.EnableCluster {
+		if !db.enableCluster {
 			return gone.NewInnerError(fmt.Sprintf("database(name=%s) is not enable cluster, cannot inject []gone.XormEngine", clusterName), gone.InjectError)
 		}
 
@@ -124,7 +131,7 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 
 	if v.Type() == xormInterface {
 		if _, ok := m["master"]; ok {
-			if !db.conf.EnableCluster {
+			if !db.enableCluster {
 				return gone.NewInnerError(fmt.Sprintf("database(name=%s) is not enable cluster, cannot inject master into gone.XormEngine", clusterName), gone.InjectError)
 			}
 
@@ -135,7 +142,7 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 		}
 
 		if slaveIndex, ok := m["slave"]; ok {
-			if !db.conf.EnableCluster {
+			if !db.enableCluster {
 				return gone.NewInnerError(fmt.Sprintf("database(name=%s) is not enable cluster, cannot inject slave into gone.XormEngine", clusterName), gone.InjectError)
 			}
 
@@ -159,45 +166,3 @@ func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
 	}
 	return gone.CannotFoundGonerByTypeError(v.Type())
 }
-
-//database.cluster.enable=true
-//database.cluster.master.driver-name=mysql
-//database.cluster.master.dsn=${db.username}:${db.password}@tcp(${db.host}:${db.port})/${db.name}?charset=utf8mb4&loc=Local
-//
-//database.cluster.slaves[0].driver-name=mysql
-//database.cluster.slaves[0].dsn=${db.username}:${db.password}@tcp(${db.host}:${db.port})/${db.name}?charset=utf8mb4&loc=Local
-//
-//database.cluster.slaves[1].driver-name=mysql
-//database.cluster.slaves[1].dsn=${db.username}:${db.password}@tcp(${db.host}:${db.port})/${db.name}?charset=utf8mb4&loc=Local
-//
-//database.cluster.slaves[2].driver-name=mysql
-//database.cluster.slaves[2].dsn=${db.username}:${db.password}@tcp(${db.host}:${db.port})/${db.name}?charset=utf8mb4&loc=Local
-
-//func Test_iCommission_Tmp(t *testing.T) {
-//	gone.RunTest(func(e struct {
-//		group  gone.XormEngine   `gone:"*"`
-//		master gone.XormEngine   `gone:"xorm,master"`
-//		slave0 gone.XormEngine   `gone:"xorm,slave0"`
-//		slave1 gone.XormEngine   `gone:"xorm,slave1"`
-//		slave2 gone.XormEngine   `gone:"xorm,slave2"`
-//		slaves []gone.XormEngine `gone:"xorm,xxx"`
-//	}) {
-//		assert.Equal(t, 3, len(e.slaves))
-//		assert.Equal(t, e.slaves[0], e.slave0)
-//		assert.Equal(t, e.slaves[1], e.slave1)
-//		assert.Equal(t, e.slaves[2], e.slave2)
-//		assert.NotNil(t, e.master)
-//
-//		err := e.master.Ping()
-//		assert.Nil(t, err)
-//		err = e.slave0.Ping()
-//		assert.Nil(t, err)
-//		err = e.slave1.Ping()
-//		assert.Nil(t, err)
-//		err = e.slave2.Ping()
-//		assert.Nil(t, err)
-//
-//		err = e.group.Ping()
-//		assert.Nil(t, err)
-//	}, goner.XormPriest)
-//}
