@@ -284,6 +284,24 @@ func (p *Preparer) Test(fn any) {
 	p.testKit().AfterStart(fn).Run()
 }
 
+// TagStringParse parse tag string to map
+// example: "a=1,b=2" -> map[string]string{"a":"1","b":"2"}
+func TagStringParse(conf string) map[string]string {
+	conf = strings.TrimSpace(conf)
+	specs := strings.Split(conf, ",")
+	m := make(map[string]string)
+	for _, spec := range specs {
+		spec = strings.TrimSpace(spec)
+		pairs := strings.Split(spec, "=")
+		if len(pairs) == 1 && pairs[0] != "" {
+			m[pairs[0]] = ""
+		} else if len(pairs) > 1 && pairs[0] != "" {
+			m[pairs[0]] = pairs[1]
+		}
+	}
+	return m
+}
+
 type provider[T any] struct {
 	Flag
 	cemetery Cemetery `gone:"*"`
@@ -297,24 +315,6 @@ func (p *provider[T]) Suck(conf string, v reflect.Value, field reflect.StructFie
 	}
 	v.Set(reflect.ValueOf(obj))
 	return nil
-}
-
-// TagStringParse parse tag string to map
-// example: "a=1,b=2" -> map[string]string{"a":"1","b":"2"}
-func TagStringParse(conf string) map[string]string {
-	conf = strings.TrimSpace(conf)
-	specs := strings.Split(conf, ",")
-	m := make(map[string]string)
-	for _, spec := range specs {
-		spec = strings.TrimSpace(spec)
-		pairs := strings.Split(spec, "=")
-		if len(pairs) == 1 {
-			m[pairs[0]] = ""
-		} else if len(pairs) > 1 {
-			m[pairs[0]] = pairs[1]
-		}
-	}
-	return m
 }
 
 // NewProviderPriest create a provider priest function for goner from a function like: `func(tagConf string, injectableStructParam struct{}) (provideType T, err error)`

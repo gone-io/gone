@@ -314,3 +314,43 @@ func TestBuryMockCemetery_Bury(t *testing.T) {
 	tombs := cemetery.GetTomByType(reflect.TypeOf(*point))
 	assert.Equal(t, 2, len(tombs))
 }
+
+func TestTagStringParse(t *testing.T) {
+	type args struct {
+		conf string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		{
+			name: "suc",
+			args: args{
+				conf: "a=1,b=2",
+			},
+			want: map[string]string{
+				"a": "1",
+				"b": "2",
+			},
+		},
+		{
+			name: "suc",
+			args: args{
+				conf: "x,a=1,b=2,,,default,ok=",
+			},
+			want: map[string]string{
+				"a":       "1",
+				"b":       "2",
+				"x":       "",
+				"default": "",
+				"ok":      "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, TagStringParse(tt.args.conf), "TagStringParse(%v)", tt.args.conf)
+		})
+	}
+}
