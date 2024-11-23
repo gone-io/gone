@@ -12,15 +12,15 @@ type dial struct {
 
 	driverName                   string `gone:"config,gorm.clickhouse.driver-name"`
 	dsn                          string `gone:"config,gorm.clickhouse.dsn"`
-	disableDatetimePrecision     bool   `gone:"gorm.clickhouse.disable-datetime-precision,default=false"`
-	dontSupportRenameColumn      bool   `gone:"gorm.clickhouse.dont-support-rename-column,default=false"`
-	dontSupportColumnPrecision   bool   `gone:"gorm.clickhouse.dont-support-column-precision,default=false"`
-	dontSupportEmptyDefaultValue bool   `gone:"gorm.clickhouse.dont-support-empty-default-value,default=false"`
-	skipInitializeWithVersion    bool   `gone:"gorm.clickhouse.skip-initialize-with-version,default=false"`
-	defaultGranularity           int    `gone:"gorm.clickhouse.default-granularity,default="`
-	defaultCompression           string `gone:"gorm.clickhouse.default-compression,default="`
-	defaultIndexType             string `gone:"gorm.clickhouse.default-indexType,default="`
-	defaultTableEngineOpts       string `gone:"gorm.clickhouse.default-table-engine-opts,default="`
+	disableDatetimePrecision     bool   `gone:"config,gorm.clickhouse.disable-datetime-precision,default=false"`
+	dontSupportRenameColumn      bool   `gone:"config,gorm.clickhouse.dont-support-rename-column,default=false"`
+	dontSupportColumnPrecision   bool   `gone:"config,gorm.clickhouse.dont-support-column-precision,default=false"`
+	dontSupportEmptyDefaultValue bool   `gone:"config,gorm.clickhouse.dont-support-empty-default-value,default=false"`
+	skipInitializeWithVersion    bool   `gone:"config,gorm.clickhouse.skip-initialize-with-version,default=false"`
+	defaultGranularity           int    `gone:"config,gorm.clickhouse.default-granularity,default="`
+	defaultCompression           string `gone:"config,gorm.clickhouse.default-compression,default="`
+	defaultIndexType             string `gone:"config,gorm.clickhouse.default-indexType,default="`
+	defaultTableEngineOpts       string `gone:"config,gorm.clickhouse.default-table-engine-opts,default="`
 }
 
 func (d *dial) Apply(*gorm.Config) error {

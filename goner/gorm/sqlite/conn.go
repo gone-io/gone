@@ -1,4 +1,4 @@
-package mysql
+package sqlite
 
 import (
 	"github.com/gone-io/gone"

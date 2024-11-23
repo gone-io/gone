@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+type Applier interface {
+	Apply(*gorm.Config) error
+}
+
 func ProviderPriest(cemetery gone.Cemetery) error {
 	var gInstance *gorm.DB
 
