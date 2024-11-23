@@ -336,6 +336,13 @@ func (p *provider[T]) Suck(conf string, v reflect.Value, field reflect.StructFie
 // ```
 func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)) Priest {
 	p := provider[T]{}
+
+	t := new(T)
+	of := reflect.TypeOf(t).Elem()
+	pt := provideType{
+		t: []reflect.Type{of},
+	}
+
 	p.create = func(tagConf string) (T, error) {
 		args, err := p.cemetery.InjectFuncParameters(fn, func(pt reflect.Type, i int) any {
 			if i == 0 {
@@ -347,7 +354,6 @@ func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)
 		if err != nil {
 			return *new(T), err
 		}
-
 		results := reflect.ValueOf(fn).Call(args)
 		if results[1].IsNil() {
 			return results[0].Interface().(T), nil
@@ -356,7 +362,7 @@ func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)
 	}
 
 	return func(cemetery Cemetery) error {
-		cemetery.Bury(&p, Provide(*new(T)))
+		cemetery.Bury(&p, pt)
 		return nil
 	}
 }
