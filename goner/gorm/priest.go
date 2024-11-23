@@ -7,6 +7,5 @@ import (
 // Priest gorm的priest
 func Priest(cemetery gone.Cemetery) error {
 	cemetery.Bury(NewLogger())
-	cemetery.Bury(NewGorm())
-	return nil
+	return ProviderPriest(cemetery)
 }

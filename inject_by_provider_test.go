@@ -39,3 +39,66 @@ func TestTestInjectByProvider(t *testing.T) {
 		return nil
 	})
 }
+
+type testBird struct {
+	Name string
+}
+
+func (b *testBird) Fly() {
+	println(b.Name + " flying")
+}
+
+type testCat struct {
+	Flag
+	Name string
+}
+
+func (*testCat) Meow() {
+	println("meow")
+}
+
+func TestNewProvider(t *testing.T) {
+	t.Run("provide struct", func(t *testing.T) {
+		RunTest(func(p struct {
+			blackBird testBird `gone:"*,black"`
+			grayBird  testBird `gone:"*,gray"`
+		}) {
+			assert.Equal(t, p.blackBird.Name, "black")
+			assert.Equal(t, p.grayBird.Name, "gray")
+		}, func(cemetery Cemetery) error {
+			cemetery.Bury(&testCat{
+				Name: "cat",
+			})
+
+			priest := NewProviderPriest(func(tagConf string, in struct {
+				cat *testCat `gone:"*"`
+			}) (testBird, error) {
+				assert.Equal(t, in.cat.Name, "cat")
+				return testBird{Name: tagConf}, nil
+			})
+			return priest(cemetery)
+		})
+	})
+
+	t.Run("provide struct pointer", func(t *testing.T) {
+		RunTest(func(p struct {
+			blackBird *testBird `gone:"*,black"`
+			grayBird  *testBird `gone:"*,gray"`
+		}) {
+			assert.Equal(t, p.blackBird.Name, "black")
+			assert.Equal(t, p.grayBird.Name, "gray")
+		}, func(cemetery Cemetery) error {
+			cemetery.Bury(&testCat{
+				Name: "cat",
+			})
+
+			priest := NewProviderPriest(func(tagConf string, in struct {
+				cat *testCat `gone:"*"`
+			}) (*testBird, error) {
+				assert.Equal(t, in.cat.Name, "cat")
+				return &testBird{Name: tagConf}, nil
+			})
+			return priest(cemetery)
+		})
+	})
+}
