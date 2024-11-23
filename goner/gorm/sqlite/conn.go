@@ -14,15 +14,13 @@ type dial struct {
 	DSN        string `gone:"config,gorm.sqlite.dsn"`
 }
 
-func (d *dial) AfterRevive() error {
-	if d.Dialector != nil {
-		return gone.NewInnerError("gorm.mysql.dialer has been initialized", gone.StartError)
+func (d *dial) Apply(*gorm.Config) error {
+	if d.Dialector == nil {
+		d.Dialector = sqlite.New(sqlite.Config{
+			DriverName: d.DriverName,
+			DSN:        d.DSN,
+		})
 	}
-
-	d.Dialector = sqlite.New(sqlite.Config{
-		DriverName: d.DriverName,
-		DSN:        d.DSN,
-	})
 	return nil
 }
 

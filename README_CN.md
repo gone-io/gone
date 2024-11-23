@@ -233,6 +233,12 @@ curl -X POST 'http://localhost:8080/hello' \
 ## 📚[完整文档](https://goner.fun/zh/)
 
 ## 更新记录
+### v1.2.0
+- 提供一种新的 `gone.GonerOption`，可以将按类型注入，将构造注入类型实例的任务代理给一个实现了`Suck(conf string, v reflect.Value, field reflect.StructField) error`的**Goner**；
+- 提供了一个用于实现**Goner Provider**的辅助函数：`func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)) Priest` ；
+- 给`goner/xorm` 集群模式提供策略配置的方案；
+- 完善`goner/gorm`代码 和 做功能测试，支持多种数据库的接入。
+
 ### v1.1.1
 - goner/xorm 支持集群 和 多数据库，最新文档：https://goner.fun/zh/references/xorm.html
 - 新增 goner/gorm，封装`gorm.io/gorm`，用于数据库的访问，暂时只支持mysql，完善中...

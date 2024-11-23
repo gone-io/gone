@@ -5,7 +5,6 @@ import (
 	"github.com/gone-io/gone"
 	"reflect"
 	"strconv"
-	"strings"
 	"xorm.io/xorm"
 )
 
@@ -40,24 +39,8 @@ type provider struct {
 var xormInterface = gone.GetInterfaceType(new(gone.XormEngine))
 var xormInterfaceSlice = gone.GetInterfaceType(new([]gone.XormEngine))
 
-func confMap(conf string) map[string]string {
-	conf = strings.TrimSpace(conf)
-	specs := strings.Split(conf, ",")
-	m := make(map[string]string)
-	for _, spec := range specs {
-		spec = strings.TrimSpace(spec)
-		pairs := strings.Split(spec, "=")
-		if len(pairs) == 1 {
-			m[pairs[0]] = ""
-		} else if len(pairs) > 1 {
-			m[pairs[0]] = pairs[1]
-		}
-	}
-	return m
-}
-
 func (p *provider) Suck(conf string, v reflect.Value) gone.SuckError {
-	m := confMap(conf)
+	m := gone.TagStringParse(conf)
 	clusterName := m[clusterKey]
 	if clusterName == "" {
 		clusterName = defaultCluster

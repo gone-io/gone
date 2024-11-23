@@ -29,27 +29,25 @@ type dial struct {
 	DontSupportDropConstraint bool `gone:"config,gorm.mysql.dont-support-drop-constraint"`
 }
 
-func (d *dial) AfterRevive() error {
-	if d.Dialector != nil {
-		return gone.NewInnerError("gorm.mysql.dialer has been initialized", gone.StartError)
+func (d *dial) Apply(*gorm.Config) error {
+	if d.Dialector == nil {
+		d.Dialector = mysql.New(mysql.Config{
+			DriverName:                    d.DriverName,
+			ServerVersion:                 d.ServerVersion,
+			DSN:                           d.DSN,
+			SkipInitializeWithVersion:     d.SkipInitializeWithVersion,
+			DefaultStringSize:             d.DefaultStringSize,
+			DefaultDatetimePrecision:      d.DefaultDatetimePrecision,
+			DisableWithReturning:          d.DisableWithReturning,
+			DisableDatetimePrecision:      d.DisableDatetimePrecision,
+			DontSupportRenameIndex:        d.DontSupportRenameIndex,
+			DontSupportRenameColumn:       d.DontSupportRenameColumn,
+			DontSupportForShareClause:     d.DontSupportForShareClause,
+			DontSupportNullAsDefaultValue: d.DontSupportNullAsDefaultValue,
+			DontSupportRenameColumnUnique: d.DontSupportRenameColumnUnique,
+			DontSupportDropConstraint:     d.DontSupportDropConstraint,
+		})
 	}
-
-	d.Dialector = mysql.New(mysql.Config{
-		DriverName:                    d.DriverName,
-		ServerVersion:                 d.ServerVersion,
-		DSN:                           d.DSN,
-		SkipInitializeWithVersion:     d.SkipInitializeWithVersion,
-		DefaultStringSize:             d.DefaultStringSize,
-		DefaultDatetimePrecision:      d.DefaultDatetimePrecision,
-		DisableWithReturning:          d.DisableWithReturning,
-		DisableDatetimePrecision:      d.DisableDatetimePrecision,
-		DontSupportRenameIndex:        d.DontSupportRenameIndex,
-		DontSupportRenameColumn:       d.DontSupportRenameColumn,
-		DontSupportForShareClause:     d.DontSupportForShareClause,
-		DontSupportNullAsDefaultValue: d.DontSupportNullAsDefaultValue,
-		DontSupportRenameColumnUnique: d.DontSupportRenameColumnUnique,
-		DontSupportDropConstraint:     d.DontSupportDropConstraint,
-	})
 	return nil
 }
 
@@ -58,6 +56,7 @@ func Priest(cemetery gone.Cemetery) error {
 	cemetery.Bury(
 		&dial{},
 		gone.IsDefault(new(gorm.Dialector)),
+		gone.Order1,
 	)
 	return nil
 }

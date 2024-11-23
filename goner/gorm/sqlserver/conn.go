@@ -15,16 +15,14 @@ type dial struct {
 	DefaultStringSize int    `gone:"config,gorm.sqlserver.default-string-size"`
 }
 
-func (d *dial) AfterRevive() error {
-	if d.Dialector != nil {
-		return gone.NewInnerError("gorm.mysql.dialer has been initialized", gone.StartError)
+func (d *dial) Apply(*gorm.Config) error {
+	if d.Dialector == nil {
+		d.Dialector = sqlserver.New(sqlserver.Config{
+			DriverName:        d.DriverName,
+			DSN:               d.DSN,
+			DefaultStringSize: d.DefaultStringSize,
+		})
 	}
-
-	d.Dialector = sqlserver.New(sqlserver.Config{
-		DriverName:        d.DriverName,
-		DSN:               d.DSN,
-		DefaultStringSize: d.DefaultStringSize,
-	})
 	return nil
 }
 

@@ -17,18 +17,16 @@ type dial struct {
 	withoutReturning     bool   `gone:"config,gorm.postgres.without-returning=default"`
 }
 
-func (d *dial) AfterRevive() (err error) {
-	if d.Dialector != nil {
-		return gone.NewInnerError("gorm.mysql.dialer has been initialized", gone.StartError)
+func (d *dial) Apply(*gorm.Config) error {
+	if d.Dialector == nil {
+		d.Dialector = postgres.New(postgres.Config{
+			DriverName:           d.driverName,
+			DSN:                  d.dsn,
+			WithoutReturning:     d.withoutReturning,
+			PreferSimpleProtocol: d.preferSimpleProtocol,
+			WithoutQuotingCheck:  d.withoutQuotingCheck,
+		})
 	}
-
-	d.Dialector = postgres.New(postgres.Config{
-		DriverName:           d.driverName,
-		DSN:                  d.dsn,
-		WithoutReturning:     d.withoutReturning,
-		PreferSimpleProtocol: d.preferSimpleProtocol,
-		WithoutQuotingCheck:  d.withoutQuotingCheck,
-	})
 	return nil
 }
 
