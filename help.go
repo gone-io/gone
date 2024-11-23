@@ -122,6 +122,9 @@ type provideType struct {
 
 func (d provideType) option() {}
 
+// Provide a kind of GonerOption, which can be used in burying Vampire2(which is implemented `Suck(conf string, v reflect.Value, field reflect.StructField) error`) to framework.
+// Provide will get the type of the object and put it in the GonerOption. When A goner need to be injected,
+// the framework will find the Vampire2 which Tag by the GonerOption and call the Suck method to create the goner and inject it.
 func Provide(objs ...any) GonerOption {
 	m := make(map[reflect.Type]any)
 
