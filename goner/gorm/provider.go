@@ -8,6 +8,8 @@ import (
 )
 
 func ProviderPriest(cemetery gone.Cemetery) error {
+	var gInstance *gorm.DB
+
 	return gone.NewProviderPriest(func(tagConf string, s struct {
 		dial   gorm.Dialector   `gone:"*"`
 		logger logger.Interface `gone:"*"`
@@ -56,6 +58,9 @@ func ProviderPriest(cemetery gone.Cemetery) error {
 		MaxOpen         int            `gone:"config,gorm.pool.max-open"`
 		ConnMaxLifetime *time.Duration `gone:"config,gorm.pool.conn-max-lifetime"`
 	}) (*gorm.DB, error) {
+		if gInstance != nil {
+			return gInstance, nil
+		}
 		g, err := gorm.Open(s.dial, &gorm.Config{
 			SkipDefaultTransaction:                   s.SkipDefaultTransaction,
 			FullSaveAssociations:                     s.FullSaveAssociations,
@@ -92,6 +97,7 @@ func ProviderPriest(cemetery gone.Cemetery) error {
 		if s.ConnMaxLifetime != nil {
 			db.SetConnMaxLifetime(*s.ConnMaxLifetime)
 		}
+		gInstance = g
 		return g, nil
 	})(cemetery)
 }
