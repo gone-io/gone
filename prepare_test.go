@@ -158,3 +158,51 @@ func TestHooksOrder(t *testing.T) {
 		assert.Equal(t, []int{0, 1, 2}, orders)
 	})
 }
+
+type SayName interface {
+	SayMyName() string
+}
+
+type TestGoner struct {
+	gone.Flag
+	Name string
+}
+
+func (g *TestGoner) SayMyName() string {
+	return g.Name
+}
+
+type TestNamedGoner struct {
+	gone.Flag
+	Name string
+}
+
+func (g *TestNamedGoner) GetGonerId() gone.GonerId {
+	return "test-named-goner"
+}
+
+func (g *TestNamedGoner) SayMyName() string {
+	return g.Name
+}
+
+func TestPreparer_Load(t *testing.T) {
+	t1 := TestGoner{Name: "test"}
+	t2 := TestNamedGoner{Name: "test-named"}
+	gone.
+		Default.
+		Load(&t1).
+		Bury(&t2).
+		LoadPriest(func(cemetery gone.Cemetery) error {
+			cemetery.Bury(&t1, gone.GonerId("t1"))
+			return nil
+		}).
+		Run(func(in struct {
+			t1 *TestGoner `gone:"*"`
+			t2 SayName    `gone:"test-named-goner"`
+			tx SayName    `gone:"t1"`
+		}) {
+			assert.Equal(t, in.t1, &t1)
+			assert.Equal(t, in.t2, &t2)
+			assert.Equal(t, in.tx, &t1)
+		})
+}
