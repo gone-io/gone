@@ -30,13 +30,13 @@
 
 Gone 是一个轻量级的golang依赖注入框架，并且适配了一些列第三方组件用于快速开始编写一个云原生的微服务。
 
-<img src="docs/assert/plan.png" width = "400" alt="plan"/>
-
 ## 特性
 - 依赖注入，支持对结构体属性和函数参数自动注入
 - **[Gonectr](https://github.com/gone-io/gonectr)**，生成项目、生成辅助代码、编译和启动项目
 - 单元测试方案，基于接口的mock测试
 - 多种组件，可插拔，支持云原生、微服务
+
+<img src="docs/assert/architecture.png" width = "600" alt="architecture"/>
 
 ## 快速开始
 1. 安装 [gonectr](https://github.com/gone-io/gonectr) 和 [mockgen](https://github.com/uber-go/mock/tree/main)

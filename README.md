@@ -32,13 +32,13 @@
 
 Gone is a lightweight dependency injection framework for Golang, designed to integrate with a variety of third-party components, enabling rapid development of cloud-native microservices.
 
-<img src="docs/assert/plan.png" width = "400" alt="plan"/>
-
 ## Features
 - Dependency injection: Supports automatic injection of struct fields and function parameters.
 - **[Gonectr](https://github.com/gone-io/gonectr)**: Generates projects, auxiliary code, compiles, and starts the project.
 - Unit testing solution: Mock testing based on interfaces.
 - Multiple pluggable components: Supports cloud-native and microservices architectures.
+  
+<img src="docs/assert/architecture.png" width = "600" alt="architecture"/>
 
 ## Quick Start
 1. Install [gonectr](https://github.com/gone-io/gonectr) and [mockgen](https://github.com/uber-go/mock/tree/main)
