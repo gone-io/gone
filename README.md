@@ -1,5 +1,5 @@
 <p align="left">
-   English&nbsp ｜&nbsp <a href="https://github.com/gone-io/gone/blob/main/README_CN.md">中文</a>
+   English&nbsp ｜&nbsp <a href="README_CN.md">中文</a>
 </p>
 
 [![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE) 
