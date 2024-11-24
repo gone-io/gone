@@ -10,7 +10,7 @@
 [![Release](https://img.shields.io/github/release/gone-io/gone.svg?style=flat-square)](https://github.com/gone-io/gone/releases)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)  
 
-<img src="docs/assert/logo.png" width = "150" alt="logo" />
+<img src="docs/assert/logo.png" width = "100" alt="logo" />
 
 - [Gone](#gone)
 	- [Gone 是什么？](#gone-是什么)
@@ -27,25 +27,16 @@
 
 # Gone
 ## Gone 是什么？
-Gone 是一个轻量级的golang依赖注入框架；内置了一系列Goners组件用于快速开发微服务。
+
+Gone 是一个轻量级的golang依赖注入框架，并且适配了一些列第三方组件用于快速开始编写一个云原生的微服务。
 
 <img src="docs/assert/plan.png" width = "400" alt="plan"/>
 
 ## 特性
-- 定义Goner接口，对依赖进行抽象
-- 依赖注入
-  - 注入Goners
-  - 注入函数参数
-- 模块化，可拆卸设计
-- 启动流程控制
-- 测试支持
-- 内置组件
-  - goner/config，支持配置参数的依赖注入
-  - goner/tracer，给调用链路增加TraceId，支持链路追踪
-  - goner/logrus、goner/zap，支持日志记录
-  - goner/gin，集成gin框架，提供HTTP请求参数的依赖注入
-  - goner/viper，用于解析多种配置文件
-  - ...
+- 依赖注入，支持对结构体属性和函数参数自动注入
+- **[Gonectr](https://github.com/gone-io/gonectr)**，生成项目、生成辅助代码、编译和启动项目
+- 单元测试方案，基于接口的mock测试
+- 多种组件，可插拔，支持云原生、微服务
 
 ## 快速开始
 1. 安装 [gonectr](https://github.com/gone-io/gonectr) 和 [mockgen](https://github.com/uber-go/mock/tree/main)

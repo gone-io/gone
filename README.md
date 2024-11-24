@@ -10,7 +10,7 @@
 [![Release](https://img.shields.io/github/release/gone-io/gone.svg?style=flat-square)](https://github.com/gone-io/gone/releases)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)  
 
-<img src="docs/assert/logo.png" width = "150" alt="logo" align=center />
+<img src="docs/assert/logo.png" width = "100" alt="logo" align=center />
 
 
 - [Gone](#gone)
@@ -30,25 +30,15 @@
 # Gone
 ## What Is Gone?
 
-Gone is a lightweight golang dependency injection framework; a series of Goners components are built in for rapid development of micro services.
+Gone is a lightweight dependency injection framework for Golang, designed to integrate with a variety of third-party components, enabling rapid development of cloud-native microservices.
 
 <img src="docs/assert/plan.png" width = "400" alt="plan"/>
 
 ## Features
-- Define the Goner interface to abstract dependencies.
-- Dependency Injection:
-    - Inject Goners.
-    - Inject function arguments.
-- Modular, detachable design.
-- Startup process control.
-- Testing support.
-- Built-in components:
-    - goner/config, supports dependency injection of configuration parameters.
-    - goner/tracer, adds TraceId to call chains, supports link tracing.
-    - goner/logrus, goner/zap, supports log recording.
-    - goner/gin, integrates with the gin framework to provide HTTP request parameter dependency injection.
-    - goner/viper, used to parse various configuration files.
-    - ...
+- Dependency injection: Supports automatic injection of struct fields and function parameters.
+- **[Gonectr](https://github.com/gone-io/gonectr)**: Generates projects, auxiliary code, compiles, and starts the project.
+- Unit testing solution: Mock testing based on interfaces.
+- Multiple pluggable components: Supports cloud-native and microservices architectures.
 
 ## Quick Start
 1. Install [gonectr](https://github.com/gone-io/gonectr) and [mockgen](https://github.com/uber-go/mock/tree/main)
