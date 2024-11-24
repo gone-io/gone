@@ -1,4 +1,4 @@
-package mysql
+package sqlserver
 
 import (
 	"github.com/gone-io/gone"

@@ -284,6 +284,24 @@ func (p *Preparer) Test(fn any) {
 	p.testKit().AfterStart(fn).Run()
 }
 
+// TagStringParse parse tag string to map
+// example: "a=1,b=2" -> map[string]string{"a":"1","b":"2"}
+func TagStringParse(conf string) map[string]string {
+	conf = strings.TrimSpace(conf)
+	specs := strings.Split(conf, ",")
+	m := make(map[string]string)
+	for _, spec := range specs {
+		spec = strings.TrimSpace(spec)
+		pairs := strings.Split(spec, "=")
+		if len(pairs) == 1 && pairs[0] != "" {
+			m[pairs[0]] = ""
+		} else if len(pairs) > 1 && pairs[0] != "" {
+			m[pairs[0]] = pairs[1]
+		}
+	}
+	return m
+}
+
 type provider[T any] struct {
 	Flag
 	cemetery Cemetery `gone:"*"`
@@ -299,23 +317,11 @@ func (p *provider[T]) Suck(conf string, v reflect.Value, field reflect.StructFie
 	return nil
 }
 
-// TagStringParse parse tag string to map
-// example: "a=1,b=2" -> map[string]string{"a":"1","b":"2"}
-func TagStringParse(conf string) map[string]string {
-	conf = strings.TrimSpace(conf)
-	specs := strings.Split(conf, ",")
-	m := make(map[string]string)
-	for _, spec := range specs {
-		spec = strings.TrimSpace(spec)
-		pairs := strings.Split(spec, "=")
-		if len(pairs) == 1 {
-			m[pairs[0]] = ""
-		} else if len(pairs) > 1 {
-			m[pairs[0]] = pairs[1]
-		}
-	}
-	return m
-}
+// Provider is a factory function template, which return `T` instance and goner framework will call this function to
+// create a new `T` instance for Type `T` fields of a struct who need injected.
+// The parameter `tagConf` is the tag string of the field, and the parameter `param` should be an anonymous struct which field can be tag by `gone` and injected by goner framework.
+// The function should be used for NewProviderPriest to create a provider priest.
+type Provider[P, T any] func(tagConf string, param P) (T, error)
 
 // NewProviderPriest create a provider priest function for goner from a function like: `func(tagConf string, injectableStructParam struct{}) (provideType T, err error)`
 // example:
@@ -334,8 +340,15 @@ func TagStringParse(conf string) map[string]string {
 //
 // var priest = NewProviderPriest(NewMyGoner)
 // ```
-func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)) Priest {
+func NewProviderPriest[P, T any](fn Provider[P, T]) Priest {
 	p := provider[T]{}
+
+	t := new(T)
+	of := reflect.TypeOf(t).Elem()
+	pt := provideType{
+		t: []reflect.Type{of},
+	}
+
 	p.create = func(tagConf string) (T, error) {
 		args, err := p.cemetery.InjectFuncParameters(fn, func(pt reflect.Type, i int) any {
 			if i == 0 {
@@ -347,7 +360,6 @@ func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)
 		if err != nil {
 			return *new(T), err
 		}
-
 		results := reflect.ValueOf(fn).Call(args)
 		if results[1].IsNil() {
 			return results[0].Interface().(T), nil
@@ -356,7 +368,7 @@ func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)
 	}
 
 	return func(cemetery Cemetery) error {
-		cemetery.Bury(&p, Provide(*new(T)))
+		cemetery.Bury(&p, pt)
 		return nil
 	}
 }
