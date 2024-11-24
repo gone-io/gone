@@ -224,6 +224,11 @@ curl -X POST 'http://localhost:8080/hello' \
 ## 📚[完整文档](https://goner.fun/zh/)
 
 ## 更新记录
+### v1.2.1
+- 定义 **gone.Provider**，一个工厂函数用于将 不是 **Goner** 的外部组件（结构体、结构体指针、函数、接口）注入到 属性需要注入的Goner；
+- 修复 `gone.NewProviderPriest` 无法为 生成接口类型的**gone.Provider**生成Priest; 
+- 为`goner/gorm`编写测试代码，补齐其他测试代码；文档更新。
+
 ### v1.2.0
 - 提供一种新的 `gone.GonerOption`，可以将按类型注入，将构造注入类型实例的任务代理给一个实现了`Suck(conf string, v reflect.Value, field reflect.StructField) error`的**Goner**；
 - 提供了一个用于实现**Goner Provider**的辅助函数：`func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)) Priest` ；
