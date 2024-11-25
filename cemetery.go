@@ -246,12 +246,32 @@ func (c *cemetery) reviveByVampire2(goner Goner, extConfig string, v reflect.Val
 	return false, nil
 }
 
-func (c *cemetery) reviveFieldByType(field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool) {
-	container := c.getGonerContainerByType(field.Type, fmt.Sprintf("%s.%s", goneTypeName, field.Name))
+func (c *cemetery) reviveFieldByType(gonerType reflect.Type, field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool) {
+	goneTypeName := getNameByType(gonerType)
+	filedName := fmt.Sprintf("%s.%s", goneTypeName, field.Name)
+
+	container := c.getGonerContainerByType(field.Type, filedName)
 	if container != nil {
 		setFieldValue(v, container.GetGoner())
 		suc = true
 		deps = append(deps, container)
+	}
+	return
+}
+
+func (c *cemetery) reviveFieldByProvider(tag string, field reflect.StructField, v reflect.Value) (deps []Tomb, suc bool, err error) {
+	if aTomb, ok := c.providerMap[field.Type]; ok {
+		err = c.checkRevive(aTomb)
+		if err != nil {
+			return
+		}
+		deps = append(deps, aTomb)
+		vampire2 := aTomb.GetGoner().(Vampire2)
+		_, extConfig := parseGoneTagId(tag)
+
+		err = vampire2.Suck(extConfig, v, field)
+
+		suc = err == nil
 	}
 	return
 }
@@ -327,10 +347,7 @@ func (c *cemetery) reviveOneAndItsDeps(tomb Tomb) (deps []Tomb, err error) {
 	return
 }
 
-func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
-	gonerType := reflect.TypeOf(goner).Elem()
-	gonerValue := reflect.ValueOf(goner).Elem()
-
+func getNameByType(gonerType reflect.Type) string {
 	goneTypeName := gonerType.PkgPath()
 	if goneTypeName == "" {
 		goneTypeName = gonerType.Name()
@@ -341,6 +358,12 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 	if goneTypeName == "" {
 		goneTypeName = "[Anonymous Goner]"
 	}
+	return goneTypeName
+}
+
+func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
+	gonerType := reflect.TypeOf(goner).Elem()
+	gonerValue := reflect.ValueOf(goner).Elem()
 
 	for i := 0; i < gonerValue.NumField(); i++ {
 		field := gonerType.Field(i)
@@ -370,15 +393,15 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 			continue
 		}
 
-		if tmpDeps, suc, err = c.reviveFieldByProvider(tag, field, v, goneTypeName); err != nil {
-			return
-		} else if suc {
+		// inject by type
+		if tmpDeps, suc = c.reviveFieldByType(gonerType, field, v); suc {
 			deps = append(deps, tmpDeps...)
 			continue
 		}
 
-		// inject by type
-		if tmpDeps, suc = c.reviveFieldByType(field, v, goneTypeName); suc {
+		if tmpDeps, suc, err = c.reviveFieldByProvider(tag, field, v); err != nil {
+			return
+		} else if suc {
 			deps = append(deps, tmpDeps...)
 			continue
 		}
@@ -390,23 +413,6 @@ func (c *cemetery) ReviveOne(goner any) (deps []Tomb, err error) {
 		}
 
 		return deps, CannotFoundGonerByTypeError(field.Type)
-	}
-	return
-}
-
-func (c *cemetery) reviveFieldByProvider(tag string, field reflect.StructField, v reflect.Value, goneTypeName string) (deps []Tomb, suc bool, err error) {
-	if aTomb, ok := c.providerMap[field.Type]; ok {
-		err = c.checkRevive(aTomb)
-		if err != nil {
-			return
-		}
-		deps = append(deps, aTomb)
-		vampire2 := aTomb.GetGoner().(Vampire2)
-		_, extConfig := parseGoneTagId(tag)
-
-		err = vampire2.Suck(extConfig, v, field)
-
-		suc = err == nil
 	}
 	return
 }

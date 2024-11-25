@@ -317,12 +317,6 @@ func (p *provider[T]) Suck(conf string, v reflect.Value, field reflect.StructFie
 	return nil
 }
 
-// Provider is a factory function template, which return `T` instance and goner framework will call this function to
-// create a new `T` instance for Type `T` fields of a struct who need injected.
-// The parameter `tagConf` is the tag string of the field, and the parameter `param` should be an anonymous struct which field can be tag by `gone` and injected by goner framework.
-// The function should be used for NewProviderPriest to create a provider priest.
-type Provider[P, T any] func(tagConf string, param P) (T, error)
-
 // NewProviderPriest create a provider priest function for goner from a function like: `func(tagConf string, injectableStructParam struct{}) (provideType T, err error)`
 // example:
 // ```go
