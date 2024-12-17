@@ -6,10 +6,6 @@ import (
 	"sync"
 )
 
-func NewRedisPool() (gone.Angel, gone.GonerId, gone.GonerOption) {
-	return &pool{}, gone.IdGoneRedisPool, gone.IsDefault(new(Pool))
-}
-
 type pool struct {
 	gone.Flag
 	*redis.Pool
@@ -21,6 +17,10 @@ type pool struct {
 	dbIndex     int    `gone:"config,redis.db,default=0"`
 
 	once sync.Once
+}
+
+func (f *pool) Name() string {
+	return "gone-redis-pool"
 }
 
 func (f *pool) connect() {
@@ -49,7 +49,7 @@ func (f *pool) connect() {
 	})
 }
 
-func (f *pool) Start(gone.Cemetery) error {
+func (f *pool) Start() error {
 	f.connect()
 	return nil
 }
@@ -66,6 +66,6 @@ func (f *pool) Close(conn redis.Conn) {
 	}
 }
 
-func (f *pool) Stop(gone.Cemetery) error {
+func (f *pool) Stop() error {
 	return f.Pool.Close()
 }

@@ -161,7 +161,7 @@ func Test_locker_LockAndDo(t *testing.T) {
 	mockPool2.EXPECT().Close(gomock.Any()).AnyTimes()
 	mockPool2.EXPECT().Get().Return(conn2).AnyTimes()
 
-	gone.Prepare(tracer.Priest, logrus.Priest, config.Priest).AfterStart(func(in struct {
+	gone.Prepare(tracer.Load).Test(func(in struct {
 		tracer tracer.Tracer `gone:"gone-tracer"`
 	}) {
 		l := locker{
@@ -181,5 +181,5 @@ func Test_locker_LockAndDo(t *testing.T) {
 		}, 100*time.Millisecond, 50*time.Millisecond)
 
 		assert.Nil(t, err)
-	}).Run()
+	})
 }

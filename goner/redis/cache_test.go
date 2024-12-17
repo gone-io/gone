@@ -12,7 +12,7 @@ import (
 )
 
 func TestCache(t *testing.T) {
-	gone.Test(func(c *cache) {
+	gone.Loads(Load).Test(func(c *cache) {
 		type Point struct {
 			X int
 			Y int
@@ -46,11 +46,11 @@ func TestCache(t *testing.T) {
 		<-time.After(ttl + 2*time.Second)
 		err = c.Get(key, value2)
 		assert.Equal(t, ErrNil, err)
-	}, Priest)
+	})
 }
 
 func Test_cache_Keys(t *testing.T) {
-	gone.Test(func(c *cache) {
+	gone.Loads(Load).Test(func(c *cache) {
 		n := 10
 		f := rand.Intn(100)
 
@@ -79,7 +79,7 @@ func Test_cache_Keys(t *testing.T) {
 			err := c.Remove(k)
 			assert.Nil(t, err)
 		}
-	}, Priest)
+	})
 }
 
 type useKey struct {
@@ -89,7 +89,9 @@ type useKey struct {
 }
 
 func TestKey(t *testing.T) {
-	gone.Test(func(u *useKey) {
+	gone.Loads(Load, func(loader gone.Loader) error {
+		return loader.Load(&useKey{})
+	}).Test(func(u *useKey) {
 		assert.Equal(t, u.key, u.cache)
 		key := "test-key"
 		value := "10"
@@ -124,8 +126,5 @@ func TestKey(t *testing.T) {
 		err = u.key.Del(key2)
 		assert.Nil(t, err)
 
-	}, func(cemetery gone.Cemetery) error {
-		cemetery.Bury(&useKey{})
-		return nil
-	}, Priest)
+	})
 }

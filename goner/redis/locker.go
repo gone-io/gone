@@ -16,14 +16,14 @@ end`
 
 var ErrorLockFailed = errors.New("not lock success")
 
-func NewRedisLocker() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &locker{}, gone.IdGoneRedisLocker, gone.IsDefault(new(Locker))
-}
+//func NewRedisLocker() (gone.Goner, gone.GonerId, gone.GonerOption) {
+//	return &locker{}, gone.IdGoneRedisLocker, gone.IsDefault(new(Locker))
+//}
 
 type locker struct {
 	tracer gone.Tracer `gone:"gone-tracer"`
 	*inner `gone:"gone-redis-inner"`
-	k      Key `gone:"gone-redis-key"`
+	k      Key `gone:"*"`
 }
 
 type Unlock func()

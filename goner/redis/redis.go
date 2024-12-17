@@ -8,15 +8,19 @@ import (
 
 const IdGoneRedisInner = "gone-redis-inner"
 
-func NewInner() (gone.Goner, gone.GonerId) {
-	return &inner{}, IdGoneRedisInner
-}
+//func NewInner() (gone.Goner, gone.GonerId) {
+//	return &inner{}, IdGoneRedisInner
+//}
 
 type inner struct {
 	gone.Flag
 	gone.Logger `gone:"gone-logger"`
 	pool        Pool   `gone:"gone-redis-pool"`
 	cachePrefix string `gone:"config,redis.cache.prefix"`
+}
+
+func (r *inner) Name() string {
+	return IdGoneRedisInner
 }
 
 func (r *inner) getConn() redis.Conn {

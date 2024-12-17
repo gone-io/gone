@@ -9,21 +9,9 @@ import (
 	"testing"
 )
 
-func Test_r_AfterRevive(t *testing.T) {
-	gone.Prepare(tracer.Priest, logrus.Priest, config.Priest).AfterStart(func(in struct {
-		tracer tracer.Tracer `gone:"gone-tracer"`
-	}) {
-		g := r{
-			Tracer: in.tracer,
-		}
-		err := g.AfterRevive()
-		assert.Nil(t, err)
-	}).Run()
-}
-
 func Test_r_trip(t *testing.T) {
-	gone.Prepare(tracer.Priest, logrus.Priest, config.Priest).AfterStart(func(in struct {
-		tracer tracer.Tracer `gone:"gone-tracer"`
+	gone.Prepare(tracer.Load).Test(func(in struct {
+		tracer tracer.Tracer `gone:"*"`
 	}) {
 		controller := gomock.NewController(t)
 		defer controller.Finish()
@@ -43,5 +31,5 @@ func Test_r_trip(t *testing.T) {
 			_, err := trip(&req.Request{})
 			assert.Nil(t, err)
 		})
-	}).Run()
+	})
 }

@@ -172,3 +172,8 @@ func convertUppercaseCamel(input string) string {
 	}
 	return strings.Join(parts, "_")
 }
+
+// GetInterfaceType get interface type
+func GetInterfaceType[T any](t *T) reflect.Type {
+	return reflect.TypeOf(t).Elem()
+}

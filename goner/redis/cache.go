@@ -4,19 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
-	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/internal/json"
 	"strings"
 	"time"
 )
 
-func NewRedisCache() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &cache{}, gone.IdGoneRedisCache, gone.IsDefault(new(Cache))
-}
-
-func NewRedisKey() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &cache{}, gone.IdGoneRedisKey, gone.IsDefault(new(Key))
-}
+//func NewRedisCache() (gone.Goner, gone.GonerId, gone.GonerOption) {
+//	return &cache{}, gone.IdGoneRedisCache, gone.IsDefault(new(Cache))
+//}
+//
+//func NewRedisKey() (gone.Goner, gone.GonerId, gone.GonerOption) {
+//	return &cache{}, gone.IdGoneRedisKey, gone.IsDefault(new(Key))
+//}
 
 type cache struct {
 	*inner `gone:"gone-redis-inner"`

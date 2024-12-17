@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+type Tracer = gone.Tracer
+
 var load = gone.OnceLoad(func(loader gone.Loader) error {
 	return loader.Load(
 		&tracer{},
@@ -32,7 +34,7 @@ type tracer struct {
 var xMap sync.Map
 
 func (t *tracer) Name() string {
-	return "tracer"
+	return "gone-tracer"
 }
 
 func (t *tracer) SetTraceId(traceId string, cb func()) {

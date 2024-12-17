@@ -8,8 +8,17 @@ import (
 	"time"
 )
 
-func NewSchedule() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &schedule{}, gone.IdGoneSchedule, gone.Order4
+var load = gone.OnceLoad(func(loader gone.Loader) error {
+	return loader.Load(&schedule{})
+})
+
+func Load(loader gone.Loader) error {
+	return load(loader)
+}
+
+// Priest Deprecated, use Load instead
+func Priest(loader gone.Loader) error {
+	return Load(loader)
 }
 
 type schedule struct {
@@ -24,12 +33,11 @@ type schedule struct {
 	checkPeriod time.Duration `gone:"config,schedule.checkPeriod,default=2s"`
 }
 
-func (s *schedule) AfterRevive() error {
+func (s *schedule) Init() {
 	s.cronTab = cron.New(cron.WithSeconds())
-	return nil
 }
 
-func (s *schedule) Start(gone.Cemetery) error {
+func (s *schedule) Start() error {
 	for _, o := range s.schedulers {
 		o.Cron(func(spec string, jobName JobName, fn func()) {
 			lockKey := fmt.Sprintf("lock-job:%s", jobName)
@@ -53,7 +61,7 @@ func (s *schedule) Start(gone.Cemetery) error {
 	return nil
 }
 
-func (s *schedule) Stop(gone.Cemetery) error {
+func (s *schedule) Stop() error {
 	s.cronTab.Stop()
 	return nil
 }

@@ -249,4 +249,5 @@ const (
 	LoadedError        = 1007
 	FailInstall        = 1008
 	InjectError        = 1009
+	ProviderError      = 1010
 )
