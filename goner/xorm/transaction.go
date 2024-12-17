@@ -65,7 +65,7 @@ func (e *wrappedEngine) Transaction(fn func(session Interface) error) error {
 					e.log.Errorf("%s", gone.PanicTrace(2, 1))
 					if !isRollback {
 						rollback()
-						err = gone.NewInnerError(fmt.Sprintf("%s", info), gone.DbRollForPanic)
+						err = gone.NewInnerError(fmt.Sprintf("%s", info), gone.DbRollForPanicError)
 					} else {
 						panic(info)
 					}

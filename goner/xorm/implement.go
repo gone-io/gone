@@ -7,10 +7,6 @@ import (
 	"xorm.io/xorm"
 )
 
-func NewXormEngine() (gone.Angel, gone.GonerId, gone.GonerOption, gone.GonerOption) {
-	return newWrappedEngine(), gone.IdGoneXorm, gone.IsDefault(new(gone.XormEngine)), gone.Order3
-}
-
 func newWrappedEngine() *wrappedEngine {
 	return &wrappedEngine{
 		newFunc:    newEngine,
@@ -70,7 +66,7 @@ func (e *wrappedEngine) SetPolicy(policy xorm.GroupPolicy) {
 	}
 }
 
-func (e *wrappedEngine) Start(gone.Cemetery) error {
+func (e *wrappedEngine) Start() error {
 	err := e.create()
 	if err != nil {
 		return err
@@ -131,7 +127,7 @@ func (e *wrappedEngine) config() {
 	e.SetLogger(&dbLogger{Logger: e.log, showSql: e.conf.ShowSql})
 }
 
-func (e *wrappedEngine) Stop(gone.Cemetery) error {
+func (e *wrappedEngine) Stop() error {
 	if e.unitTest {
 		return nil
 	}

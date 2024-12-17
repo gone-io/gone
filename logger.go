@@ -24,7 +24,7 @@ type Logger interface {
 	SetLevel(level LoggerLevel)
 }
 
-const LoggerName = "logger"
+const LoggerName = "gone-logger"
 
 var defaultLog = &defaultLogger{
 	level: InfoLevel,

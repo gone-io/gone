@@ -240,14 +240,16 @@ func NewInnerErrorSkip(msg string, code int, skip int) Error {
 
 // Error Code：1001~1999 used for gone framework.
 const (
-	GonerNameNotFound  = 1001
-	GonerTypeNotFound  = 1002
-	CircularDependency = 1003
-	GonerTypeNotMatch  = 1004
-	ConfigError        = 1005
-	NotSupport         = 1006
-	LoadedError        = 1007
-	FailInstall        = 1008
-	InjectError        = 1009
-	ProviderError      = 1010
+	GonerNameNotFound   = 1001
+	GonerTypeNotFound   = 1002
+	CircularDependency  = 1003
+	GonerTypeNotMatch   = 1004
+	ConfigError         = 1005
+	NotSupport          = 1006
+	LoadedError         = 1007
+	FailInstall         = 1008
+	InjectError         = 1009
+	ProviderError       = 1010
+	StartError          = 1011
+	DbRollForPanicError = 1012
 )
