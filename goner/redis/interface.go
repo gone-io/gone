@@ -97,6 +97,15 @@ type Pool interface {
 	Close(conn redis.Conn)
 }
 
+type HashProvider interface {
+	ProvideHashForKey(key string) (Hash, error)
+}
+
+const (
+	IdGoneRedisInner = "gone-redis-inner"
+	IdGoneRedis      = "redis"
+)
+
 var (
 	ErrNil           = redis.ErrNil
 	ErrNotExpire     = KeyNoExpirationError()

@@ -25,8 +25,7 @@ var load = gone.OnceLoad(func(loader gone.Loader) error {
 	if err := loader.Load(&locker{}, gone.IsDefault(new(Locker))); err != nil {
 		return gone.ToError(err)
 	}
-
-	if err := loader.Load(&provider{}); err != nil {
+	if err := loader.Load(&provider{}, gone.IsDefault(new(HashProvider))); err != nil {
 		return gone.ToError(err)
 	}
 	return nil

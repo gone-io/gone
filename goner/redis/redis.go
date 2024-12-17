@@ -6,12 +6,6 @@ import (
 	"github.com/gone-io/gone"
 )
 
-const IdGoneRedisInner = "gone-redis-inner"
-
-//func NewInner() (gone.Goner, gone.GonerId) {
-//	return &inner{}, IdGoneRedisInner
-//}
-
 type inner struct {
 	gone.Flag
 	gone.Logger `gone:"gone-logger"`

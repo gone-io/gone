@@ -13,7 +13,7 @@ type provider struct {
 }
 
 func (s *provider) Name() string {
-	return "redis"
+	return IdGoneRedis
 }
 
 var cacheType = gone.GetInterfaceType(new(Cache))
@@ -69,4 +69,12 @@ func (s *provider) Provide(tagConf string, t reflect.Type) (any, error) {
 			gone.GetTypeName(t),
 		)
 	}
+}
+
+func (s *provider) ProvideHashForKey(key string) (Hash, error) {
+	provide, err := s.Provide(key, hashType)
+	if err != nil {
+		return nil, gone.ToError(err)
+	}
+	return provide.(Hash), nil
 }
