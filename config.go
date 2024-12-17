@@ -23,8 +23,8 @@ type ConfigProvider struct {
 	configure Configure `gone:"configure"` // The Configure implementation to use
 }
 
-// Name returns the provider name "config" used for registration
-func (s *ConfigProvider) Name() string {
+// GonerName returns the provider name "config" used for registration
+func (s *ConfigProvider) GonerName() string {
 	return "config"
 }
 

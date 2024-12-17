@@ -19,7 +19,7 @@ type pool struct {
 	once sync.Once
 }
 
-func (f *pool) Name() string {
+func (f *pool) GonerName() string {
 	return "gone-redis-pool"
 }
 

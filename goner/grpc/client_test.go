@@ -14,7 +14,7 @@ import (
 
 func (s *clientRegister) Infof(format string, args ...any) {}
 func TestClientRegister_traceInterceptor(t *testing.T) {
-	gone.Prepare(config.Priest, tracer.Priest, logrus.Priest).AfterStart(func(in struct {
+	gone.Prepare(tracer.Load).Test(func(in struct {
 		tracer tracer.Tracer `gone:"gone-tracer"`
 	}) {
 
@@ -40,7 +40,7 @@ func TestClientRegister_traceInterceptor(t *testing.T) {
 			)
 			assert.Nil(t, err)
 		})
-	}).Run()
+	})
 }
 
 func Test_clientRegister_register(t *testing.T) {
@@ -56,7 +56,7 @@ func Test_clientRegister_register(t *testing.T) {
 		clients:     []Client{client},
 	}
 
-	err := register.Start(nil)
+	err := register.Start()
 	assert.Nil(t, err)
 }
 
@@ -64,11 +64,10 @@ func Test_clientRegister_Stop(t *testing.T) {
 	register := clientRegister{
 		connections: make(map[string]*grpc.ClientConn),
 	}
-
-	conn, err2 := grpc.NewClient(":8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err2 := grpc.Dial(":8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.Nil(t, err2)
 	register.connections[":8080"] = conn
 
-	err := register.Stop(nil)
+	err := register.Stop()
 	assert.Nil(t, err)
 }

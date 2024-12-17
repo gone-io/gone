@@ -95,11 +95,11 @@ func TestName(t *testing.T) {
 			opt := Name(tt.setName)
 
 			if err := opt.Apply(c); err != nil {
-				t.Errorf("Name(%q).Apply() error = %v", tt.setName, err)
+				t.Errorf("GonerName(%q).Apply() error = %v", tt.setName, err)
 			}
 
 			if c.name != tt.wantName {
-				t.Errorf("Name(%q) got name = %q, want %q", tt.setName, c.name, tt.wantName)
+				t.Errorf("GonerName(%q) got name = %q, want %q", tt.setName, c.name, tt.wantName)
 			}
 		})
 	}

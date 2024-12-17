@@ -29,7 +29,7 @@ type dial struct {
 	DontSupportDropConstraint bool `gone:"config,gorm.mysql.dont-support-drop-constraint"`
 }
 
-func (d *dial) Apply(*gorm.Config) error {
+func (d *dial) Init() error {
 	if d.Dialector == nil {
 		d.Dialector = mysql.New(mysql.Config{
 			DriverName:                    d.DriverName,

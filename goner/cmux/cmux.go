@@ -51,7 +51,7 @@ type server struct {
 	listen func(network, address string) (net.Listener, error)
 }
 
-func (s *server) Name() string {
+func (s *server) GonerName() string {
 	return Name
 }
 

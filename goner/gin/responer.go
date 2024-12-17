@@ -34,7 +34,7 @@ type responser struct {
 	returnWrappedData bool `gone:"config,server.return.wrapped-data,default=true"`
 }
 
-func (r *responser) Name() string {
+func (r *responser) GonerName() string {
 	return IdGoneGinResponser
 }
 

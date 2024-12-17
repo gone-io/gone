@@ -12,7 +12,7 @@ type sugar struct {
 	provider *zapLoggerProvider `gone:"*"`
 }
 
-func (l *sugar) Name() string {
+func (l *sugar) GonerName() string {
 	return "gone-logger"
 }
 

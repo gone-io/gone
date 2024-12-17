@@ -87,13 +87,13 @@ func TestParseGoneTag(t *testing.T) {
 		wantExtend string
 	}{
 		{
-			name:       "Name only",
+			name:       "GonerName only",
 			tag:        "myGoner",
 			wantName:   "myGoner",
 			wantExtend: "",
 		},
 		{
-			name:       "Name and extend",
+			name:       "GonerName and extend",
 			tag:        "myGoner,config=value",
 			wantName:   "myGoner",
 			wantExtend: "config=value",

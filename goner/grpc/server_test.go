@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/gone-io/gone"
+	gonecmux "github.com/gone-io/gone/goner/cmux"
 	"github.com/gone-io/gone/goner/tracer"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -31,13 +32,14 @@ func Test_server_initListener(t *testing.T) {
 		listener := NewMockListener(controller)
 		cMuxServer.EXPECT().MatchWithWriters(gomock.Any()).Return(listener)
 		cMuxServer.EXPECT().GetAddress().Return("")
-
-		cemetery := gone.NewBuryMockCemeteryForTest()
-		cemetery.Bury(cMuxServer, gone.IdGoneCMux)
-
-		s := server{}
-		err := s.initListener(cemetery)
-		assert.Nil(t, err)
+		gone.
+			Prepare(ServerLoad, tracer.Load, func(loader gone.Loader) error {
+				return loader.Load(cMuxServer, gone.Name(gonecmux.Name))
+			}).
+			Test(func(s *server) {
+				err := s.initListener()
+				assert.Nil(t, err)
+			})
 	})
 
 	t.Run("use tcpListener", func(t *testing.T) {
@@ -51,8 +53,7 @@ func Test_server_initListener(t *testing.T) {
 				return nil
 			},
 		}
-		cemetery := gone.NewBuryMockCemeteryForTest()
-		err := s.initListener(cemetery)
+		err := s.initListener()
 		assert.Nil(t, err)
 	})
 
@@ -67,17 +68,15 @@ func Test_server_initListener(t *testing.T) {
 				return errors.New("error")
 			},
 		}
-		cemetery := gone.NewBuryMockCemeteryForTest()
-		err := s.initListener(cemetery)
+		err := s.initListener()
 		assert.Error(t, err)
 	})
 }
 
 func Test_server_Start(t *testing.T) {
 	t.Run("no gRPC service found, gRPC server will not start", func(t *testing.T) {
-		cemetery := gone.NewBuryMockCemeteryForTest()
 		s := server{}
-		err := s.Start(cemetery)
+		err := s.Start()
 		assert.Error(t, err)
 	})
 
@@ -86,14 +85,13 @@ func Test_server_Start(t *testing.T) {
 		defer controller.Finish()
 
 		service := NewMockService(controller)
-		cemetery := gone.NewBuryMockCemeteryForTest()
 		s := server{
 			grpcServices: []Service{service},
 			createListener: func(s *server) error {
 				return errors.New("error")
 			},
 		}
-		err := s.Start(cemetery)
+		err := s.Start()
 		assert.Error(t, err)
 	})
 
@@ -106,7 +104,6 @@ func Test_server_Start(t *testing.T) {
 
 		listener := NewMockListener(controller)
 
-		cemetery := gone.NewBuryMockCemeteryForTest()
 		s := server{
 			grpcServices: []Service{service},
 			createListener: func(s *server) error {
@@ -114,7 +111,7 @@ func Test_server_Start(t *testing.T) {
 				return nil
 			},
 		}
-		err := s.Start(cemetery)
+		err := s.Start()
 		assert.Nil(t, err)
 	})
 }
@@ -147,7 +144,7 @@ func Test_server_Stop(t *testing.T) {
 	s := server{
 		grpcServer: grpc.NewServer(),
 	}
-	err := s.Stop(nil)
+	err := s.Stop()
 	assert.Nil(t, err)
 }
 
@@ -159,7 +156,7 @@ func Test_server_traceInterceptor(t *testing.T) {
 		XTraceId: []string{traceId},
 	})
 
-	gone.Prepare(config.Priest, tracer.Priest, logrus.Priest).AfterStart(func(in struct {
+	gone.Prepare(tracer.Load).Test(func(in struct {
 		tracer tracer.Tracer `gone:"gone-tracer"`
 	}) {
 		s := server{
@@ -174,11 +171,11 @@ func Test_server_traceInterceptor(t *testing.T) {
 		})
 		assert.Nil(t, err)
 
-	}).Run()
+	})
 }
 
 func Test_server_recoveryInterceptor(t *testing.T) {
-	gone.Prepare(tracer.Priest, logrus.Priest, config.Priest).AfterStart(func(in struct {
+	gone.Prepare(tracer.Load).Test(func(in struct {
 		tracer tracer.Tracer `gone:"gone-tracer"`
 	}) {
 		s := server{

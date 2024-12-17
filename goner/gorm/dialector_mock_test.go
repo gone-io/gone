@@ -132,7 +132,7 @@ func (mr *MockDialectorMockRecorder) Migrator(db any) *gomock.Call {
 // Name mocks base method.
 func (m *MockDialector) Name() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Name")
+	ret := m.ctrl.Call(m, "GonerName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
@@ -140,7 +140,7 @@ func (m *MockDialector) Name() string {
 // Name indicates an expected call of Name.
 func (mr *MockDialectorMockRecorder) Name() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockDialector)(nil).Name))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GonerName", reflect.TypeOf((*MockDialector)(nil).Name))
 }
 
 // QuoteTo mocks base method.

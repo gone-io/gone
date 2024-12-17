@@ -33,8 +33,8 @@ func (m *MockConfigure) Get(key string, v any, defaultVal string) error {
 
 func TestConfigProvider_Name(t *testing.T) {
 	provider := &ConfigProvider{}
-	if got := provider.Name(); got != "config" {
-		t.Errorf("ConfigProvider.Name() = %v, want %v", got, "config")
+	if got := provider.GonerName(); got != "config" {
+		t.Errorf("ConfigProvider.GonerName() = %v, want %v", got, "config")
 	}
 }
 

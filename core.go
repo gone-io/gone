@@ -104,7 +104,7 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 	co := newCoffin(goner)
 
 	if namedGoner, ok := goner.(NamedGoner); ok {
-		co.name = namedGoner.Name()
+		co.name = namedGoner.GonerName()
 	}
 
 	for _, option := range options {
@@ -404,7 +404,7 @@ func (s *Core) getDefaultCoffinByType(t reflect.Type) *coffin {
 	return nil
 }
 
-func (s *Core) Name() string {
+func (s *Core) GonerName() string {
 	return defaultId
 }
 

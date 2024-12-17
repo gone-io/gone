@@ -18,7 +18,7 @@ type proxy struct {
 	stat         bool              `gone:"config,server.proxy.stat,default=false"`
 }
 
-func (p *proxy) Name() string {
+func (p *proxy) GonerName() string {
 	return IdGoneGinProxy
 }
 

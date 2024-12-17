@@ -13,7 +13,7 @@ type inner struct {
 	cachePrefix string `gone:"config,redis.cache.prefix"`
 }
 
-func (r *inner) Name() string {
+func (r *inner) GonerName() string {
 	return IdGoneRedisInner
 }
 

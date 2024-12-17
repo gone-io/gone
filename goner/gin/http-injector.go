@@ -19,7 +19,7 @@ type httpInjector struct {
 	isInjectedBody bool
 }
 
-func (s *httpInjector) Name() string {
+func (s *httpInjector) GonerName() string {
 	return IdHttpInjector
 }
 

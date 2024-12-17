@@ -11,10 +11,10 @@ import (
 
 type clientRegister struct {
 	gone.Flag
-	gone.Logger `gone:"gone-logger"`
-	connections map[string]*grpc.ClientConn
+	gone.Logger `gone:"*"`
 	clients     []Client    `gone:"*"`
-	tracer      gone.Tracer `gone:"gone-tracer"`
+	tracer      gone.Tracer `gone:"*"`
+	connections map[string]*grpc.ClientConn
 }
 
 //go:gone
@@ -54,7 +54,7 @@ func (s *clientRegister) register(client Client) error {
 	return nil
 }
 
-func (s *clientRegister) Start(gone.Cemetery) error {
+func (s *clientRegister) Start() error {
 	for _, c := range s.clients {
 		s.Infof("register gRPC client %v on address %v\n", reflect.ValueOf(c).Type().String(), c.Address())
 		if err := s.register(c); err != nil {
@@ -65,7 +65,7 @@ func (s *clientRegister) Start(gone.Cemetery) error {
 	return nil
 }
 
-func (s *clientRegister) Stop(gone.Cemetery) error {
+func (s *clientRegister) Stop() error {
 	for _, conn := range s.connections {
 		err := conn.Close()
 		if err != nil {

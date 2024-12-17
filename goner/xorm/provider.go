@@ -37,7 +37,7 @@ type provider struct {
 	unitTest bool
 }
 
-func (p *provider) Name() string {
+func (p *provider) GonerName() string {
 	return "xorm"
 }
 

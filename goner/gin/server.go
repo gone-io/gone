@@ -47,7 +47,7 @@ type server struct {
 	createListener func(*server) error
 }
 
-func (s *server) Name() string {
+func (s *server) GonerName() string {
 	return IdGoneGin
 }
 

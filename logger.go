@@ -42,7 +42,7 @@ type defaultLogger struct {
 	levelStr string `gone:"config,log.level"`
 }
 
-func (l *defaultLogger) Name() string {
+func (l *defaultLogger) GonerName() string {
 	return LoggerName
 }
 

@@ -20,7 +20,7 @@ func (s *Boss) Init() {
 	s.first.Eat()
 }
 
-func (s *Boss) Name() string {
+func (s *Boss) GonerName() string {
 	return s.name
 }
 
@@ -49,7 +49,7 @@ func (s *Worker) Work() {
 func (s *Worker) Eat() {
 	print("eat something")
 }
-func (s *Worker) Name() string {
+func (s *Worker) GonerName() string {
 	return s.name
 }
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gone-io/gone"
+	gonecmux "github.com/gone-io/gone/goner/cmux"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -21,7 +22,8 @@ func createListener(s *server) (err error) {
 
 type server struct {
 	gone.Flag
-	gone.Logger `gone:"gone-logger"`
+	gone.Logger `gone:"*"`
+	gone.Tracer `gone:"*"`
 
 	port int    `gone:"config,server.grpc.port,default=9090"`
 	host string `gone:"config,server.grpc.host,default=0.0.0.0"`
@@ -29,50 +31,36 @@ type server struct {
 	grpcServer *grpc.Server
 	listener   net.Listener
 
-	grpcServices []Service `gone:"*"`
-	gone.Tracer  `gone:"gone-tracer"`
+	grpcServices []Service        `gone:"*"`
+	keeper       gone.GonerKeeper `gone:"*"`
 
-	address string
-
+	address        string
 	createListener func(*server) error
 }
 
-func NewServer() (gone.Goner, gone.GonerOption) {
-	return &server{
-		createListener: createListener,
-	}, gone.Order2
-}
-
-func (s *server) initListener(cemetery gone.Cemetery) error {
-	tomb := cemetery.GetTomById(gone.IdGoneCMux)
-	if tomb != nil {
-		cMux := tomb.GetGoner().(gone.CMuxServer)
-		//s.listener = cMux.Match(
-		//	cmux.HTTP2HeaderField("content-type", "application/grpc"),
-		//	cmux.HTTP1HeaderField("content-type", "application/grpc"),
-		//)
-
-		s.listener = cMux.MatchWithWriters(
-			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
-		)
-
-		s.address = cMux.GetAddress()
-		return nil
+func (s *server) initListener() error {
+	goner := s.keeper.GetGonerByName(gonecmux.Name)
+	if goner != nil {
+		if muxServer, ok := goner.(gone.CMuxServer); ok {
+			s.listener = muxServer.MatchWithWriters(
+				cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+			)
+			s.address = muxServer.GetAddress()
+			return nil
+		}
 	}
 	s.address = fmt.Sprintf("%s:%d", s.host, s.port)
 	return s.createListener(s)
 }
-
-func (s *server) Start(cemetery gone.Cemetery) error {
+func (s *server) Init() error {
 	if len(s.grpcServices) == 0 {
 		return errors.New("no gRPC service found, gRPC server will not start")
 	}
 
-	err := s.initListener(cemetery)
-	if err != nil {
-		return err
-	}
+	return s.initListener()
+}
 
+func (s *server) Start() error {
 	s.grpcServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			s.traceInterceptor,
@@ -87,7 +75,6 @@ func (s *server) Start(cemetery gone.Cemetery) error {
 
 	s.Infof("gRPC server now listen at %s", s.address)
 	s.Go(s.server)
-
 	return nil
 }
 
@@ -97,7 +84,7 @@ func (s *server) server() {
 	}
 }
 
-func (s *server) Stop(gone.Cemetery) error {
+func (s *server) Stop() error {
 	s.grpcServer.Stop()
 	return nil
 }

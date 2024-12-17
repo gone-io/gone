@@ -12,7 +12,7 @@ type provider struct {
 	configure gone.Configure `gone:"*"`
 }
 
-func (s *provider) Name() string {
+func (s *provider) GonerName() string {
 	return IdGoneRedis
 }
 

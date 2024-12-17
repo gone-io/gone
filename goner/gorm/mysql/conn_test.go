@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"github.com/gone-io/gone"
-	goneGorm "github.com/gone-io/gone/goner/gorm"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 	"testing"
@@ -13,7 +12,5 @@ func TestPriest(t *testing.T) {
 		dial gorm.Dialector `gone:"*"`
 	}) {
 		assert.NotNil(t, in.dial)
-		err := in.dial.(goneGorm.Applier).Apply(nil)
-		assert.Nil(t, err)
 	}, Load)
 }

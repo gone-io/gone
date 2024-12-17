@@ -17,7 +17,7 @@ type dial struct {
 	withoutReturning     bool   `gone:"config,gorm.postgres.without-returning=default"`
 }
 
-func (d *dial) Apply(*gorm.Config) error {
+func (d *dial) Init() error {
 	if d.Dialector == nil {
 		d.Dialector = postgres.New(postgres.Config{
 			DriverName:           d.driverName,

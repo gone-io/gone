@@ -38,7 +38,7 @@ func (r *router) getMiddlewaresFunc() (list []gin.HandlerFunc) {
 	return list
 }
 
-func (r *router) Name() string {
+func (r *router) GonerName() string {
 	return IdGoneGinRouter
 }
 

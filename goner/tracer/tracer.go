@@ -33,7 +33,7 @@ type tracer struct {
 
 var xMap sync.Map
 
-func (t *tracer) Name() string {
+func (t *tracer) GonerName() string {
 	return "gone-tracer"
 }
 

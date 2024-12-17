@@ -21,7 +21,7 @@ type MockNamed struct {
 	Flag
 }
 
-func (m *MockNamed) Name() string {
+func (m *MockNamed) GonerName() string {
 	return "named-dep"
 }
 
@@ -38,7 +38,7 @@ func (m *MockProvider) Provide(conf string, t reflect.Type) (any, error) {
 	return m.returnVal, nil
 }
 
-func (m *MockProvider) Name() string {
+func (m *MockProvider) GonerName() string {
 	return "mock-provider"
 }
 
@@ -193,7 +193,7 @@ func TestCore_Fill(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			core := NewCore()
 			tt.setup(core)
-			err := core.Fill()
+			err := core.Install()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Core.Fill() error = %v, wantErr %v", err, tt.wantErr)
 			}

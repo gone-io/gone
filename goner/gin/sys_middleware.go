@@ -60,7 +60,7 @@ type SysMiddleware struct {
 	limiter *rate.Limiter
 }
 
-func (m *SysMiddleware) Name() string {
+func (m *SysMiddleware) GonerName() string {
 	return IdGoneGinSysMiddleware
 }
 

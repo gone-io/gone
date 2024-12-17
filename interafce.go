@@ -35,12 +35,12 @@ type Goner interface {
 //	    gone.Flag
 //	}
 //
-//	func (c *MyNamedComponent) Name() string {
+//	func (c *MyNamedComponent) GonerName() string {
 //	    return "myComponent"
 //	}
 type NamedGoner interface {
 	Goner
-	Name() string
+	GonerName() string
 }
 
 // Initiator interface defines components that need initialization after dependencies are injected.

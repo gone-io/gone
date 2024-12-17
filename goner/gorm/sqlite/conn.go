@@ -14,7 +14,7 @@ type dial struct {
 	DSN        string `gone:"config,gorm.sqlite.dsn"`
 }
 
-func (d *dial) Apply(*gorm.Config) error {
+func (d *dial) Init() error {
 	if d.Dialector == nil {
 		d.Dialector = sqlite.New(sqlite.Config{
 			DriverName: d.DriverName,

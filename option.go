@@ -98,7 +98,7 @@ func LowStartPriority() Option {
 //
 // Example usage:
 //
-//	gone.Load(&EnvConfigure{}, gone.Name("configure"))
+//	gone.Load(&EnvConfigure{}, gone.GonerName("configure"))
 //
 // Parameters:
 //   - name: String identifier to use for this component
@@ -117,7 +117,7 @@ func Name(name string) Option {
 //
 // Example usage:
 //
-//	gone.Load(&EnvConfigure{}, gone.Name("configure"), gone.OnlyForName())
+//	gone.Load(&EnvConfigure{}, gone.GonerName("configure"), gone.OnlyForName())
 //	// Now EnvConfigure can only be injected using `gone:"configure"` tag
 //	// And not through interface type matching
 func OnlyForName() Option {
@@ -136,7 +136,7 @@ func OnlyForName() Option {
 //
 // Example usage:
 //
-//	gone.Load(&MyService{}, gone.Name("service"), gone.ForceReplace())
+//	gone.Load(&MyService{}, gone.GonerName("service"), gone.ForceReplace())
 //	// This will replace any existing component named "service"
 func ForceReplace() Option {
 	return option{

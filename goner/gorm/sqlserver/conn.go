@@ -15,7 +15,7 @@ type dial struct {
 	DefaultStringSize int    `gone:"config,gorm.sqlserver.default-string-size"`
 }
 
-func (d *dial) Apply(*gorm.Config) error {
+func (d *dial) Init() error {
 	if d.Dialector == nil {
 		d.Dialector = sqlserver.New(sqlserver.Config{
 			DriverName:        d.DriverName,
