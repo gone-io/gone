@@ -13,11 +13,6 @@ import (
 	"time"
 )
 
-// NewSysMiddleware create a new sys middleware
-func NewSysMiddleware() (gone.Goner, gone.GonerOption, gone.GonerOption) {
-	return &SysMiddleware{}, gone.Order0, gone.IdGoneGinSysMiddleware
-}
-
 // SysMiddleware system middleware
 type SysMiddleware struct {
 	gone.Flag
@@ -65,7 +60,11 @@ type SysMiddleware struct {
 	limiter *rate.Limiter
 }
 
-func (m *SysMiddleware) AfterRevive() error {
+func (m *SysMiddleware) Name() string {
+	return IdGoneGinSysMiddleware
+}
+
+func (m *SysMiddleware) Init() error {
 	if m.enableLimit {
 		m.limiter = rate.NewLimiter(m.limit, m.burst)
 	}
@@ -149,7 +148,7 @@ func (m *SysMiddleware) requestLog(context *gin.Context) {
 		if m.logRequestBody && strings.Contains(m.requestBodyLogContentTypes, context.ContentType()) {
 			data, err := cloneRequestBody(context)
 			if err != nil {
-				m.logger.Error("accessLog - cloneRequestBody error:", err)
+				m.logger.Errorf("accessLog - cloneRequestBody error:%v", err)
 			}
 
 			if m.logDataMaxLength > 0 && len(data) > m.logDataMaxLength {

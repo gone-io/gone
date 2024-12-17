@@ -2,70 +2,91 @@ package gone
 
 import (
 	"log"
+	"os"
 )
 
-var _defaultLogger = &defaultLogger{Logger: new(log.Logger)}
+type LoggerLevel int8
 
-func NewSimpleLogger() (Goner, GonerId, GonerOption) {
-	return _defaultLogger, IdGoneLogger, IsDefault(new(Logger))
+const (
+	DebugLevel LoggerLevel = -1
+	InfoLevel  LoggerLevel = 0
+	WarnLevel  LoggerLevel = 1
+	ErrorLevel LoggerLevel = 2
+)
+
+type Logger interface {
+	Infof(msg string, args ...any)
+	Errorf(msg string, args ...any)
+	Warnf(msg string, args ...any)
+	Debugf(msg string, args ...any)
+
+	GetLevel() LoggerLevel
+	SetLevel(level LoggerLevel)
 }
 
-func GetSimpleLogger() Logger {
-	return _defaultLogger
+const LoggerName = "logger"
+
+var defaultLog = &defaultLogger{
+	level: InfoLevel,
+}
+var defaultLogInit = false
+
+func GetDefaultLogger() Logger {
+	defaultLog.Init()
+	return defaultLog
 }
 
 type defaultLogger struct {
 	Flag
-	*log.Logger
+	level    LoggerLevel
+	levelStr string `gone:"config,log.level"`
 }
 
-func (l *defaultLogger) Tracef(format string, args ...any) {
-	log.Printf(format, args...)
-}
-func (l *defaultLogger) Debugf(format string, args ...any) {
-	log.Printf(format, args...)
-}
-func (l *defaultLogger) Infof(format string, args ...any) {
-	log.Printf(format, args...)
-}
-func (l *defaultLogger) Warnf(format string, args ...any) {
-	log.Printf(format, args...)
+func (l *defaultLogger) Name() string {
+	return LoggerName
 }
 
-func (l *defaultLogger) Errorf(format string, args ...any) {
-	log.Printf(format, args...)
+func (l *defaultLogger) Init() {
+	if defaultLogInit {
+		return
+	}
+	defaultLogInit = true
+	if l.levelStr == "" {
+		l.levelStr = os.Getenv("LOG_LEVEL")
+	}
+
+	switch l.levelStr {
+	case "debug":
+		l.level = DebugLevel
+	case "warn":
+		l.level = WarnLevel
+	case "error":
+		l.level = ErrorLevel
+	default:
+		l.level = InfoLevel
+	}
 }
 
-func (l *defaultLogger) Trace(args ...any) {
-	log.Print(args...)
-}
-func (l *defaultLogger) Debug(args ...any) {
-	log.Print(args...)
-}
-func (l *defaultLogger) Info(args ...any) {
-	log.Print(args...)
-}
-func (l *defaultLogger) Warn(args ...any) {
-	log.Print(args...)
+func (l *defaultLogger) Infof(msg string, args ...any) {
+	log.Printf(msg, args...)
 }
 
-func (l *defaultLogger) Error(args ...any) {
-	log.Print(args...)
+func (l *defaultLogger) Errorf(msg string, args ...any) {
+	log.Printf(msg, args...)
 }
 
-func (l *defaultLogger) Traceln(args ...any) {
-	log.Println(args...)
-}
-func (l *defaultLogger) Debugln(args ...any) {
-	log.Println(args...)
-}
-func (l *defaultLogger) Infoln(args ...any) {
-	log.Println(args...)
-}
-func (l *defaultLogger) Warnln(args ...any) {
-	log.Println(args...)
+func (l *defaultLogger) Warnf(msg string, args ...any) {
+	log.Printf(msg, args...)
 }
 
-func (l *defaultLogger) Errorln(args ...any) {
-	log.Println(args...)
+func (l *defaultLogger) Debugf(msg string, args ...any) {
+	log.Printf(msg, args...)
+}
+
+func (l *defaultLogger) GetLevel() LoggerLevel {
+	return l.level
+}
+
+func (l *defaultLogger) SetLevel(level LoggerLevel) {
+	l.level = level
 }

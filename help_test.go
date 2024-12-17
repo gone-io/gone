@@ -1,356 +1,323 @@
 package gone
 
 import (
-	"errors"
-	"github.com/stretchr/testify/assert"
 	"reflect"
+	"strings"
 	"testing"
-	"time"
 )
 
-func Test_FuncName(t *testing.T) {
-	name := GetFuncName(Test_FuncName)
-	println(name)
-	assert.Equal(t, name, "github.com/gone-io/gone.Test_FuncName")
-	fn := func() {}
-
-	println(GetFuncName(fn))
-
-	assert.Equal(t, GetFuncName(fn), "github.com/gone-io/gone.Test_FuncName.func1")
-}
-
-type XX interface {
-	Get()
-}
-
-var XXPtr *XX
-var XXType = reflect.TypeOf(XXPtr).Elem()
-
-func Test_getInterfaceType(t *testing.T) {
-	interfaceType := GetInterfaceType(new(XX))
-	assert.Equal(t, interfaceType, XXType)
-}
-
-func TestTimeStat(t *testing.T) {
-	t.Run("with log", func(t *testing.T) {
-		defer TimeStat("test", time.Now(), func(format string, args ...any) {
-			assert.Equal(t, "test", args[0])
-			assert.Equal(t, 4, len(args))
-		})
-
-	})
-	t.Run("without log", func(t *testing.T) {
-		defer TimeStat("test", time.Now())
-	})
-}
-
-func TestWrapNormalFnToProcess(t *testing.T) {
-	Prepare().Test(func(cemetery Cemetery) {
-		fn := WrapNormalFnToProcess(func(in struct {
-			in Logger `gone:"xxx"`
-		}) {
-		})
-
-		err := fn(cemetery)
-		assert.Error(t, err)
-
-		process := WrapNormalFnToProcess(func() error {
-			return errors.New("err")
-		})
-
-		err = process(cemetery)
-		assert.Error(t, err)
-		assert.Equal(t, err.Error(), "err")
-	})
-}
-
-func TestBlank(t *testing.T) {
-	flag := Flag{}
-	flag.goneFlag()
-	id := GonerId("")
-	id.option()
-
-	d := defaultType{}
-	d.option()
-
-	order := Order(1)
-	order.option()
-}
-
-type errProphet struct {
-	Flag
-}
-
-func (e *errProphet) AfterRevive() error {
-	return errors.New("AfterReviveError")
-}
-
-func Test_Test(t *testing.T) {
-	t.Run("suc", func(t *testing.T) {
-		type Line struct {
-			Flag
-			A XPoint `gone:"point-a"`
-			b XPoint `gone:"point-b"`
-		}
-
-		var a = &Point{x: 1}
-		var b = &Point{x: 2}
-
-		var executed = false
-		Test(func(l *Line) {
-			assert.Equal(t, a, l.A)
-			assert.Equal(t, b, l.b)
-
-			executed = true
-		}, func(cemetery Cemetery) error {
-			cemetery.Bury(a, GonerId("point-a"))
-			cemetery.Bury(b, GonerId("point-b"))
-			cemetery.Bury(&Line{})
-			return nil
-		})
-		assert.True(t, executed)
-	})
-
-	t.Run("failed: CannotFoundGonerById", func(t *testing.T) {
-		var executed = false
-		func() {
-			defer func() {
-				a := recover()
-				assert.Equal(t, CannotFoundGonerById, a.(Error).Code())
-				executed = true
-			}()
-			TestAt("point-a", func(p *Point) {
-
-			}, func(cemetery Cemetery) error {
-				return nil
-			})
-		}()
-
-		assert.True(t, executed)
-	})
-
-	t.Run("failed: CannotFoundGonerByType", func(t *testing.T) {
-		var executed = false
-		func() {
-			defer func() {
-				a := recover()
-				assert.Equal(t, CannotFoundGonerByType, a.(Error).Code())
-				executed = true
-			}()
-			Test(func(p *Point) {
-
-			}, func(cemetery Cemetery) error {
-				return nil
-			})
-		}()
-
-		assert.True(t, executed)
-	})
-
-	t.Run("failed: AfterRevive err", func(t *testing.T) {
-		var executed = false
-
-		func() {
-			defer func() {
-				a := recover()
-				assert.Equal(t, "AfterReviveError", a.(error).Error())
-				executed = true
-			}()
-			Test(func(p *errProphet) {
-
-			}, func(cemetery Cemetery) error {
-				cemetery.Bury(&errProphet{})
-				return nil
-			})
-		}()
-
-		assert.True(t, executed)
-	})
-}
-
-func Test_TestAt(t *testing.T) {
-	t.Run("suc", func(t *testing.T) {
-		var executed = false
-		type Line struct {
-			Flag
-			A XPoint `gone:"point-a"`
-			b XPoint `gone:"point-b"`
-		}
-
-		var a = &Point{x: 1}
-		var b = &Point{x: 2}
-
-		TestAt("point-a", func(p *Point) {
-			assert.Equal(t, p, a)
-
-			executed = true
-		}, func(cemetery Cemetery) error {
-			cemetery.Bury(a, GonerId("point-a"))
-			cemetery.Bury(b, GonerId("point-b"))
-			cemetery.Bury(&Line{})
-			return nil
-		})
-		assert.True(t, executed)
-	})
-
-	t.Run("suc: more than one Goner found by type", func(t *testing.T) {
-		var executed = false
-		a := &Point{}
-		b := &Point{}
-
-		Test(func(p *Point) {
-			executed = true
-			assert.Equal(t, a, p)
-		}, func(cemetery Cemetery) error {
-			cemetery.Bury(a)
-			cemetery.Bury(b)
-			return nil
-		})
-
-		assert.True(t, executed)
-	})
-
-	t.Run("failed: NotCompatible", func(t *testing.T) {
-		var executed = false
-		func() {
-			defer func() {
-				a := recover()
-				assert.Equal(t, NotCompatible, a.(Error).Code())
-				executed = true
-			}()
-
-			type Line struct {
-				Flag
-			}
-			TestAt("point-a", func(p *Point) {
-
-			}, func(cemetery Cemetery) error {
-				cemetery.Bury(&Line{}, GonerId("point-a"))
-				return nil
-			})
-		}()
-
-		assert.True(t, executed)
-	})
-
-	t.Run("failed: NotCompatible", func(t *testing.T) {
-		var executed = false
-		func() {
-			defer func() {
-				a := recover()
-				assert.Equal(t, NotCompatible, a.(Error).Code())
-				executed = true
-			}()
-
-			type Line struct {
-				Flag
-			}
-			TestAt("point-a", func(p *Point) {
-
-			}, func(cemetery Cemetery) error {
-
-				cemetery.Bury(&Line{}, GonerId("point-a"))
-				return nil
-			})
-		}()
-
-		assert.True(t, executed)
-	})
-}
-
-type angel struct {
-	Flag
-	x int
-}
-
-func (i *angel) Start(Cemetery) error {
-	i.x = 100
-	return nil
-}
-
-func (i *angel) Stop(Cemetery) error {
-	return nil
-}
-
-func (i *angel) X() int {
-	return i.x
-}
-
-func Test_testHeaven_installAngelHook(t *testing.T) {
-	type UseAngel struct {
-		Flag
-		angel *angel `gone:"*"`
-	}
-	var executed = false
-	Test(func(u *UseAngel) {
-		assert.Equal(t, 100, u.angel.X())
-		executed = true
-	}, func(cemetery Cemetery) error {
-		cemetery.Bury(&angel{})
-		cemetery.Bury(&UseAngel{})
-		return nil
-	})
-	assert.True(t, executed)
-}
-
-func TestPreparer_Test(t *testing.T) {
-	Prepare().Test(func(in struct {
-		cemetery Cemetery `gone:"gone-cemetery"`
-	}) {
-		assert.NotNil(t, in.cemetery)
-	})
-}
-
-func TestBuryMockCemetery_Bury(t *testing.T) {
-	cemetery := NewBuryMockCemeteryForTest()
-	point, id := &Point{}, "point-x"
-	cemetery.Bury(point, GonerId(id))
-
-	cemetery.Bury(&Point{x: 100})
-
-	tomb := cemetery.GetTomById(GonerId(id))
-	assert.Equal(t, point, tomb.GetGoner())
-
-	tombs := cemetery.GetTomByType(reflect.TypeOf(*point))
-	assert.Equal(t, 2, len(tombs))
-}
-
 func TestTagStringParse(t *testing.T) {
-	type args struct {
-		conf string
-	}
 	tests := []struct {
-		name string
-		args args
-		want map[string]string
+		name     string
+		conf     string
+		wantMap  map[string]string
+		wantKeys []string
 	}{
 		{
-			name: "suc",
-			args: args{
-				conf: "a=1,b=2",
+			name: "Simple key-value pairs",
+			conf: "key1=value1,key2=value2",
+			wantMap: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
 			},
-			want: map[string]string{
-				"a": "1",
-				"b": "2",
-			},
+			wantKeys: []string{"key1", "key2"},
 		},
 		{
-			name: "suc",
-			args: args{
-				conf: "x,a=1,b=2,,,default,ok=",
+			name: "Empty values",
+			conf: "key1=,key2=value2",
+			wantMap: map[string]string{
+				"key1": "",
+				"key2": "value2",
 			},
-			want: map[string]string{
-				"a":       "1",
-				"b":       "2",
-				"x":       "",
-				"default": "",
-				"ok":      "",
+			wantKeys: []string{"key1", "key2"},
+		},
+		{
+			name: "No values",
+			conf: "key1,key2",
+			wantMap: map[string]string{
+				"key1": "",
+				"key2": "",
 			},
+			wantKeys: []string{"key1", "key2"},
+		},
+		{
+			name: "With spaces",
+			conf: " key1 = value1 , key2 = value2 ",
+			wantMap: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			wantKeys: []string{"key1", "key2"},
+		},
+		{
+			name:     "Empty string",
+			conf:     "",
+			wantMap:  map[string]string{"": ""},
+			wantKeys: []string{""},
+		},
+		{
+			name: "Duplicate keys",
+			conf: "key1=value1,key1=value2",
+			wantMap: map[string]string{
+				"key1": "value2",
+			},
+			wantKeys: []string{"key1"},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, TagStringParse(tt.args.conf), "TagStringParse(%v)", tt.args.conf)
+			gotMap, gotKeys := TagStringParse(tt.conf)
+
+			if !reflect.DeepEqual(gotMap, tt.wantMap) {
+				t.Errorf("TagStringParse() map = %v, want %v", gotMap, tt.wantMap)
+			}
+			if !reflect.DeepEqual(gotKeys, tt.wantKeys) {
+				t.Errorf("TagStringParse() keys = %v, want %v", gotKeys, tt.wantKeys)
+			}
+		})
+	}
+}
+
+func TestParseGoneTag(t *testing.T) {
+	tests := []struct {
+		name       string
+		tag        string
+		wantName   string
+		wantExtend string
+	}{
+		{
+			name:       "Name only",
+			tag:        "myGoner",
+			wantName:   "myGoner",
+			wantExtend: "",
+		},
+		{
+			name:       "Name and extend",
+			tag:        "myGoner,config=value",
+			wantName:   "myGoner",
+			wantExtend: "config=value",
+		},
+		{
+			name:       "Empty string",
+			tag:        "",
+			wantName:   "",
+			wantExtend: "",
+		},
+		{
+			name:       "Multiple commas",
+			tag:        "myGoner,key1=value1,key2=value2",
+			wantName:   "myGoner",
+			wantExtend: "key1=value1,key2=value2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotName, gotExtend := ParseGoneTag(tt.tag)
+			if gotName != tt.wantName {
+				t.Errorf("ParseGoneTag() name = %v, want %v", gotName, tt.wantName)
+			}
+			if gotExtend != tt.wantExtend {
+				t.Errorf("ParseGoneTag() extend = %v, want %v", gotExtend, tt.wantExtend)
+			}
+		})
+	}
+}
+
+type testInterface interface {
+	TestMethod()
+}
+
+type testStruct struct {
+	name string
+}
+
+func (t *testStruct) TestMethod() {}
+
+func TestIsCompatible(t *testing.T) {
+	var ti testInterface
+	ts := &testStruct{}
+
+	tests := []struct {
+		name  string
+		t     reflect.Type
+		goner any
+		want  bool
+	}{
+		{
+			name:  "Interface implementation",
+			t:     reflect.TypeOf(&ti).Elem(),
+			goner: ts,
+			want:  true,
+		},
+		{
+			name:  "Exact type match",
+			t:     reflect.TypeOf(&testStruct{}),
+			goner: ts,
+			want:  true,
+		},
+		{
+			name:  "Type mismatch",
+			t:     reflect.TypeOf(""),
+			goner: ts,
+			want:  false,
+		},
+		{
+			name:  "Nil goner",
+			t:     reflect.TypeOf(&testStruct{}),
+			goner: nil,
+			want:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsCompatible(tt.t, tt.goner); got != tt.want {
+				t.Errorf("IsCompatible() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetTypeName(t *testing.T) {
+	type LocalType struct{}
+	var iface interface{}
+
+	tests := []struct {
+		name string
+		t    reflect.Type
+		want string
+	}{
+		{
+			name: "Basic type",
+			t:    reflect.TypeOf(""),
+			want: "string",
+		},
+		{
+			name: "Array",
+			t:    reflect.TypeOf([3]int{}),
+			want: "[3]int",
+		},
+		{
+			name: "Slice",
+			t:    reflect.TypeOf([]string{}),
+			want: "[]string",
+		},
+		{
+			name: "Map",
+			t:    reflect.TypeOf(map[string]int{}),
+			want: "map[string]int",
+		},
+		{
+			name: "Pointer",
+			t:    reflect.TypeOf(&LocalType{}),
+			want: "*github.com/gone-io/gone.LocalType",
+		},
+		{
+			name: "Empty interface",
+			t:    reflect.TypeOf(&iface).Elem(),
+			want: "interface{}",
+		},
+		{
+			name: "Named struct",
+			t:    reflect.TypeOf(LocalType{}),
+			want: "github.com/gone-io/gone.LocalType",
+		},
+		{
+			name: "Anonymous struct",
+			t:    reflect.TypeOf(struct{}{}),
+			want: "struct{}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetTypeName(tt.t); got != tt.want {
+				t.Errorf("GetTypeName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetFuncName(t *testing.T) {
+	namedFunc := func() {}
+
+	tests := []struct {
+		name string
+		f    any
+		want string
+	}{
+		{
+			name: "Named function",
+			f:    TestGetFuncName,
+			want: "github.com/gone-io/gone.TestGetFuncName",
+		},
+		{
+			name: "Anonymous function",
+			f:    namedFunc,
+			want: "github.com/gone-io/gone.TestGetFuncName.func1",
+		},
+		{
+			name: "Non-function",
+			f:    "not a function",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetFuncName(tt.f); !strings.HasSuffix(got, tt.want) {
+				t.Errorf("GetFuncName() = %v, want suffix %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRemoveRepeat(t *testing.T) {
+	a := &testStruct{
+		name: "a",
+	}
+	b := &testStruct{
+		name: "b",
+	}
+	c := &testStruct{
+		name: "c",
+	}
+
+	tests := []struct {
+		name string
+		list []*testStruct
+		want []*testStruct
+	}{
+		{
+			name: "No duplicates",
+			list: []*testStruct{a, b, c},
+			want: []*testStruct{a, b, c},
+		},
+		{
+			name: "With duplicates",
+			list: []*testStruct{a, b, a, c, b},
+			want: []*testStruct{a, b, c},
+		},
+		{
+			name: "Empty list",
+			list: []*testStruct{},
+			want: []*testStruct{},
+		},
+		{
+			name: "Single element",
+			list: []*testStruct{a},
+			want: []*testStruct{a},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := RemoveRepeat(tt.list)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RemoveRepeat() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

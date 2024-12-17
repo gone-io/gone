@@ -2,7 +2,6 @@ package sqlserver
 
 import (
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/config"
 	goneGorm "github.com/gone-io/gone/goner/gorm"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"

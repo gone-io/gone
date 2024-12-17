@@ -1,7 +1,0 @@
-services:
-  redis:
-    image: redis:7.2.5-alpine
-    volumes:
-      - ./data:/data
-    ports:
-      - 6379:6379

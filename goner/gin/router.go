@@ -6,11 +6,6 @@ import (
 	"net/http"
 )
 
-// NewGinRouter 用于创建系统根路由
-func NewGinRouter() (gone.Goner, gone.GonerId, gone.GonerOption, gone.GonerOption, gone.Order) {
-	return &router{id: incr}, gone.IdGoneGinRouter, gone.IsDefault(new(gone.RouteGroup)), gone.IsDefault(new(gone.IRouter)), gone.Order0
-}
-
 var incr = 0
 
 type router struct {
@@ -43,7 +38,11 @@ func (r *router) getMiddlewaresFunc() (list []gin.HandlerFunc) {
 	return list
 }
 
-func (r *router) AfterRevive() gone.AfterReviveError {
+func (r *router) Name() string {
+	return IdGoneGinRouter
+}
+
+func (r *router) Init() error {
 	gin.SetMode(r.mode)
 	r.Engine = gin.New()
 

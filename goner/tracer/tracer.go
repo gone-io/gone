@@ -7,16 +7,33 @@ import (
 	"sync"
 )
 
-func NewTracer() (gone.Goner, gone.GonerId, gone.GonerOption, gone.GonerOption) {
-	return &tracer{}, gone.IdGoneTracer, gone.IsDefault(new(gone.Tracer)), gone.Order0
+var load = gone.OnceLoad(func(loader gone.Loader) error {
+	return loader.Load(
+		&tracer{},
+		gone.IsDefault(new(gone.Tracer)),
+		gone.LazyFill(),
+	)
+})
+
+func Load(loader gone.Loader) error {
+	return load(loader)
+}
+
+// Priest Deprecated, use Load instead
+func Priest(loader gone.Loader) error {
+	return Load(loader)
 }
 
 type tracer struct {
 	gone.Flag
-	gone.Logger `gone:"gone-logger"`
+	gone.Logger `gone:"*"`
 }
 
 var xMap sync.Map
+
+func (t *tracer) Name() string {
+	return "tracer"
+}
 
 func (t *tracer) SetTraceId(traceId string, cb func()) {
 	SetTraceId(traceId, cb, t.Warnf)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/logrus"
 	"github.com/gone-io/gone/internal/json"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

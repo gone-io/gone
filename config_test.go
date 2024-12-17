@@ -1,0 +1,275 @@
+package gone
+
+import (
+	"encoding/json"
+	"errors"
+	"os"
+	"reflect"
+	"testing"
+	"time"
+)
+
+// MockConfigure implements Configure interface for testing
+type MockConfigure struct {
+	values map[string]string
+}
+
+func (m *MockConfigure) Get(key string, v any, defaultVal string) error {
+	if key == "" {
+		return errors.New("key is empty")
+	}
+	val, exists := m.values[key]
+	if !exists {
+		val = defaultVal
+	}
+
+	if reflect.TypeOf(v).Kind() == reflect.Ptr && reflect.TypeOf(v).Elem().Kind() == reflect.String {
+		reflect.ValueOf(v).Elem().SetString(val)
+		return nil
+	}
+
+	return json.Unmarshal([]byte(val), v)
+}
+
+func TestConfigProvider_Name(t *testing.T) {
+	provider := &ConfigProvider{}
+	if got := provider.Name(); got != "config" {
+		t.Errorf("ConfigProvider.Name() = %v, want %v", got, "config")
+	}
+}
+
+func TestConfigProvider_Provide(t *testing.T) {
+	mockConfigure := &MockConfigure{
+		values: map[string]string{
+			"test-key":   `test-value`,
+			"number-key": "42",
+			//"missing-key": "",
+			"invalid-key": "invalid-json",
+			"complex-key": `{"name":"test","value":123}`,
+		},
+	}
+
+	provider := &ConfigProvider{
+		configure: mockConfigure,
+	}
+
+	type testStruct struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}
+
+	tests := []struct {
+		name      string
+		tagConf   string
+		valueType reflect.Type
+		want      any
+		wantErr   bool
+	}{
+		{
+			name:      "String value",
+			tagConf:   "test-key",
+			valueType: reflect.TypeOf(""),
+			want:      "test-value",
+			wantErr:   false,
+		},
+		{
+			name:      "Number value",
+			tagConf:   "number-key",
+			valueType: reflect.TypeOf(0),
+			want:      42,
+			wantErr:   false,
+		},
+		{
+			name:      "Default value",
+			tagConf:   "missing-key=default-value",
+			valueType: reflect.TypeOf(""),
+			want:      "default-value",
+			wantErr:   false,
+		},
+		{
+			name:    "Invalid JSON",
+			tagConf: "invalid-key",
+			valueType: reflect.TypeOf(struct {
+				Name string
+			}{}),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:      "Complex struct",
+			tagConf:   "complex-key",
+			valueType: reflect.TypeOf(testStruct{}),
+			want:      testStruct{Name: "test", Value: 123},
+			wantErr:   false,
+		},
+		{
+			name:      "Empty key",
+			tagConf:   "",
+			valueType: reflect.TypeOf(""),
+			want:      nil,
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := provider.Provide(tt.tagConf, tt.valueType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConfigProvider.Provide() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(reflect.ValueOf(got).Elem().Interface(), tt.want) {
+				t.Errorf("ConfigProvider.Provide() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEnvConfigure_Get(t *testing.T) {
+	// Setup test environment variables
+	envVars := map[string]string{
+		"TEST_STRING":   "test-value",
+		"TEST_INT":      "42",
+		"TEST_INT64":    "9223372036854775807",
+		"TEST_FLOAT":    "3.14",
+		"TEST_BOOL":     "true",
+		"TEST_UINT":     "123",
+		"TEST_UINT64":   "18446744073709551615",
+		"TEST_DURATION": "1h30m",
+		"TEST_STRUCT":   `{"name":"test","value":123}`,
+	}
+
+	for k, v := range envVars {
+		os.Setenv(k, v)
+		defer os.Unsetenv(k)
+	}
+
+	type testStruct struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}
+
+	tests := []struct {
+		name       string
+		key        string
+		defaultVal string
+		value      any
+		want       any
+		wantErr    bool
+	}{
+		{
+			name:       "String value",
+			key:        "TEST_STRING",
+			defaultVal: "default",
+			value:      new(string),
+			want:       "test-value",
+			wantErr:    false,
+		},
+		{
+			name:       "Int value",
+			key:        "TEST_INT",
+			defaultVal: "0",
+			value:      new(int),
+			want:       42,
+			wantErr:    false,
+		},
+		{
+			name:       "Int64 value",
+			key:        "TEST_INT64",
+			defaultVal: "0",
+			value:      new(int64),
+			want:       int64(9223372036854775807),
+			wantErr:    false,
+		},
+		{
+			name:       "Float64 value",
+			key:        "TEST_FLOAT",
+			defaultVal: "0.0",
+			value:      new(float64),
+			want:       3.14,
+			wantErr:    false,
+		},
+		{
+			name:       "Bool value",
+			key:        "TEST_BOOL",
+			defaultVal: "false",
+			value:      new(bool),
+			want:       true,
+			wantErr:    false,
+		},
+		{
+			name:       "Uint value",
+			key:        "TEST_UINT",
+			defaultVal: "0",
+			value:      new(uint),
+			want:       uint(123),
+			wantErr:    false,
+		},
+		{
+			name:       "Uint64 value",
+			key:        "TEST_UINT64",
+			defaultVal: "0",
+			value:      new(uint64),
+			want:       uint64(18446744073709551615),
+			wantErr:    false,
+		},
+		{
+			name:       "Duration value",
+			key:        "TEST_DURATION",
+			defaultVal: "1s",
+			value:      new(time.Duration),
+			want:       90 * time.Minute,
+			wantErr:    false,
+		},
+		{
+			name:       "Struct value",
+			key:        "TEST_STRUCT",
+			defaultVal: "{}",
+			value:      &testStruct{},
+			want:       testStruct{Name: "test", Value: 123},
+			wantErr:    false,
+		},
+		{
+			name:       "Default value",
+			key:        "NON_EXISTENT",
+			defaultVal: "default-value",
+			value:      new(string),
+			want:       "default-value",
+			wantErr:    false,
+		},
+		{
+			name:       "Invalid type",
+			key:        "TEST_STRING",
+			defaultVal: "",
+			value:      "not-a-pointer",
+			want:       nil,
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid number format",
+			key:        "TEST_STRING",
+			defaultVal: "",
+			value:      new(int),
+			want:       0,
+			wantErr:    true,
+		},
+	}
+
+	configure := &EnvConfigure{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := configure.Get(tt.key, tt.value, tt.defaultVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnvConfigure.Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				got := reflect.ValueOf(tt.value).Elem().Interface()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("EnvConfigure.Get() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}

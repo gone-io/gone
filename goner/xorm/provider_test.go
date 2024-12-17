@@ -3,7 +3,6 @@ package xorm
 import (
 	"fmt"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/config"
 	gone_viper "github.com/gone-io/gone/goner/viper"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"

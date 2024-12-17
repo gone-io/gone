@@ -1,25 +1,25 @@
 package gin
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gone-io/gone"
 	"reflect"
 	"time"
 )
 
-// NewGinProxy 新建代理器
-func NewGinProxy() (gone.Goner, gone.GonerId) {
-	return &proxy{}, gone.IdGoneGinProxy
-}
-
 type proxy struct {
 	gone.Flag
-	gone.Logger `gone:"*"`
-	cemetery    gone.Cemetery `gone:"*"`
-	responser   Responser     `gone:"*"`
-	tracer      gone.Tracer   `gone:"*"`
-	injector    HttInjector   `gone:"*"`
-	stat        bool          `gone:"config,server.proxy.stat,default=false"`
+	gone.Logger  `gone:"*"`
+	funcInjector gone.FuncInjector `gone:"*"`
+	responser    Responser         `gone:"*"`
+	tracer       gone.Tracer       `gone:"*"`
+	injector     HttInjector       `gone:"*"`
+	stat         bool              `gone:"config,server.proxy.stat,default=false"`
+}
+
+func (p *proxy) Name() string {
+	return IdGoneGinProxy
 }
 
 func (p *proxy) Proxy(handlers ...HandlerFunc) (arr []gin.HandlerFunc) {
@@ -120,9 +120,9 @@ func (p *proxy) proxyOne(x HandlerFunc, last bool) gin.HandlerFunc {
 
 func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.HandlerFunc {
 	m := make(map[int]*bindStructFuncAndType)
-	args, err := p.cemetery.InjectFuncParameters(
+	args, err := p.funcInjector.InjectFuncParameters(
 		x,
-		func(pt reflect.Type, i int) any {
+		func(pt reflect.Type, i int, injected bool) any {
 			switch pt {
 			case ctxPointType, ctxType, goneContextPointType, goneContextType:
 				return placeholder{
@@ -132,22 +132,24 @@ func (p *proxy) buildProxyFn(x HandlerFunc, funcName string, last bool) gin.Hand
 			p.injector.StartBindFuncs()
 			return nil
 		},
-		func(pt reflect.Type, i int) {
+		func(pt reflect.Type, i int, injected bool) any {
 			m[i] = &bindStructFuncAndType{
 				Fn:   p.injector.BindFuncs(),
 				Type: pt,
 			}
+			return nil
 		},
 	)
 
 	if err != nil {
-		p.Panicf("build Proxy func for \033[31m%s\033[0m error:\n\n%s", funcName, err)
+		err = gone.ToErrorWithMsg(err, fmt.Sprintf("build Proxy func for \033[31m%s\033[0m error:\n\n", funcName))
+		panic(err)
 	}
 
 	fv := reflect.ValueOf(x)
 	return func(context *gin.Context) {
 		if p.stat {
-			defer gone.TimeStat(funcName+"-inject-proxy", time.Now(), p.Infof)
+			defer TimeStat(funcName+"-inject-proxy", time.Now(), p.Infof)
 		}
 
 		parameters := make([]reflect.Value, 0, len(args))

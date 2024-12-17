@@ -2,9 +2,7 @@ package gin_test
 
 import (
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/goner/gin"
-	"github.com/gone-io/gone/goner/logrus"
 	"github.com/gone-io/gone/goner/tracer"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"

@@ -3,7 +3,6 @@ package gorm
 import (
 	"context"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/config"
 	"go.uber.org/mock/gomock"
 	"gorm.io/gorm/logger"
 	"testing"

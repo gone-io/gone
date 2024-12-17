@@ -135,3 +135,14 @@ type HttInjector interface {
 type Middleware interface {
 	Process(ctx *gin.Context)
 }
+
+const (
+	// IdGoneGin , IdGoneGinRouter , IdGoneGinProcessor, IdGoneGinProxy, IdGoneGinResponser, IdHttpInjector;
+	// The GonerIds of Goners in goner/gin, which integrates gin framework for web request.
+	IdGoneGin              = "gone-gin"
+	IdGoneGinRouter        = "gone-gin-router"
+	IdGoneGinSysMiddleware = "gone-gin-sys-middleware"
+	IdGoneGinProxy         = "gone-gin-proxy"
+	IdGoneGinResponser     = "gone-gin-responser"
+	IdHttpInjector         = "http"
+)

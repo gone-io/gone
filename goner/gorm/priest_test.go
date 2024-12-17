@@ -3,7 +3,6 @@ package gorm
 import (
 	"database/sql"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/config"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"gorm.io/gorm"

@@ -3,24 +3,42 @@ package cmux
 import (
 	"fmt"
 	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/goner/tracer"
 	"github.com/soheilhy/cmux"
 	"net"
 	"sync"
 	"time"
 )
 
-func NewServer() (gone.Angel, gone.GonerId, gone.GonerOption, gone.GonerOption) {
-	s := server{}
-	s.listen = net.Listen
-	return &s, gone.IdGoneCMux, gone.IsDefault(new(gone.CMuxServer)), gone.Order1
+const Name = "cmux"
+
+var load = gone.OnceLoad(func(loader gone.Loader) error {
+	err := tracer.Load(loader)
+	if err != nil {
+		return gone.ToError(err)
+	}
+	return loader.Load(
+		&server{listen: net.Listen},
+		gone.IsDefault(new(gone.CMuxServer)),
+		gone.HighStartPriority(),
+	)
+})
+
+func Load(loader gone.Loader) error {
+	return load(loader)
+}
+
+// Priest Deprecated, use Load instead
+func Priest(loader gone.Loader) error {
+	return Load(loader)
 }
 
 type server struct {
 	gone.Flag
 	once        sync.Once
 	cMux        cmux.CMux
-	gone.Logger `gone:"gone-logger"`
-	gone.Tracer `gone:"gone-tracer"`
+	gone.Logger `gone:"*"`
+	gone.Tracer `gone:"*"`
 
 	stopFlag bool
 	lock     sync.Mutex
@@ -33,7 +51,11 @@ type server struct {
 	listen func(network, address string) (net.Listener, error)
 }
 
-func (s *server) AfterRevive() gone.AfterReviveError {
+func (s *server) Name() string {
+	return Name
+}
+
+func (s *server) Init() error {
 	var err error
 	if s.cMux == nil {
 		s.once.Do(func() {
@@ -60,7 +82,7 @@ func (s *server) GetAddress() string {
 	return s.address
 }
 
-func (s *server) Start(gone.Cemetery) error {
+func (s *server) Start() error {
 	s.stopFlag = false
 	var err error
 	var mutex sync.Mutex
@@ -73,6 +95,16 @@ func (s *server) Start(gone.Cemetery) error {
 	<-time.After(20 * time.Millisecond)
 	return err
 }
+
+func (s *server) Stop() error {
+	s.Warnf("cMux server stopping!!")
+	s.lock.Lock()
+	s.stopFlag = true
+	s.lock.Unlock()
+	s.cMux.Close()
+	return nil
+}
+
 func (s *server) processStartError(err error) {
 	if err != nil {
 		s.lock.Lock()
@@ -83,13 +115,4 @@ func (s *server) processStartError(err error) {
 		}
 		s.lock.Unlock()
 	}
-}
-
-func (s *server) Stop(gone.Cemetery) error {
-	s.Warnf("cMux server stopping!!")
-	s.lock.Lock()
-	s.stopFlag = true
-	s.lock.Unlock()
-	s.cMux.Close()
-	return nil
 }

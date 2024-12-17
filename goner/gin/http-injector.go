@@ -12,17 +12,15 @@ import (
 	"strings"
 )
 
-func NewHttInjector() (gone.Goner, gone.GonerId) {
-	return &httpInjector{
-		bindFuncs: make([]BindFieldFunc, 0),
-	}, gone.IdHttpInjector
-}
-
 type httpInjector struct {
 	gone.Flag
 
 	bindFuncs      []BindFieldFunc
 	isInjectedBody bool
+}
+
+func (s *httpInjector) Name() string {
+	return IdHttpInjector
 }
 
 func parseConfKeyValue(conf string) (key, value string) {

@@ -1,3 +1,3 @@
 package gone
 
-const Version = "v1.2.1"
+const Version = "v2.0.0"

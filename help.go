@@ -1,368 +1,174 @@
 package gone
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
-	"time"
+	"unsafe"
 )
 
-// GonerIds for Gone framework inner Goners
-const (
-	// IdGoneHeaven , The GonerId of Heaven Goner, which represents the program itself, and which is injected by default when it starts.
-	IdGoneHeaven GonerId = "gone-heaven"
-
-	// IdGoneCemetery , The GonerId of Cemetery Goner, which is Dependence Injection Key Goner, and which is injected by default.
-	IdGoneCemetery GonerId = "gone-cemetery"
-
-	// IdGoneTestKit , The GonerId of TestKit Goner, which is injected by default when using gone.Test or gone.TestAt to run test code.
-	IdGoneTestKit GonerId = "gone-test-kit"
-
-	//IdConfig , The GonerId of Config Goner, which can be used for Injecting Configs from files or envs.
-	IdConfig GonerId = "config"
-
-	//IdGoneConfigure , The GonerId of Configure Goner, which is used to read configs from devices.
-	IdGoneConfigure GonerId = "gone-configure"
-
-	// IdGoneTracer ,The GonerId of Tracer
-	IdGoneTracer GonerId = "gone-tracer"
-
-	// IdGoneLogger , The GonerId of Logger
-	IdGoneLogger GonerId = "gone-logger"
-
-	// IdGoneCMux , The GonerId of CMuxServer
-	IdGoneCMux GonerId = "gone-cmux"
-
-	// IdGoneGin , IdGoneGinRouter , IdGoneGinProcessor, IdGoneGinProxy, IdGoneGinResponser, IdHttpInjector;
-	// The GonerIds of Goners in goner/gin, which integrates gin framework for web request.
-	IdGoneGin              GonerId = "gone-gin"
-	IdGoneGinRouter        GonerId = "gone-gin-router"
-	IdGoneGinSysMiddleware GonerId = "gone-gin-sys-middleware"
-	IdGoneGinProxy         GonerId = "gone-gin-proxy"
-	IdGoneGinResponser     GonerId = "gone-gin-responser"
-	IdHttpInjector         GonerId = "http"
-
-	// IdGoneXorm , The GonerId of XormEngine Goner, which is for xorm engine.
-	IdGoneXorm GonerId = "gone-xorm"
-
-	// IdGoneRedisPool ,IdGoneRedisCache, IdGoneRedisKey, IdGoneRedisLocker, IdGoneRedisProvider
-	// The GonerIds of Goners in goner/redis, which integrates redis framework for cache and locker.
-	IdGoneRedisPool     GonerId = "gone-redis-pool"
-	IdGoneRedisCache    GonerId = "gone-redis-cache"
-	IdGoneRedisKey      GonerId = "gone-redis-key"
-	IdGoneRedisLocker   GonerId = "gone-redis-locker"
-	IdGoneRedisProvider GonerId = "gone-redis-provider"
-
-	// IdGoneSchedule , The GonerId of Schedule Goner, which is for schedule in goner/schedule.
-	IdGoneSchedule GonerId = "gone-schedule"
-
-	// IdGoneReq , The GonerId of urllib.Client Goner, which is for request in goner/urllib.
-	IdGoneReq GonerId = "gone-urllib"
-)
-
-const (
-	RequestIdHeaderKey = "X-Request-Id"
-	TraceIdHeaderKey   = "X-Trace-Id"
-)
-
-// PanicTrace used for getting panic stack
-func PanicTrace(kb int, skip int) []byte {
-	stack := make([]byte, kb<<10) //4KB
-	length := runtime.Stack(stack, true)
-
-	_, filename, fileLine, ok := runtime.Caller(skip)
-	start := 0
-	if ok {
-		start = bytes.Index(stack, []byte(fmt.Sprintf("%s:%d", filename, fileLine)))
-		stack = stack[start:length]
-	}
-
-	line := []byte("\n")
-	start = bytes.Index(stack, line) + 1
-	stack = stack[start:]
-	end := bytes.LastIndex(stack, line)
-	if end != -1 {
-		stack = stack[:end]
-	}
-
-	e := []byte("\ngoroutine ")
-	end = bytes.Index(stack, e)
-	if end != -1 {
-		stack = stack[:end]
-	}
-	stack = bytes.TrimRight(stack, "\n")
-	return stack
-}
-
-// GetFuncName get function name
-func GetFuncName(f any) string {
-	return strings.TrimSuffix(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
-}
-
-// GetInterfaceType get interface type
-func GetInterfaceType[T any](t *T) reflect.Type {
-	return reflect.TypeOf(t).Elem()
-}
-
-type defaultType struct {
-	t reflect.Type
-}
-
-func (d defaultType) option() {}
-
-func IsDefault[T any](t *T) GonerOption {
-	return defaultType{t: GetInterfaceType(t)}
-}
-
-type provideType struct {
-	t []reflect.Type
-}
-
-func (d provideType) option() {}
-
-// Provide a kind of GonerOption, which can be used in burying Vampire2(which is implemented `Suck(conf string, v reflect.Value, field reflect.StructField) error`) to framework.
-// Provide will get the type of the object and put it in the GonerOption. When A goner need to be injected,
-// the framework will find the Vampire2 which Tag by the GonerOption and call the Suck method to create the goner and inject it.
-func Provide(objs ...any) GonerOption {
-	m := make(map[reflect.Type]any)
-
-	for _, o := range objs {
-		m[reflect.TypeOf(o)] = o
-	}
-	p := provideType{
-		t: make([]reflect.Type, 0),
-	}
-	for o, _ := range m {
-		p.t = append(p.t, o)
-	}
-	return p
-}
-
-// WrapNormalFnToProcess warp a func to Process
-func WrapNormalFnToProcess(fn any) Process {
-	return func(cemetery Cemetery) error {
-		args, err := cemetery.InjectFuncParameters(fn, nil, nil)
-		if err != nil {
-			return err
+// TagStringParse parses a tag string in the format "key1=value1,key2=value2" into a map and ordered key slice.
+// It splits the string by commas, then splits each part into key-value pairs by "=".
+// Returns:
+//   - map[string]string: Contains all key-value pairs from the tag string
+//   - []string: Contains keys in order of appearance, with duplicates removed
+func TagStringParse(conf string) (map[string]string, []string) {
+	conf = strings.TrimSpace(conf)
+	specs := strings.Split(conf, ",")
+	m := make(map[string]string)
+	var keys []string
+	for _, spec := range specs {
+		spec = strings.TrimSpace(spec)
+		pairs := strings.Split(spec, "=")
+		var key, value string
+		if len(pairs) > 0 {
+			key = strings.TrimSpace(pairs[0])
 		}
-
-		results := reflect.ValueOf(fn).Call(args)
-		for _, result := range results {
-			if err, ok := result.Interface().(error); ok {
-				return err
-			}
+		if len(pairs) > 1 {
+			value = strings.TrimSpace(pairs[1])
 		}
-		return nil
+		if _, ok := m[key]; !ok {
+			keys = append(keys, key)
+		}
+		m[key] = value
 	}
+	return m, keys
 }
 
-// IsCompatible t Type can put in goner
+// ParseGoneTag parses a gone tag string in the format "name,extend" into name and extend parts.
+// The name part is used to identify the goner, while extend part contains additional configuration.
+// For example:
+//   - "myGoner" returns ("myGoner", "")
+//   - "myGoner,config=value" returns ("myGoner", "config=value")
+func ParseGoneTag(tag string) (name string, extend string) {
+	if tag == "" {
+		return
+	}
+	list := strings.SplitN(tag, ",", 2)
+	switch len(list) {
+	case 1:
+		name = list[0]
+	default:
+		name, extend = list[0], list[1]
+	}
+	return
+}
+
+func BlackMagic(v reflect.Value) reflect.Value {
+	return reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem()
+}
+
+// IsCompatible checks if a goner object is compatible with a given type t.
+// For interface types, checks if goner implements the interface.
+// For other types, checks for exact type equality.
 func IsCompatible(t reflect.Type, goner any) bool {
 	gonerType := reflect.TypeOf(goner)
 
 	switch t.Kind() {
 	case reflect.Interface:
 		return gonerType.Implements(t)
-	case reflect.Struct:
-		return gonerType.Elem() == t
+	//case reflect.Struct:
+	//	return gonerType.Elem() == t
 	default:
 		return gonerType == t
 	}
 }
 
-func setFieldValue(v reflect.Value, ref any) {
-	t := v.Type()
-
+// GetTypeName returns a string representation of a reflect.Type, including package path for named types.
+// For arrays, slices, maps and pointers it recursively formats the element types.
+// For interfaces and structs it includes the package path if available.
+// For unnamed types it returns a basic representation like "interface{}" or "struct{}".
+func GetTypeName(t reflect.Type) string {
 	switch t.Kind() {
-	case reflect.Interface, reflect.Pointer, reflect.Slice, reflect.Map:
-		v.Set(reflect.ValueOf(ref))
+	case reflect.Array:
+		return fmt.Sprintf("[%d]%s", t.Len(), GetTypeName(t.Elem()))
+	case reflect.Slice:
+		return "[]" + GetTypeName(t.Elem())
+	case reflect.Map:
+		return fmt.Sprintf("map[%s]%s", GetTypeName(t.Key()), GetTypeName(t.Elem()))
+	case reflect.Ptr:
+		return "*" + GetTypeName(t.Elem())
+	case reflect.Interface:
+		if t.Name() != "" {
+			return t.PkgPath() + "." + t.Name()
+		}
+		return "interface{}"
+	case reflect.Struct:
+		if t.Name() != "" {
+			return t.PkgPath() + "." + t.Name()
+		}
+		return "struct{}"
 	default:
-		v.Set(reflect.ValueOf(ref).Elem())
-	}
-	return
-}
-
-type timeUseRecord struct {
-	UseTime time.Duration
-	Count   int64
-}
-
-var mapRecord = make(map[string]*timeUseRecord)
-
-// TimeStat record the time of function and avg time
-func TimeStat(name string, start time.Time, logs ...func(format string, args ...any)) {
-	since := time.Since(start)
-	if mapRecord[name] == nil {
-		mapRecord[name] = &timeUseRecord{}
-	}
-	mapRecord[name].UseTime += since
-	mapRecord[name].Count++
-
-	var log func(format string, args ...any)
-	if len(logs) == 0 {
-		log = func(format string, args ...any) {
-			fmt.Printf(format, args...)
+		if t.Name() != "" {
+			if t.PkgPath() != "" {
+				return t.PkgPath() + "." + t.Name()
+			}
+			return t.Name()
 		}
-	} else {
-		log = logs[0]
+		return t.String()
+	}
+}
+
+// GetFuncName get function name
+func GetFuncName(f any) string {
+	t := reflect.TypeOf(f)
+	if t.Kind() != reflect.Func {
+		return ""
 	}
 
-	log("%s executed %v times, took %v, avg: %v\n",
-		name,
-		mapRecord[name].Count,
-		mapRecord[name].UseTime,
-		mapRecord[name].UseTime/time.Duration(mapRecord[name].Count),
-	)
-}
-
-func RunTest(fn any, priests ...Priest) {
-	Prepare(priests...).testKit().Run(fn)
-}
-
-// Test Use for writing test cases, refer to [example](https://github.com/gone-io/gone/blob/main/example/test/goner_test.go)
-func Test[T Goner](fn func(goner T), priests ...Priest) {
-	RunTest(func(in struct {
-		cemetery Cemetery `gone:"*"`
-	}) {
-		ft := reflect.TypeOf(fn)
-		t := ft.In(0).Elem()
-		theTombs := in.cemetery.GetTomByType(t)
-		if len(theTombs) == 0 {
-			panic(CannotFoundGonerByTypeError(t))
+	if t.Name() != "" {
+		if t.PkgPath() != "" {
+			return t.PkgPath() + "." + t.Name()
 		}
-		fn(theTombs[0].GetGoner().(T))
-	}, priests...)
-}
-
-// TestAt Use for writing test cases, test a specific ID of Goner
-func TestAt[T Goner](id GonerId, fn func(goner T), priests ...Priest) {
-	RunTest(func(in struct {
-		cemetery Cemetery `gone:"*"`
-	}) {
-		theTomb := in.cemetery.GetTomById(id)
-		if theTomb == nil {
-			panic(CannotFoundGonerByIdError(id))
-		}
-		g, ok := theTomb.GetGoner().(T)
-		if !ok {
-			panic(NotCompatibleError(reflect.TypeOf(g).Elem(), reflect.TypeOf(theTomb.GetGoner()).Elem()))
-		}
-		fn(g)
-	}, priests...)
-}
-
-// NewBuryMockCemeteryForTest make a new Cemetery for test
-func NewBuryMockCemeteryForTest() Cemetery {
-	return newCemetery()
-}
-
-func (p *Preparer) testKit() *Preparer {
-	type Kit struct {
-		Flag
+		return t.Name()
 	}
-	p.heaven.(*heaven).cemetery.Bury(&Kit{}, IdGoneTestKit)
-	return p
+
+	// Fallback to runtime.FuncForPC for anonymous functions
+	return strings.TrimSuffix(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
 }
 
-/*
-Test Use for writing test cases
-example:
-```go
-
-	gone.Prepare(priests...).Test(func(in struct{
-	    cemetery Cemetery `gone:"*"`
-	}) {
-
-	  // test code
-	})
-
-```
-*/
-func (p *Preparer) Test(fn any) {
-	p.testKit().AfterStart(fn).Run()
-}
-
-// TagStringParse parse tag string to map
-// example: "a=1,b=2" -> map[string]string{"a":"1","b":"2"}
-func TagStringParse(conf string) map[string]string {
-	conf = strings.TrimSpace(conf)
-	specs := strings.Split(conf, ",")
-	m := make(map[string]string)
-	for _, spec := range specs {
-		spec = strings.TrimSpace(spec)
-		pairs := strings.Split(spec, "=")
-		if len(pairs) == 1 && pairs[0] != "" {
-			m[pairs[0]] = ""
-		} else if len(pairs) > 1 && pairs[0] != "" {
-			m[pairs[0]] = pairs[1]
+// RemoveRepeat removes duplicate pointers from a slice of pointers to type T.
+// It preserves the order of first occurrence of each pointer.
+func RemoveRepeat[T comparable](list []T) []T {
+	type X struct{}
+	m := make(map[T]X)
+	out := make([]T, 0, len(list))
+	for _, v := range list {
+		if _, ok := m[v]; !ok {
+			m[v] = X{}
+			out = append(out, v)
 		}
 	}
-	return m
+	return out
 }
 
-type provider[T any] struct {
-	Flag
-	cemetery Cemetery `gone:"*"`
-	create   func(tagConf string) (T, error)
-}
-
-func (p *provider[T]) Suck(conf string, v reflect.Value, field reflect.StructField) error {
-	obj, err := p.create(conf)
-	if err != nil {
-		return ToError(err)
+func OnceLoad(fn LoadFunc) LoadFunc {
+	var key = GenLoaderKey()
+	return func(loader Loader) error {
+		if loader.Loaded(key) {
+			return nil
+		}
+		return fn(loader)
 	}
-	v.Set(reflect.ValueOf(obj))
+}
+
+// SafeExecute 执行可能会触发panic的函数并将panic转换为error
+func SafeExecute(fn func()) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = NewInnerErrorSkip(fmt.Sprintf("panic occurred: %v", r), FailInstall, 7)
+		}
+	}()
+	// 执行传入的函数
+	fn()
 	return nil
 }
 
-// NewProviderPriest create a provider priest function for goner from a function like: `func(tagConf string, injectableStructParam struct{}) (provideType T, err error)`
-// example:
-// ```go
-// type MyGoner struct {}
-//
-//	func NewMyGoner(tagConf string, param struct{
-//		depGoner1 MyGoner1 `gone:"*"` // inject dep
-//		depGoner2 MyGoner2 `gone:"*"` // inject dep
-//		configStr string `gone:"config,my.config.str"` // inject config from config file
-//	}) (MyGoner, error) {
-//
-//		// do something
-//		return MyGoner{}, nil
-//	}
-//
-// var priest = NewProviderPriest(NewMyGoner)
-// ```
-func NewProviderPriest[P, T any](fn Provider[P, T]) Priest {
-	p := provider[T]{}
-
-	t := new(T)
-	of := reflect.TypeOf(t).Elem()
-	pt := provideType{
-		t: []reflect.Type{of},
+func convertUppercaseCamel(input string) string {
+	parts := strings.Split(input, ".")
+	for i, part := range parts {
+		parts[i] = strings.ToUpper(part)
 	}
-
-	p.create = func(tagConf string) (T, error) {
-		args, err := p.cemetery.InjectFuncParameters(fn, func(pt reflect.Type, i int) any {
-			if i == 0 {
-				return tagConf
-			}
-			return nil
-		}, nil)
-
-		if err != nil {
-			return *new(T), err
-		}
-		results := reflect.ValueOf(fn).Call(args)
-		if results[1].IsNil() {
-			return results[0].Interface().(T), nil
-		}
-		return *new(T), ToError(results[1].Interface())
-	}
-
-	return func(cemetery Cemetery) error {
-		cemetery.Bury(&p, pt)
-		return nil
-	}
+	return strings.Join(parts, "_")
 }

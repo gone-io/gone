@@ -10,12 +10,10 @@ import (
 	"reflect"
 )
 
-// NewGinResponser 新建系统默认的响应处理器
-// 注入的ID为：gone-gin-responser (`gone.IdGoneGinResponser`)
-func NewGinResponser() (gone.Goner, gone.GonerId) {
+func NewGinResponser() gone.Goner {
 	return &responser{
 		wrappedDataFunc: wrapFunc,
-	}, gone.IdGoneGinResponser
+	}
 }
 
 type res[T any] struct {
@@ -34,6 +32,10 @@ type responser struct {
 
 	wrappedDataFunc   WrappedDataFunc
 	returnWrappedData bool `gone:"config,server.return.wrapped-data,default=true"`
+}
+
+func (r *responser) Name() string {
+	return IdGoneGinResponser
 }
 
 func (r *responser) SetWrappedDataFunc(wrappedDataFunc WrappedDataFunc) {

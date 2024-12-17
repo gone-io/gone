@@ -3,7 +3,6 @@ package gone_viper
 import (
 	"errors"
 	"github.com/gone-io/gone"
-	"github.com/gone-io/gone/goner/config"
 	"github.com/gone-io/gone/internal/json"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -13,14 +12,27 @@ import (
 	"time"
 )
 
-func NewConfigure() (gone.Goner, gone.GonerId, gone.GonerOption) {
-	return &configure{}, gone.IdGoneConfigure, gone.IsDefault(new(gone.Configure))
+var load = gone.OnceLoad(func(loader gone.Loader) error {
+	return loader.Load(
+		&configure{},
+		gone.Name(gone.ConfigureName),
+		gone.IsDefault(new(gone.Configure)),
+		gone.ForceReplace(),
+	)
+})
+
+func Load(loader gone.Loader) error {
+	return load(loader)
+}
+
+// Priest Deprecated, use Load instead
+func Priest(loader gone.Loader) error {
+	return Load(loader)
 }
 
 type configure struct {
 	gone.Flag
-	cemetery gone.Cemetery `gone:"*"`
-
+	test []gone.TestFlag `gone:"*"`
 	conf *viper.Viper
 }
 
@@ -36,13 +48,16 @@ func (c *configure) Get(key string, v any, defaultVal string) error {
 }
 
 func (c *configure) isInTestKit() bool {
-	return c.cemetery != nil && c.cemetery.GetTomById(gone.IdGoneTestKit) != nil
+	return len(c.test) > 0
 }
 
 func (c *configure) readConfig() (err error) {
-	configs := config.GetConfSettings(c.isInTestKit())
-
+	configs := GetConfSettings(c.isInTestKit())
 	conf := viper.New()
+	conf.SetEnvPrefix("gone")
+	conf.AutomaticEnv()
+	conf.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
 	for _, setting := range configs {
 		vConf := viper.New()
 		vConf.SetConfigName(setting.ConfigName)
@@ -62,7 +77,6 @@ func (c *configure) readConfig() (err error) {
 			return gone.ToError(err)
 		}
 	}
-
 	c.conf = conf
 	return
 }
@@ -70,7 +84,7 @@ func (c *configure) readConfig() (err error) {
 func (c *configure) get(key string, value any, defaultVale string) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
-		return gone.NewInnerError("type of value must be ptr", gone.NotCompatible)
+		return gone.NewInnerError("type of value must be ptr", gone.NotSupport)
 	}
 
 	el := rv.Elem()
