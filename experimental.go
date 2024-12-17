@@ -1,0 +1,45 @@
+package gone
+
+import "reflect"
+
+// FunctionProvider is an experimental type that may change or be removed in future releases.
+type FunctionProvider[P, T any] func(tagConf string, param P) (T, error)
+
+// XProvider is an experimental type that may change or be removed in future releases.
+type XProvider[T any] struct {
+	Flag
+	injector FuncInjector `gone:"*"`
+	create   func(tagConf string) (T, error)
+}
+
+func (p *XProvider[T]) Provide(tagConf string) (T, error) {
+	obj, err := p.create(tagConf)
+	if err != nil {
+		return obj, ToError(err)
+	}
+	return obj, nil
+}
+
+// WrapFunctionProvider is an experimental function that may change or be removed in future releases.
+func WrapFunctionProvider[P, T any](fn FunctionProvider[P, T]) *XProvider[T] {
+	p := XProvider[T]{}
+
+	p.create = func(tagConf string) (T, error) {
+		f, err := p.injector.InjectWrapFunc(fn, func(pt reflect.Type, i int, injected bool) any {
+			if i == 0 {
+				return tagConf
+			}
+			return nil
+		}, nil)
+
+		if err != nil {
+			return *new(T), err
+		}
+		results := f()
+		if results[1] == nil {
+			return results[0].(T), nil
+		}
+		return *new(T), ToError(results[1])
+	}
+	return &p
+}

@@ -15,9 +15,5 @@ func TestPriest(t *testing.T) {
 		assert.NotNil(t, in.dial)
 		err := in.dial.(goneGorm.Applier).Apply(nil)
 		assert.Nil(t, err)
-
-	}, func(cemetery gone.Cemetery) error {
-		_ = config.Priest(cemetery)
-		return Priest(cemetery)
 	})
 }

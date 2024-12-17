@@ -30,11 +30,18 @@ func (d *dial) Apply(*gorm.Config) error {
 	return nil
 }
 
-// Priest is the entry point of the gorm mysql module
-func Priest(cemetery gone.Cemetery) error {
-	cemetery.Bury(
+var load = gone.OnceLoad(func(loader gone.Loader) error {
+	return loader.Load(
 		&dial{},
 		gone.IsDefault(new(gorm.Dialector)),
 	)
-	return nil
+})
+
+func Load(loader gone.Loader) error {
+	return load(loader)
+}
+
+// Priest Deprecated, use Load instead
+func Priest(loader gone.Loader) error {
+	return Load(loader)
 }

@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-func NewLogger() (gone.Goner, gone.GonerOption) {
-	return &iLogger{}, gone.GonerId("gorm-logger")
-}
-
 type iLogger struct {
 	gone.Flag
 	log      gone.Logger `gone:"*"`
@@ -56,24 +52,24 @@ func (l *iLogger) Trace(ctx context.Context, begin time.Time, fc func() (string,
 	case err != nil && l.LogLevel >= logger.Error && (!errors.Is(err, logger.ErrRecordNotFound)):
 		sql, rows := fc()
 		if rows == -1 {
-			l.log.Trace(utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, "-", sql)
+			l.log.Debugf(utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, "-", sql)
 		} else {
-			l.log.Trace(utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, rows, sql)
+			l.log.Debugf(utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, rows, sql)
 		}
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= logger.Warn:
 		sql, rows := fc()
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
 		if rows == -1 {
-			l.log.Trace(utils.FileWithLineNum(), slowLog, float64(elapsed.Nanoseconds())/1e6, "-", sql)
+			l.log.Debugf(utils.FileWithLineNum(), slowLog, float64(elapsed.Nanoseconds())/1e6, "-", sql)
 		} else {
-			l.log.Trace(utils.FileWithLineNum(), slowLog, float64(elapsed.Nanoseconds())/1e6, rows, sql)
+			l.log.Debugf(utils.FileWithLineNum(), slowLog, float64(elapsed.Nanoseconds())/1e6, rows, sql)
 		}
 	case l.LogLevel == logger.Info:
 		sql, rows := fc()
 		if rows == -1 {
-			l.log.Trace(utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, "-", sql)
+			l.log.Debugf(utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, "-", sql)
 		} else {
-			l.log.Trace(utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, rows, sql)
+			l.log.Debugf(utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, rows, sql)
 		}
 	}
 }
