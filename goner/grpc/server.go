@@ -22,20 +22,22 @@ func createListener(s *server) (err error) {
 
 type server struct {
 	gone.Flag
-	gone.Logger `gone:"*"`
-	gone.Tracer `gone:"*"`
+	logger       gone.Logger      `gone:"*"`
+	tracer       gone.Tracer      `gone:"*"`
+	grpcServices []Service        `gone:"*"`
+	keeper       gone.GonerKeeper `gone:"*"`
 
 	port int    `gone:"config,server.grpc.port,default=9090"`
 	host string `gone:"config,server.grpc.host,default=0.0.0.0"`
 
-	grpcServer *grpc.Server
-	listener   net.Listener
-
-	grpcServices []Service        `gone:"*"`
-	keeper       gone.GonerKeeper `gone:"*"`
-
+	grpcServer     *grpc.Server
+	listener       net.Listener
 	address        string
 	createListener func(*server) error
+}
+
+func (s *server) GonerName() string {
+	return "gone-grpc-server"
 }
 
 func (s *server) initListener() error {
@@ -69,18 +71,18 @@ func (s *server) Start() error {
 	)
 
 	for _, grpcService := range s.grpcServices {
-		s.Infof("Register gRPC service %v", reflect.ValueOf(grpcService).Type().String())
+		s.logger.Infof("Register gRPC service %v", reflect.ValueOf(grpcService).Type().String())
 		grpcService.RegisterGrpcServer(s.grpcServer)
 	}
 
-	s.Infof("gRPC server now listen at %s", s.address)
-	s.Go(s.server)
+	s.logger.Infof("gRPC server now listen at %s", s.address)
+	s.tracer.Go(s.server)
 	return nil
 }
 
 func (s *server) server() {
 	if err := s.grpcServer.Serve(s.listener); err != nil {
-		s.Errorf("failed to serve: %v", err)
+		s.logger.Errorf("failed to serve: %v", err)
 	}
 }
 
@@ -101,10 +103,9 @@ func (s *server) traceInterceptor(
 		traceId = traceIdV[0]
 	}
 
-	s.SetTraceId(traceId, func() {
+	s.tracer.SetTraceId(traceId, func() {
 		resp, err = handler(ctx, req)
 	})
-
 	return
 }
 
@@ -114,6 +115,6 @@ func (s *server) recoveryInterceptor(
 	_ *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (resp interface{}, err error) {
-	defer s.Recover()
+	defer s.tracer.RecoverAndSetError(&err)
 	return handler(ctx, req)
 }

@@ -29,6 +29,8 @@ type Tracer interface {
 	//Recover use for catch panic in goroutine
 	Recover()
 
+	RecoverAndSetError(errPointer *error)
+
 	//RecoverSetTraceId SetTraceId and Recover
 	RecoverSetTraceId(traceId string, fn func())
 }

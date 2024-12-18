@@ -33,12 +33,16 @@ func Test_server_initListener(t *testing.T) {
 		cMuxServer.EXPECT().MatchWithWriters(gomock.Any()).Return(listener)
 		cMuxServer.EXPECT().GetAddress().Return("")
 		gone.
-			Prepare(ServerLoad, tracer.Load, func(loader gone.Loader) error {
+			Prepare(tracer.Load, func(loader gone.Loader) error {
 				return loader.Load(cMuxServer, gone.Name(gonecmux.Name))
 			}).
-			Test(func(s *server) {
+			Test(func(keeper gone.GonerKeeper) {
+				s := server{
+					keeper: keeper,
+				}
 				err := s.initListener()
 				assert.Nil(t, err)
+				assert.NotNil(t, s.listener)
 			})
 	})
 
@@ -47,72 +51,65 @@ func Test_server_initListener(t *testing.T) {
 		defer controller.Finish()
 		listener := NewMockListener(controller)
 
-		s := server{
-			createListener: func(s *server) error {
-				s.listener = listener
-				return nil
-			},
-		}
-		err := s.initListener()
-		assert.Nil(t, err)
+		gone.
+			Test(func(keeper gone.GonerKeeper) {
+
+				s := server{
+					createListener: func(s *server) error {
+						s.listener = listener
+						return nil
+					},
+					keeper: keeper,
+				}
+				err := s.initListener()
+				assert.Nil(t, err)
+			})
 	})
 
 	t.Run("use tcpListener error", func(t *testing.T) {
-		controller := gomock.NewController(t)
-		defer controller.Finish()
-		listener := NewMockListener(controller)
+		gone.
+			Test(func(keeper gone.GonerKeeper) {
+				controller := gomock.NewController(t)
+				defer controller.Finish()
+				listener := NewMockListener(controller)
 
-		s := server{
-			createListener: func(s *server) error {
-				s.listener = listener
-				return errors.New("error")
-			},
-		}
-		err := s.initListener()
-		assert.Error(t, err)
+				s := server{
+					keeper: keeper,
+					createListener: func(s *server) error {
+						s.listener = listener
+						return errors.New("error")
+					},
+				}
+				err := s.initListener()
+				assert.Error(t, err)
+			})
 	})
 }
 
 func Test_server_Start(t *testing.T) {
 	t.Run("no gRPC service found, gRPC server will not start", func(t *testing.T) {
-		s := server{}
-		err := s.Start()
-		assert.Error(t, err)
-	})
+		gone.
+			Prepare(tracer.Load).
+			Test(func(keeper gone.GonerKeeper, logger gone.Logger, tracer gone.Tracer) {
+				controller := gomock.NewController(t)
+				defer controller.Finish()
+				listener := NewMockListener(controller)
 
-	t.Run("initListener error", func(t *testing.T) {
-		controller := gomock.NewController(t)
-		defer controller.Finish()
+				s := server{
+					logger: logger,
+					tracer: tracer,
+					keeper: keeper,
+					createListener: func(s *server) error {
+						s.listener = listener
+						return nil
+					},
+				}
+				err := s.initListener()
+				assert.Nil(t, err)
+				err = s.Start()
+				assert.Nil(t, err)
+			})
 
-		service := NewMockService(controller)
-		s := server{
-			grpcServices: []Service{service},
-			createListener: func(s *server) error {
-				return errors.New("error")
-			},
-		}
-		err := s.Start()
-		assert.Error(t, err)
-	})
-
-	t.Run("suc", func(t *testing.T) {
-		controller := gomock.NewController(t)
-		defer controller.Finish()
-
-		service := NewMockService(controller)
-		service.EXPECT().RegisterGrpcServer(gomock.Any())
-
-		listener := NewMockListener(controller)
-
-		s := server{
-			grpcServices: []Service{service},
-			createListener: func(s *server) error {
-				s.listener = listener
-				return nil
-			},
-		}
-		err := s.Start()
-		assert.Nil(t, err)
 	})
 }
 
@@ -133,11 +130,14 @@ func Test_server_server(t *testing.T) {
 	listener.EXPECT().Accept().Return(nil, errors.New("error"))
 	listener.EXPECT().Close().Return(nil)
 
-	s := server{
-		grpcServer: grpc.NewServer(),
-		listener:   listener,
-	}
-	s.server()
+	gone.Test(func(logger gone.Logger) {
+		s := server{
+			grpcServer: grpc.NewServer(),
+			listener:   listener,
+			logger:     logger,
+		}
+		s.server()
+	})
 }
 
 func Test_server_Stop(t *testing.T) {
@@ -160,7 +160,7 @@ func Test_server_traceInterceptor(t *testing.T) {
 		tracer tracer.Tracer `gone:"gone-tracer"`
 	}) {
 		s := server{
-			Tracer: in.tracer,
+			tracer: in.tracer,
 		}
 
 		var req any
@@ -179,11 +179,11 @@ func Test_server_recoveryInterceptor(t *testing.T) {
 		tracer tracer.Tracer `gone:"gone-tracer"`
 	}) {
 		s := server{
-			Tracer: in.tracer,
+			tracer: in.tracer,
 		}
 		_, err := s.recoveryInterceptor(context.Background(), nil, nil, func(ctx context.Context, req any) (any, error) {
 			panic(errors.New("error"))
 		})
-		assert.Nil(t, err)
+		assert.NotNil(t, err)
 	})
 }

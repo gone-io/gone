@@ -252,4 +252,5 @@ const (
 	ProviderError       = 1010
 	StartError          = 1011
 	DbRollForPanicError = 1012
+	PanicError          = 1013
 )

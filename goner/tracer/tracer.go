@@ -1,6 +1,7 @@
 package tracer
 
 import (
+	"fmt"
 	"github.com/gone-io/gone"
 	"github.com/google/uuid"
 	"github.com/jtolds/gls"
@@ -58,7 +59,15 @@ func (t *tracer) Go(cb func()) {
 
 func (t *tracer) Recover() {
 	if err := recover(); err != nil {
-		t.Errorf("handle panic: %v, %s", err, gone.PanicTrace(2, 1))
+		e := gone.NewInnerErrorSkip(fmt.Sprintf("panic: %v", err), gone.PanicError, 3)
+		t.Errorf("%v", e)
+	}
+}
+
+func (t *tracer) RecoverAndSetError(errPointer *error) {
+	if err := recover(); err != nil {
+		*errPointer = gone.NewInnerErrorSkip(fmt.Sprintf("panic: %v", err), gone.PanicError, 3)
+		t.Errorf("%v", *errPointer)
 	}
 }
 
