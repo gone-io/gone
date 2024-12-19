@@ -39,7 +39,7 @@ func GetDefaultLogger() Logger {
 type defaultLogger struct {
 	Flag
 	level    LoggerLevel
-	levelStr string `gone:"config,log.level"`
+	levelStr string `gone:"config,log.level=info"`
 }
 
 func (l *defaultLogger) GonerName() string {

@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+func NewGinProxy() gone.Goner {
+	return &proxy{}
+}
+
 type proxy struct {
 	gone.Flag
 	gone.Logger  `gone:"*"`

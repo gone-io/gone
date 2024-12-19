@@ -45,14 +45,15 @@ func (s *Preparer) init() *Preparer {
 	s.signal = make(chan os.Signal, 1)
 	s.loader = NewCore()
 
-	s.Load(s).
+	s.
+		Load(s, IsDefault()).
 		Load(&BeforeStartProvider{}).
 		Load(&AfterStartProvider{}).
 		Load(&BeforeStopProvider{}).
 		Load(&AfterStopProvider{}).
 		Load(&ConfigProvider{}).
-		Load(&EnvConfigure{}, Name("configure"), IsDefault(), OnlyForName()).
-		Load(defaultLog, IsDefault())
+		Load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)), OnlyForName()).
+		Load(defaultLog, IsDefault(new(Logger)))
 	return s
 }
 

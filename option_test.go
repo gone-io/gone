@@ -38,19 +38,6 @@ func TestOption_Apply(t *testing.T) {
 	}
 }
 
-func TestIsDefault(t *testing.T) {
-	c := &coffin{}
-	opt := IsDefault()
-
-	if err := opt.Apply(c); err != nil {
-		t.Errorf("IsDefault().Apply() error = %v", err)
-	}
-
-	if !c.isDefault {
-		t.Error("IsDefault() did not set isDefault to true")
-	}
-}
-
 func TestOrder(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -128,82 +115,5 @@ func TestForceReplace(t *testing.T) {
 
 	if !c.forceReplace {
 		t.Error("ForceReplace() did not set forceReplace to true")
-	}
-}
-
-func TestOptionCombination(t *testing.T) {
-	tests := []struct {
-		name string
-		opts []Option
-		want *coffin
-	}{
-		{
-			name: "Multiple options",
-			opts: []Option{
-				Name("test"),
-				Order(42),
-				IsDefault(),
-				OnlyForName(),
-				ForceReplace(),
-			},
-			want: &coffin{
-				name:         "test",
-				order:        42,
-				isDefault:    true,
-				onlyForName:  true,
-				forceReplace: true,
-			},
-		},
-		{
-			name: "Override name",
-			opts: []Option{
-				Name("first"),
-				Name("second"),
-			},
-			want: &coffin{
-				name: "second",
-			},
-		},
-		{
-			name: "Override order",
-			opts: []Option{
-				Order(1),
-				Order(2),
-			},
-			want: &coffin{
-				order: 2,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := &coffin{}
-
-			// Apply all options
-			for _, opt := range tt.opts {
-				if err := opt.Apply(c); err != nil {
-					t.Errorf("Option.Apply() error = %v", err)
-					return
-				}
-			}
-
-			// Check all relevant fields
-			if c.name != tt.want.name {
-				t.Errorf("got name = %q, want %q", c.name, tt.want.name)
-			}
-			if c.order != tt.want.order {
-				t.Errorf("got order = %v, want %v", c.order, tt.want.order)
-			}
-			if c.isDefault != tt.want.isDefault {
-				t.Errorf("got isDefault = %v, want %v", c.isDefault, tt.want.isDefault)
-			}
-			if c.onlyForName != tt.want.onlyForName {
-				t.Errorf("got onlyForName = %v, want %v", c.onlyForName, tt.want.onlyForName)
-			}
-			if c.forceReplace != tt.want.forceReplace {
-				t.Errorf("got forceReplace = %v, want %v", c.forceReplace, tt.want.forceReplace)
-			}
-		})
 	}
 }

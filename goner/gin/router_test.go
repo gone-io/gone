@@ -27,7 +27,7 @@ func Test_router(t *testing.T) {
 		HandleProxyToGin: handleProxyToGin,
 	}
 
-	err := r.AfterRevive()
+	err := r.Init()
 	assert.Nil(t, err)
 
 	fn := func() {}

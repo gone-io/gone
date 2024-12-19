@@ -28,6 +28,10 @@ type locker struct {
 
 type Unlock func()
 
+func (r *locker) GonerName() string {
+	return "gone-redis-locker"
+}
+
 func (r *locker) TryLock(key string, expiresIn time.Duration) (unlock Unlock, err error) {
 	conn := r.getConn()
 	defer r.close(conn)

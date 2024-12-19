@@ -24,7 +24,7 @@ func NewCore() *Core {
 		log:                GetDefaultLogger(),
 	}
 
-	_ = loader.Load(&loader)
+	_ = loader.Load(&loader, IsDefault())
 	return &loader
 }
 
@@ -392,12 +392,17 @@ func (s *Core) getCoffinsByType(t reflect.Type) (coffins []*coffin) {
 }
 
 func (s *Core) getDefaultCoffinByType(t reflect.Type) *coffin {
+	s.log.Debugf("Get Default Goner By Type: %s", GetTypeName(t))
+
 	coffins := s.getCoffinsByType(t)
 	if len(coffins) > 0 {
 		for _, c := range coffins {
 			if c.isDefault(t) {
 				return c
 			}
+		}
+		if len(coffins) > 1 {
+			s.log.Warnf("Found multiple Goner for type %s; should set default one when loading", GetTypeName(t))
 		}
 		return coffins[0]
 	}

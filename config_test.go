@@ -118,7 +118,7 @@ func TestConfigProvider_Provide(t *testing.T) {
 				t.Errorf("ConfigProvider.Provide() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(reflect.ValueOf(got).Elem().Interface(), tt.want) {
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ConfigProvider.Provide() = %v, want %v", got, tt.want)
 			}
 		})
@@ -140,7 +140,7 @@ func TestEnvConfigure_Get(t *testing.T) {
 	}
 
 	for k, v := range envVars {
-		os.Setenv(k, v)
+		os.Setenv(GONE+"_"+k, v)
 		defer os.Unsetenv(k)
 	}
 

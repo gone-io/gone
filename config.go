@@ -65,6 +65,8 @@ type EnvConfigure struct {
 	Flag
 }
 
+const GONE = "GONE"
+
 // Get retrieves a configuration value from environment variables with fallback to default value.
 // Supports type conversion for various Go types including string, int, float, bool, and structs.
 //
@@ -79,7 +81,7 @@ type EnvConfigure struct {
 //   - Unsupported type is provided
 func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 	// Get environment variable value, fallback to default if not set
-	key = convertUppercaseCamel("GONE_" + key)
+	key = convertUppercaseCamel(GONE + "_" + key)
 	env := os.Getenv(key)
 	if env == "" {
 		env = defaultVal

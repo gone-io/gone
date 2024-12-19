@@ -26,7 +26,7 @@ type schedule struct {
 	cronTab     *cron.Cron
 	gone.Logger `gone:"gone-logger"`
 	tracer      gone.Tracer  `gone:"gone-tracer"`
-	locker      redis.Locker `gone:"gone-redis-locker"`
+	locker      redis.Locker `gone:"*"`
 	schedulers  []Scheduler  `gone:"*"`
 
 	lockTime    time.Duration `gone:"config,schedule.lockTime,default=10s"`
@@ -38,6 +38,9 @@ func (s *schedule) Init() {
 }
 
 func (s *schedule) Start() error {
+	if len(s.schedulers) == 0 {
+		s.Warnf("no scheduler found")
+	}
 	for _, o := range s.schedulers {
 		o.Cron(func(spec string, jobName JobName, fn func()) {
 			lockKey := fmt.Sprintf("lock-job:%s", jobName)

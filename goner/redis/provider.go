@@ -9,7 +9,7 @@ type provider struct {
 	gone.Flag
 	inner     *inner         `gone:"gone-redis-inner"`
 	tracer    gone.Tracer    `gone:"gone-tracer"`
-	configure gone.Configure `gone:"*"`
+	configure gone.Configure `gone:"configure"`
 }
 
 func (s *provider) GonerName() string {

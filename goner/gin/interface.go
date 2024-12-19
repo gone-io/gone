@@ -111,6 +111,10 @@ type XContext interface {
 
 type WrappedDataFunc func(code int, msg string, data any) any
 
+type WrappedDataFuncSetter interface {
+	SetWrappedDataFunc(wrappedDataFunc WrappedDataFunc)
+}
+
 // Responser Response handler
 // Inject default response handler using Id: gone-gin-responser (`gone.IdGoneGinResponser`)
 type Responser interface {

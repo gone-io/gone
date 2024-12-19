@@ -13,6 +13,10 @@ type cache struct {
 	*inner `gone:"gone-redis-inner"`
 }
 
+func (r *cache) GonerName() string {
+	return "goner-redis-cache"
+}
+
 func (r *cache) Set(key string, value any, ttl ...time.Duration) error {
 	return r.Put(key, value, ttl...)
 }

@@ -3,6 +3,7 @@ package redis
 import (
 	"fmt"
 	"github.com/gone-io/gone"
+	gone_viper "github.com/gone-io/gone/goner/viper"
 	"github.com/gone-io/gone/internal/json"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
@@ -11,13 +12,13 @@ import (
 
 type RedisUser struct {
 	gone.Flag
-	cache Cache `gone:"gone-redis-cache"`
-	h     Hash  `gone:"gone-redis-provider,test-hash"`
+	cache Cache `gone:"*"`
+	h     Hash  `gone:"redis,test-hash"`
 }
 
 func TestHash(t *testing.T) {
 	gone.
-		Loads(Load, func(loader gone.Loader) error {
+		Prepare(Load, gone_viper.Load, func(loader gone.Loader) error {
 			return loader.Load(&RedisUser{})
 		}).
 		Test(func(u *RedisUser) {

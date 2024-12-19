@@ -192,6 +192,9 @@ func TestCore_Fill(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core := NewCore()
+			_ = core.Load(defaultLog)
+			_ = core.Load(&ConfigProvider{})
+			_ = core.Load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)), OnlyForName())
 			tt.setup(core)
 			err := core.Install()
 			if (err != nil) != tt.wantErr {
@@ -216,7 +219,7 @@ func TestCore_Check(t *testing.T) {
 				_ = core.Load(&MockNamed{})
 			},
 			wantErr:      false,
-			wantOrderLen: 4,
+			wantOrderLen: 14,
 		},
 		{
 			name: "Circular dependency",
@@ -240,6 +243,9 @@ func TestCore_Check(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core := NewCore()
+			_ = core.Load(defaultLog)
+			_ = core.Load(&ConfigProvider{})
+			_ = core.Load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)), OnlyForName())
 			tt.setup(core)
 			orders, err := core.Check()
 			if (err != nil) != tt.wantErr {

@@ -34,19 +34,13 @@ func TestPriest(t *testing.T) {
 			db *gorm.DB `gone:"*"`
 		},
 	) {
-
 		assert.NotNil(t, in.db)
-
-	}, func(cemetery gone.Cemetery) error {
-		priest := gone.NewProviderPriest(func(tagConf string, p struct{}) (gorm.Dialector, error) {
-			return dialector, nil
-		})
-		err := priest(cemetery)
+	}, func(loader gone.Loader) error {
+		err := loader.Load(gone.WrapFunctionProvider(func(tagConf string, p struct{}) (gorm.Dialector, error) { return dialector, nil }))
 		assert.Nil(t, err)
 		if err != nil {
 			return err
 		}
-		_ = config.Priest(cemetery)
-		return Priest(cemetery)
+		return Priest(loader)
 	})
 }

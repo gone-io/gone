@@ -4,19 +4,13 @@ import (
 	"github.com/gone-io/gone"
 	"github.com/gone-io/gone/goner/redis"
 	"github.com/gone-io/gone/goner/tracer"
+	gone_viper "github.com/gone-io/gone/goner/viper"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"sync"
 	"testing"
 	"time"
 )
-
-func Test_schedule_AfterRevive(t *testing.T) {
-	s := schedule{}
-	err := s.AfterRevive()
-	assert.Nil(t, err)
-	assert.NotNil(t, s.cronTab)
-}
 
 type locker struct {
 	gone.Flag
@@ -34,25 +28,26 @@ func Test_schedule_Start(t *testing.T) {
 	var mu sync.Mutex
 	i := 0
 	scheduler := NewMockScheduler(controller)
-	scheduler.EXPECT().Cron(gomock.Any()).Do(func(run RunFuncOnceAt) {
-		run("0/1 * * * * *", "test", func() {
-			println("test")
-			mu.Lock()
-			i++
-			mu.Unlock()
+	scheduler.EXPECT().
+		Cron(gomock.Any()).
+		Do(func(run RunFuncOnceAt) {
+			run("0/1 * * * * *", "test", func() {
+				println("test")
+				mu.Lock()
+				i++
+				mu.Unlock()
+			})
 		})
-	})
 
-	gone.Prepare(tracer.Priest, logrus.Priest, config.Priest, func(cemetery gone.Cemetery) error {
-		cemetery.Bury(&locker{}, gone.IdGoneRedisLocker)
-		cemetery.Bury(NewSchedule())
-		cemetery.Bury(scheduler)
-		return nil
-	}).AfterStart(func(in struct {
-		s schedule `gone:"*"`
-	}) {
-		time.Sleep(2 * time.Second)
-	}).Run()
+	gone.
+		Prepare(tracer.Priest, Load, redis.Load, gone_viper.Load, func(loader gone.Loader) error {
+			return loader.Load(scheduler)
+		}).
+		Test(func(in struct {
+			s *schedule `gone:"*"`
+		}) {
+			time.Sleep(2 * time.Second)
+		})
 
 	mu.Lock()
 	assert.Equal(t, 2, i)
