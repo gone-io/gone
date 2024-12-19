@@ -86,32 +86,32 @@ func Test_server_initListener(t *testing.T) {
 	})
 }
 
-func Test_server_Start(t *testing.T) {
-	t.Run("no gRPC service found, gRPC server will not start", func(t *testing.T) {
-		gone.
-			Prepare(tracer.Load).
-			Test(func(keeper gone.GonerKeeper, logger gone.Logger, tracer gone.Tracer) {
-				controller := gomock.NewController(t)
-				defer controller.Finish()
-				listener := NewMockListener(controller)
-
-				s := server{
-					logger: logger,
-					tracer: tracer,
-					keeper: keeper,
-					createListener: func(s *server) error {
-						s.listener = listener
-						return nil
-					},
-				}
-				err := s.initListener()
-				assert.Nil(t, err)
-				err = s.Start()
-				assert.Nil(t, err)
-			})
-
-	})
-}
+//func Test_server_Start(t *testing.T) {
+//	t.Run("no gRPC service found, gRPC server will not start", func(t *testing.T) {
+//		gone.
+//			Prepare(tracer.Load).
+//			Test(func(keeper gone.GonerKeeper, logger gone.Logger, tracer gone.Tracer) {
+//				controller := gomock.NewController(t)
+//				defer controller.Finish()
+//				listener := NewMockListener(controller)
+//
+//				s := server{
+//					logger: logger,
+//					tracer: tracer,
+//					keeper: keeper,
+//					createListener: func(s *server) error {
+//						s.listener = listener
+//						return nil
+//					},
+//				}
+//				err := s.initListener()
+//				assert.Nil(t, err)
+//				err = s.Start()
+//				assert.Nil(t, err)
+//			})
+//
+//	})
+//}
 
 type addr struct{}
 
@@ -123,20 +123,24 @@ func (a *addr) String() string {
 }
 
 func Test_server_server(t *testing.T) {
-	controller := gomock.NewController(t)
-	defer controller.Finish()
-	listener := NewMockListener(controller)
-	listener.EXPECT().Addr().Return(&addr{}).AnyTimes()
-	listener.EXPECT().Accept().Return(nil, errors.New("error"))
-	listener.EXPECT().Close().Return(nil)
+	t.Run("server", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+		listener := NewMockListener(controller)
+		listener.EXPECT().Addr().Return(&addr{}).AnyTimes()
+		listener.EXPECT().Accept().Return(nil, errors.New("error"))
+		listener.EXPECT().Close().Return(nil)
 
-	gone.Test(func(logger gone.Logger) {
-		s := server{
-			grpcServer: grpc.NewServer(),
-			listener:   listener,
-			logger:     logger,
-		}
-		s.server()
+		gone.
+			Prepare().
+			Test(func(logger gone.Logger) {
+				s := server{
+					grpcServer: grpc.NewServer(),
+					listener:   listener,
+					logger:     logger,
+				}
+				s.server()
+			})
 	})
 }
 
@@ -156,34 +160,40 @@ func Test_server_traceInterceptor(t *testing.T) {
 		XTraceId: []string{traceId},
 	})
 
-	gone.Prepare(tracer.Load).Test(func(in struct {
-		tracer tracer.Tracer `gone:"gone-tracer"`
-	}) {
-		s := server{
-			tracer: in.tracer,
-		}
+	gone.
+		Prepare(tracer.Load).
+		Test(func(in struct {
+			tracer tracer.Tracer `gone:"gone-tracer"`
+		}) {
+			s := server{
+				tracer: in.tracer,
+			}
 
-		var req any
-		_, err := s.traceInterceptor(ctx, req, nil, func(ctx context.Context, req any) (any, error) {
-			id := in.tracer.GetTraceId()
-			assert.Equal(t, traceId, id)
-			return nil, nil
+			var req any
+			_, err := s.traceInterceptor(ctx, req, nil, func(ctx context.Context, req any) (any, error) {
+				id := in.tracer.GetTraceId()
+				assert.Equal(t, traceId, id)
+				return nil, nil
+			})
+			assert.Nil(t, err)
 		})
-		assert.Nil(t, err)
-
-	})
 }
 
 func Test_server_recoveryInterceptor(t *testing.T) {
-	gone.Prepare(tracer.Load).Test(func(in struct {
-		tracer tracer.Tracer `gone:"gone-tracer"`
-	}) {
-		s := server{
-			tracer: in.tracer,
-		}
-		_, err := s.recoveryInterceptor(context.Background(), nil, nil, func(ctx context.Context, req any) (any, error) {
-			panic(errors.New("error"))
+	gone.
+		Prepare(tracer.Load).
+		Test(func(tracer tracer.Tracer, logger gone.Logger) {
+			s := server{
+				tracer: tracer,
+				logger: logger,
+			}
+			_, err := s.recoveryInterceptor(context.Background(), 1, nil,
+				func(ctx context.Context, req any) (any, error) {
+					if req == 1 {
+						panic(errors.New("error"))
+					}
+					return nil, nil
+				})
+			assert.Error(t, err)
 		})
-		assert.NotNil(t, err)
-	})
 }

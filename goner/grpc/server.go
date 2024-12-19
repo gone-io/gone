@@ -58,29 +58,35 @@ func (s *server) Init() error {
 	if len(s.grpcServices) == 0 {
 		return errors.New("no gRPC service found, gRPC server will not start")
 	}
+	err := s.initListener()
+	if err != nil {
+		return gone.ToError(err)
+	}
 
-	return s.initListener()
+	return nil
 }
 
-func (s *server) Start() error {
+func (s *server) register() {
 	s.grpcServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			s.traceInterceptor,
 			s.recoveryInterceptor,
 		),
 	)
-
 	for _, grpcService := range s.grpcServices {
 		s.logger.Infof("Register gRPC service %v", reflect.ValueOf(grpcService).Type().String())
 		grpcService.RegisterGrpcServer(s.grpcServer)
 	}
+}
 
-	s.logger.Infof("gRPC server now listen at %s", s.address)
+func (s *server) Start() error {
+	s.register()
 	s.tracer.Go(s.server)
 	return nil
 }
 
 func (s *server) server() {
+	s.logger.Infof("gRPC server now listen at %s", s.address)
 	if err := s.grpcServer.Serve(s.listener); err != nil {
 		s.logger.Errorf("failed to serve: %v", err)
 	}
