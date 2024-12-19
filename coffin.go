@@ -29,6 +29,9 @@ func newCoffin(goner any) *coffin {
 	if !needInitBeforeUse {
 		_, needInitBeforeUse = goner.(NamedProvider)
 	}
+	if !needInitBeforeUse {
+		_, needInitBeforeUse = goner.(StructFieldInjector)
+	}
 
 	return &coffin{
 		goner:             goner,
@@ -59,14 +62,4 @@ func (c coffinList) Swap(i, j int) {
 // SortCoffins sorts a slice of coffins by their order
 func SortCoffins(coffins []*coffin) {
 	sort.Sort(coffinList(coffins))
-}
-
-func isInitiator(co *coffin) bool {
-	if _, ok := co.goner.(Initiator); ok {
-		return true
-	}
-	if _, ok := co.goner.(InitiatorNoError); ok {
-		return true
-	}
-	return false
 }

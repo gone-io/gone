@@ -520,3 +520,8 @@ type GonerKeeper interface {
 	GetGonerByName(name string) any
 	GetGonerByType(t reflect.Type) any
 }
+
+type StructFieldInjector interface {
+	NamedGoner
+	Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error
+}

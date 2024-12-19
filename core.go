@@ -288,8 +288,15 @@ func (s *Core) fillOne(coffin *coffin) error {
 					continue
 				}
 				return NewInnerErrorWithParams(GonerTypeNotMatch, "The value provided by provider(%T) cannot match to field %q of %q", provider, field.Name, GetTypeName(elem))
-
 			}
+			if injector, ok := co.goner.(StructFieldInjector); ok {
+				err = injector.Inject(extend, field, v)
+				if err != nil {
+					return ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem)))
+				}
+				continue
+			}
+
 			return NewInnerErrorWithParams(GonerTypeNotMatch, "Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem))
 		}
 	}

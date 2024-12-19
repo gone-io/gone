@@ -30,7 +30,7 @@ func Test_httpInjector_Suck(t *testing.T) {
 
 	rv := reflect.ValueOf(req).Elem()
 	for i := 0; i < rv.NumField(); i++ {
-		err := injector.Suck("query", rv.Field(i), rv.Type().Field(i))
+		err := injector.Suck("query", rv.Type().Field(i))
 		assert.Nil(t, err)
 	}
 	funcs := injector.CollectBindFuncs()

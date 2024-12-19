@@ -66,7 +66,7 @@ func fieldByIndexFromStructValue(structValue reflect.Value, index []int, isExpor
 	return v
 }
 
-func (s *httpInjector) Suck(conf string, v reflect.Value, field reflect.StructField) error {
+func (s *httpInjector) Inject(conf string, field reflect.StructField, _ reflect.Value) error {
 	kind, key := parseConfKeyValue(conf)
 	if key == "" {
 		key = field.Name
