@@ -68,19 +68,27 @@ func (l *defaultLogger) Init() {
 }
 
 func (l *defaultLogger) Infof(msg string, args ...any) {
-	log.Printf(msg, args...)
+	if l.level <= InfoLevel {
+		log.Printf(msg, args...)
+	}
 }
 
 func (l *defaultLogger) Errorf(msg string, args ...any) {
-	log.Printf(msg, args...)
+	if l.level <= ErrorLevel {
+		log.Printf(msg, args...)
+	}
 }
 
 func (l *defaultLogger) Warnf(msg string, args ...any) {
-	log.Printf(msg, args...)
+	if l.level <= WarnLevel {
+		log.Printf(msg, args...)
+	}
 }
 
 func (l *defaultLogger) Debugf(msg string, args ...any) {
-	log.Printf(msg, args...)
+	if l.level <= DebugLevel {
+		log.Printf(msg, args...)
+	}
 }
 
 func (l *defaultLogger) GetLevel() LoggerLevel {
