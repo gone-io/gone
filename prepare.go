@@ -72,6 +72,10 @@ func (p *Preparer) LoadPriest(priests ...Priest) *Preparer {
 	return p
 }
 
+func (p *Preparer) Loads(priests ...Priest) *Preparer {
+	return p.LoadPriest(priests...)
+}
+
 func Prepare(priests ...Priest) *Preparer {
 	h := New(priests...)
 
