@@ -537,7 +537,7 @@ func (mr *MockXInterfaceMockRecorder) Iterate(arg0, arg1 any) *gomock.Call {
 }
 
 // Join mocks base method.
-func (m *MockXInterface) Join(joinOperator string, tablename any, condition string, args ...any) *xorm.Session {
+func (m *MockXInterface) Join(joinOperator string, tablename, condition any, args ...any) *xorm.Session {
 	m.ctrl.T.Helper()
 	varargs := []any{joinOperator, tablename, condition}
 	for _, a := range args {
@@ -913,6 +913,25 @@ func (m *MockXInterface) Table(tableNameOrBean any) *xorm.Session {
 func (mr *MockXInterfaceMockRecorder) Table(tableNameOrBean any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Table", reflect.TypeOf((*MockXInterface)(nil).Table), tableNameOrBean)
+}
+
+// Truncate mocks base method.
+func (m *MockXInterface) Truncate(arg0 ...any) (int64, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{}
+	for _, a := range arg0 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Truncate", varargs...)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Truncate indicates an expected call of Truncate.
+func (mr *MockXInterfaceMockRecorder) Truncate(arg0 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Truncate", reflect.TypeOf((*MockXInterface)(nil).Truncate), arg0...)
 }
 
 // Unscoped mocks base method.

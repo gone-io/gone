@@ -799,7 +799,7 @@ func (mr *MockEngineInterfaceMockRecorder) Iterate(arg0, arg1 any) *gomock.Call 
 }
 
 // Join mocks base method.
-func (m *MockEngineInterface) Join(joinOperator string, tablename any, condition string, args ...any) *xorm.Session {
+func (m *MockEngineInterface) Join(joinOperator string, tablename, condition any, args ...any) *xorm.Session {
 	m.ctrl.T.Helper()
 	varargs := []any{joinOperator, tablename, condition}
 	for _, a := range args {
@@ -1465,6 +1465,26 @@ func (mr *MockEngineInterfaceMockRecorder) Sync2(arg0 ...any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sync2", reflect.TypeOf((*MockEngineInterface)(nil).Sync2), arg0...)
 }
 
+// SyncWithOptions mocks base method.
+func (m *MockEngineInterface) SyncWithOptions(arg0 xorm.SyncOptions, arg1 ...any) (*xorm.SyncResult, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SyncWithOptions", varargs...)
+	ret0, _ := ret[0].(*xorm.SyncResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SyncWithOptions indicates an expected call of SyncWithOptions.
+func (mr *MockEngineInterfaceMockRecorder) SyncWithOptions(arg0 any, arg1 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncWithOptions", reflect.TypeOf((*MockEngineInterface)(nil).SyncWithOptions), varargs...)
+}
+
 // Table mocks base method.
 func (m *MockEngineInterface) Table(tableNameOrBean any) *xorm.Session {
 	m.ctrl.T.Helper()
@@ -1511,6 +1531,25 @@ func (mr *MockEngineInterfaceMockRecorder) TableName(arg0 any, arg1 ...any) *gom
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TableName", reflect.TypeOf((*MockEngineInterface)(nil).TableName), varargs...)
+}
+
+// Truncate mocks base method.
+func (m *MockEngineInterface) Truncate(arg0 ...any) (int64, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{}
+	for _, a := range arg0 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Truncate", varargs...)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Truncate indicates an expected call of Truncate.
+func (mr *MockEngineInterfaceMockRecorder) Truncate(arg0 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Truncate", reflect.TypeOf((*MockEngineInterface)(nil).Truncate), arg0...)
 }
 
 // UnMapType mocks base method.
