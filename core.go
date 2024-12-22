@@ -349,7 +349,11 @@ func (s *Core) GetGonerByName(name string) any {
 }
 
 func (s *Core) GetGonerByType(t reflect.Type) any {
-	return s.getDefaultCoffinByType(t)
+	T := s.getDefaultCoffinByType(t)
+	if T != nil {
+		return T.goner
+	}
+	return nil
 }
 
 func (s *Core) getCoffinsByType(t reflect.Type) (coffins []*coffin) {
@@ -421,8 +425,7 @@ func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
 		}
 		return v.Interface(), nil
 	}
-
-	return nil, nil
+	return nil, NewInnerError("Cannot find matched Goner for type %s", NotSupport)
 }
 
 // FuncInjectHook is a function type used for customizing parameter injection in functions.
@@ -464,7 +467,7 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 
 		if !injected {
 			v, err := s.Provide("", pt)
-			if err != nil {
+			if err != nil && !IsError(err, NotSupport) {
 				return nil, ToErrorWithMsg(err, fmt.Sprintf("Inject %dth parameter of %s error", i+1, GetFuncName(fn)))
 			}
 			if v != nil {

@@ -273,3 +273,143 @@ func TestEnvConfigure_Get(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigProvider_Init(t *testing.T) {
+	provider := &ConfigProvider{}
+	// Init() should not panic
+	provider.Init()
+}
+
+func TestConfigProvider_ProvideWithDefaultTag(t *testing.T) {
+	mockConfigure := &MockConfigure{
+		values: map[string]string{},
+	}
+
+	provider := &ConfigProvider{
+		configure: mockConfigure,
+	}
+
+	tests := []struct {
+		name      string
+		tagConf   string
+		valueType reflect.Type
+		want      any
+		wantErr   bool
+	}{
+		{
+			name:      "Use default tag",
+			tagConf:   "missing-key,default=default-value",
+			valueType: reflect.TypeOf(""),
+			want:      "default-value",
+			wantErr:   false,
+		},
+		{
+			name:      "Multiple keys with default",
+			tagConf:   "key1,key2,default=fallback",
+			valueType: reflect.TypeOf(""),
+			want:      "fallback",
+			wantErr:   false,
+		},
+		{
+			name:      "Empty default value",
+			tagConf:   "missing-key,default=",
+			valueType: reflect.TypeOf(""),
+			want:      "",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := provider.Provide(tt.tagConf, tt.valueType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConfigProvider.Provide() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ConfigProvider.Provide() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEnvConfigure_GetInvalidValues(t *testing.T) {
+	configure := &EnvConfigure{}
+
+	tests := []struct {
+		name       string
+		key        string
+		value      any
+		envValue   string
+		defaultVal string
+		wantErr    bool
+	}{
+		{
+			name:       "Invalid int format",
+			key:        "TEST_INVALID_INT",
+			value:      new(int),
+			envValue:   "not-a-number",
+			defaultVal: "0",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid float format",
+			key:        "TEST_INVALID_FLOAT",
+			value:      new(float64),
+			envValue:   "not-a-float",
+			defaultVal: "0.0",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid bool format",
+			key:        "TEST_INVALID_BOOL",
+			value:      new(bool),
+			envValue:   "not-a-bool",
+			defaultVal: "false",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid duration format",
+			key:        "TEST_INVALID_DURATION",
+			value:      new(time.Duration),
+			envValue:   "not-a-duration",
+			defaultVal: "1s",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid JSON for struct",
+			key:        "TEST_INVALID_STRUCT",
+			value:      &struct{ Name string }{},
+			envValue:   "{invalid-json}",
+			defaultVal: "{}",
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set environment variable
+			os.Setenv(GONE+"_"+tt.key, tt.envValue)
+			defer os.Unsetenv(GONE + "_" + tt.key)
+
+			err := configure.Get(tt.key, tt.value, tt.defaultVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnvConfigure.Get() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnvConfigure_GetWithEmptyKey(t *testing.T) {
+	configure := &EnvConfigure{}
+	value := new(string)
+
+	// Test with empty key but valid default value
+	err := configure.Get("", value, "default")
+	if err != nil {
+		t.Errorf("EnvConfigure.Get() with empty key should use default value, got error: %v", err)
+	}
+	if *value != "default" {
+		t.Errorf("EnvConfigure.Get() with empty key = %v, want %v", *value, "default")
+	}
+}

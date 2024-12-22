@@ -2,6 +2,7 @@ package gone
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -378,6 +379,218 @@ func TestCore_InjectWrapFunc(t *testing.T) {
 				if !reflect.DeepEqual(results, tt.wantResults) {
 					t.Errorf("Wrapped function results = %v, want %v", results, tt.wantResults)
 				}
+			}
+		})
+	}
+}
+
+func TestCore_GetGonerByName(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func(*Core)
+		findName string
+		want     bool
+	}{
+		{
+			name: "Find existing named component",
+			setup: func(core *Core) {
+				_ = core.Load(&MockNamed{})
+			},
+			findName: "named-dep",
+			want:     true,
+		},
+		{
+			name: "Component not found",
+			setup: func(core *Core) {
+				_ = core.Load(&MockComponent{})
+			},
+			findName: "non-existent",
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			got := core.GetGonerByName(tt.findName)
+			if (got != nil) != tt.want {
+				t.Errorf("Core.GetGonerByName() = %v, want %v", got != nil, tt.want)
+			}
+		})
+	}
+}
+
+func TestCore_GetGonerByType(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(*Core)
+		typ   reflect.Type
+		want  bool
+	}{
+		{
+			name: "Find existing type",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+			},
+			typ:  reflect.TypeOf(&MockDependency{}),
+			want: true,
+		},
+		{
+			name: "Multiple implementations with default",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{}, IsDefault())
+				_ = core.Load(&MockDependency{})
+			},
+			typ:  reflect.TypeOf(&MockDependency{}),
+			want: true,
+		},
+		{
+			name:  "Type not found",
+			setup: func(core *Core) {},
+			typ:   reflect.TypeOf(&MockComponent{}),
+			want:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			got := core.GetGonerByType(tt.typ)
+			if (got != nil) != tt.want {
+				t.Errorf("Core.GetGonerByType() = %v, want %v", got != nil, tt.want)
+			}
+		})
+	}
+}
+
+func TestCore_InjectStruct(t *testing.T) {
+	type testStruct struct {
+		Flag
+		Dep *MockDependency `gone:"*"`
+	}
+
+	tests := []struct {
+		name    string
+		setup   func(*Core)
+		target  any
+		wantErr bool
+	}{
+		{
+			name: "Valid struct injection",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+			},
+			target:  &testStruct{},
+			wantErr: false,
+		},
+		{
+			name:    "Non-pointer target",
+			setup:   func(core *Core) {},
+			target:  testStruct{},
+			wantErr: true,
+		},
+		{
+			name:    "Non-struct pointer",
+			setup:   func(core *Core) {},
+			target:  new(string),
+			wantErr: true,
+		},
+		{
+			name:    "Missing dependency",
+			setup:   func(core *Core) {},
+			target:  &testStruct{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			err := core.InjectStruct(tt.target)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Core.InjectStruct() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCore_Loaded(t *testing.T) {
+	core := NewCore()
+	key := GenLoaderKey()
+
+	// First call should return false
+	if core.Loaded(key) {
+		t.Error("First call to Loaded() should return false")
+	}
+
+	// Second call should return true
+	if !core.Loaded(key) {
+		t.Error("Second call to Loaded() should return true")
+	}
+}
+
+func TestCore_Provide(t *testing.T) {
+	type testSlice []*MockDependency
+
+	tests := []struct {
+		name    string
+		setup   func(*Core)
+		typ     reflect.Type
+		tagConf string
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "Provide single component",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+			},
+			typ:     reflect.TypeOf(&MockDependency{}),
+			tagConf: "",
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "Provide slice of components",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+				_ = core.Load(&MockDependency{})
+			},
+			typ:     reflect.TypeOf(testSlice{}),
+			tagConf: "",
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "Provider returns error",
+			setup: func(core *Core) {
+				_ = core.Load(&MockProvider{returnErr: fmt.Errorf("provider error")})
+			},
+			typ:     reflect.TypeOf(&MockDependency{}),
+			tagConf: "",
+			want:    false,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			got, err := core.Provide(tt.tagConf, tt.typ)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Core.Provide() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if (got != nil) != tt.want {
+				t.Errorf("Core.Provide() = %v, want %v", got != nil, tt.want)
 			}
 		})
 	}

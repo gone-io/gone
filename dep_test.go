@@ -107,3 +107,141 @@ func TestCheckCircularDepsAndGetBestInitOrder(t *testing.T) {
 		})
 	}
 }
+
+type testStruct struct {
+	Dep1 *string `gone:"dep1"`
+	Dep2 *int    `gone:"dep2"`
+}
+
+type testFunc func(*string, *int)
+
+func TestGetGonerFillDeps(t *testing.T) {
+	tests := []struct {
+		name          string
+		goner         interface{}
+		setupCore     func(*Core)
+		wantDepsCount int
+		wantErr       bool
+	}{
+		{
+			name:  "Struct with dependencies",
+			goner: &testStruct{},
+			setupCore: func(c *Core) {
+				dep1 := &coffin{name: "dep1", needInitBeforeUse: true}
+				dep2 := &coffin{name: "dep2", needInitBeforeUse: true}
+				c.nameMap = map[string]*coffin{
+					"dep1": dep1,
+					"dep2": dep2,
+				}
+			},
+			wantDepsCount: 2,
+			wantErr:       false,
+		},
+		{
+			name:  "Struct with missing dependency",
+			goner: &testStruct{},
+			setupCore: func(c *Core) {
+				dep1 := &coffin{name: "dep1", needInitBeforeUse: true}
+				c.nameMap = map[string]*coffin{
+					"dep1": dep1,
+					// dep2 is missing
+				}
+			},
+			wantDepsCount: 0,
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := &Core{}
+			tt.setupCore(core)
+
+			co := &coffin{
+				goner: tt.goner,
+			}
+
+			deps, err := core.getGonerFillDeps(co)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getGonerFillDeps() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && len(deps) != tt.wantDepsCount {
+				t.Errorf("getGonerFillDeps() got %d dependencies, want %d", len(deps), tt.wantDepsCount)
+			}
+		})
+	}
+}
+
+func TestGetGonerDeps(t *testing.T) {
+	tests := []struct {
+		name              string
+		coffin            *coffin
+		setupCore         func(*Core)
+		wantFillDepsCount int
+		wantInitDepsCount int
+		wantErr           bool
+	}{
+		{
+			name: "Normal coffin with dependencies",
+			coffin: &coffin{
+				goner:    &testStruct{},
+				lazyFill: false,
+			},
+			setupCore: func(c *Core) {
+				dep1 := &coffin{name: "dep1", needInitBeforeUse: true}
+				dep2 := &coffin{name: "dep2", needInitBeforeUse: true}
+				c.nameMap = map[string]*coffin{
+					"dep1": dep1,
+					"dep2": dep2,
+				}
+			},
+			wantFillDepsCount: 2,
+			wantInitDepsCount: 1, // The coffin itself needs initialization
+			wantErr:           false,
+		},
+		{
+			name: "Lazy fill coffin",
+			coffin: &coffin{
+				goner:    &testStruct{},
+				lazyFill: true,
+			},
+			setupCore: func(c *Core) {
+				dep1 := &coffin{name: "dep1", needInitBeforeUse: true}
+				dep2 := &coffin{name: "dep2", needInitBeforeUse: true}
+				c.nameMap = map[string]*coffin{
+					"dep1": dep1,
+					"dep2": dep2,
+				}
+			},
+			wantFillDepsCount: 2,
+			wantInitDepsCount: 0, // No init dependencies due to lazy fill
+			wantErr:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := &Core{}
+			tt.setupCore(core)
+
+			fillDeps, initDeps, err := core.getGonerDeps(tt.coffin)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getGonerDeps() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if len(fillDeps) != tt.wantFillDepsCount {
+					t.Errorf("getGonerDeps() got %d fill dependencies, want %d", len(fillDeps), tt.wantFillDepsCount)
+				}
+				if len(initDeps) != tt.wantInitDepsCount {
+					t.Errorf("getGonerDeps() got %d init dependencies, want %d", len(initDeps), tt.wantInitDepsCount)
+				}
+			}
+		})
+	}
+}

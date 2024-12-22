@@ -126,15 +126,15 @@ type testInterface interface {
 	TestMethod()
 }
 
-type testStruct struct {
+type hTestStruct struct {
 	name string
 }
 
-func (t *testStruct) TestMethod() {}
+func (t *hTestStruct) TestMethod() {}
 
 func TestIsCompatible(t *testing.T) {
 	var ti testInterface
-	ts := &testStruct{}
+	ts := &hTestStruct{}
 
 	tests := []struct {
 		name  string
@@ -150,7 +150,7 @@ func TestIsCompatible(t *testing.T) {
 		},
 		{
 			name:  "Exact type match",
-			t:     reflect.TypeOf(&testStruct{}),
+			t:     reflect.TypeOf(&hTestStruct{}),
 			goner: ts,
 			want:  true,
 		},
@@ -162,7 +162,7 @@ func TestIsCompatible(t *testing.T) {
 		},
 		{
 			name:  "Nil goner",
-			t:     reflect.TypeOf(&testStruct{}),
+			t:     reflect.TypeOf(&hTestStruct{}),
 			goner: nil,
 			want:  false,
 		},
@@ -272,40 +272,40 @@ func TestGetFuncName(t *testing.T) {
 }
 
 func TestRemoveRepeat(t *testing.T) {
-	a := &testStruct{
+	a := &hTestStruct{
 		name: "a",
 	}
-	b := &testStruct{
+	b := &hTestStruct{
 		name: "b",
 	}
-	c := &testStruct{
+	c := &hTestStruct{
 		name: "c",
 	}
 
 	tests := []struct {
 		name string
-		list []*testStruct
-		want []*testStruct
+		list []*hTestStruct
+		want []*hTestStruct
 	}{
 		{
 			name: "No duplicates",
-			list: []*testStruct{a, b, c},
-			want: []*testStruct{a, b, c},
+			list: []*hTestStruct{a, b, c},
+			want: []*hTestStruct{a, b, c},
 		},
 		{
 			name: "With duplicates",
-			list: []*testStruct{a, b, a, c, b},
-			want: []*testStruct{a, b, c},
+			list: []*hTestStruct{a, b, a, c, b},
+			want: []*hTestStruct{a, b, c},
 		},
 		{
 			name: "Empty list",
-			list: []*testStruct{},
-			want: []*testStruct{},
+			list: []*hTestStruct{},
+			want: []*hTestStruct{},
 		},
 		{
 			name: "Single element",
-			list: []*testStruct{a},
-			want: []*testStruct{a},
+			list: []*hTestStruct{a},
+			want: []*hTestStruct{a},
 		},
 	}
 

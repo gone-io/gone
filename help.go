@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -184,4 +185,12 @@ func convertUppercaseCamel(input string) string {
 // GetInterfaceType get interface type
 func GetInterfaceType[T any](t *T) reflect.Type {
 	return reflect.TypeOf(t).Elem()
+}
+
+func IsError(err error, code int) bool {
+	var e Error
+	if errors.As(err, &e) {
+		return e.Code() == code
+	}
+	return false
 }

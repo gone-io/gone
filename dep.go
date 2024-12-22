@@ -190,7 +190,12 @@ func (s *Core) getGonerDeps(co *coffin) (fillDependencies, initDependencies []de
 }
 
 func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err error) {
-	elem := reflect.TypeOf(co.goner).Elem()
+	of := reflect.TypeOf(co.goner)
+	if of.Kind() != reflect.Ptr {
+		return nil, NewInnerError("goner must be a pointer", GonerTypeNotMatch)
+	}
+
+	elem := of.Elem()
 	switch elem.Kind() {
 	case reflect.Struct:
 		for i := 0; i < elem.NumField(); i++ {
@@ -235,23 +240,6 @@ func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err 
 							}
 						}
 					}
-				}
-			}
-		}
-		return RemoveRepeat(fillDependencies), nil
-	case reflect.Func:
-		for i := 0; i < elem.NumIn(); i++ {
-			argType := elem.In(i)
-			depCo, err := s.getDepByType(argType)
-			if err != nil {
-				return nil, ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for %dth parameter of %q", i+1, GetFuncName(co.goner)))
-			}
-			if depCo != nil {
-				if depCo.needInitBeforeUse {
-					fillDependencies = append(fillDependencies, dependency{
-						coffin: depCo,
-						action: initAction,
-					})
 				}
 			}
 		}
