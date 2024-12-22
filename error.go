@@ -202,11 +202,14 @@ func PanicTrace(kb int, skip int) []byte {
 	stack := make([]byte, kb<<10) //4KB
 	length := runtime.Stack(stack, true)
 
-	_, filename, fileLine, ok := runtime.Caller(skip)
 	start := 0
-	if ok {
-		start = bytes.Index(stack, []byte(fmt.Sprintf("%s:%d", filename, fileLine)))
-		stack = stack[start:length]
+
+	if skip > 0 {
+		_, filename, fileLine, ok := runtime.Caller(skip)
+		if ok {
+			start = bytes.Index(stack, []byte(fmt.Sprintf("%s:%d", filename, fileLine)))
+			stack = stack[start:length]
+		}
 	}
 
 	line := []byte("\n")
