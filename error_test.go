@@ -2,6 +2,7 @@ package gone
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"strings"
 	"testing"
@@ -261,5 +262,80 @@ func TestPanicTrace(t *testing.T) {
 	trace = PanicTrace(4, 0)
 	if !strings.Contains(string(trace), "error_test.go") {
 		t.Error("PanicTrace() does not contain test file")
+	}
+}
+
+func Test_iError_Error(t *testing.T) {
+	type fields struct {
+		defaultErr *defaultErr
+		trace      []byte
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "test error",
+			fields: fields{
+				defaultErr: &defaultErr{
+					code: 100,
+				},
+				trace: []byte("test trace"),
+			},
+			want: "GoneError(code=100); \n\ntest trace",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &iError{
+				defaultErr: tt.fields.defaultErr,
+				trace:      tt.fields.trace,
+			}
+			assert.Equalf(t, tt.want, e.Error(), "Error()")
+		})
+	}
+}
+
+func TestBError_SetMsg(t *testing.T) {
+	type fields struct {
+		err  Error
+		data any
+	}
+	type args struct {
+		msg string
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		want     string
+		wantCode int
+	}{
+		{
+			name: "test error",
+			fields: fields{
+				err: &iError{
+					defaultErr: &defaultErr{
+						code: 100,
+					},
+				},
+			},
+			args:     args{msg: "test error"},
+			want:     "test error",
+			wantCode: 100,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &BError{
+				err:  tt.fields.err,
+				data: tt.fields.data,
+			}
+			e.SetMsg(tt.args.msg)
+			msg := e.Msg()
+			assert.Equalf(t, tt.want, msg, "SetMsg(%v)", tt.args.msg)
+			assert.Equalf(t, tt.wantCode, e.Code(), "SetMsg(%v)", tt.args.msg)
+		})
 	}
 }
