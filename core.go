@@ -5,6 +5,15 @@ import (
 	"reflect"
 )
 
+type actionType int8
+
+const (
+	fillAction          actionType = 1
+	initAction          actionType = 2
+	goneTag                        = "gone"
+	defaultProviderName            = "*"
+)
+
 // Flag is a marker struct used to identify components that can be managed by the gone framework.
 // Embedding this struct in another struct indicates that it can be used with gone's dependency injection.
 type Flag struct{}
@@ -27,13 +36,6 @@ func NewCore() *Core {
 	_ = loader.Load(&loader, IsDefault())
 	return &loader
 }
-
-type actionType int8
-
-const (
-	fillAction actionType = 1
-	initAction actionType = 2
-)
 
 func (t actionType) String() string {
 	switch t {
@@ -260,7 +262,7 @@ func (s *Core) fillOne(coffin *coffin) error {
 		if tag, ok := field.Tag.Lookup(goneTag); ok {
 			goneName, extend := ParseGoneTag(tag)
 			if goneName == "" {
-				goneName = defaultId
+				goneName = defaultProviderName
 			}
 
 			co, err := s.getDepByName(goneName)
@@ -320,33 +322,22 @@ func (s *Core) initOne(c *coffin) error {
 	return nil
 }
 
-const goneTag = "gone"
-const defaultId = "*"
-
-func (s *Core) getDepByName(name string) (*coffin, error) {
-	co := s.nameMap[name]
-	if co != nil {
-		return co, nil
+func (s *Core) InjectStruct(goner any) error {
+	of := reflect.TypeOf(goner)
+	if of.Kind() != reflect.Ptr {
+		return NewInnerError("goner should be a pointer to a struct", InjectError)
 	}
-	return nil, NewInnerErrorWithParams(GonerNameNotFound, "Goner(name=%s) not found", name)
-}
-func (s *Core) getDepByType(t reflect.Type) (*coffin, error) {
-	co := s.getDefaultCoffinByType(t)
-	if co != nil {
-		return co, nil
+	if of.Elem().Kind() != reflect.Struct {
+		return NewInnerError("goner should be a pointer to a struct", InjectError)
 	}
-
-	co = s.typeProviderDepMap[t]
-	if co != nil {
-		return co, nil
+	co := &coffin{
+		goner: goner,
 	}
-
-	extend := ""
-	if t.Kind() == reflect.Struct {
-		extend = "; Maybe, you should use A Pointer to this type?"
+	err := s.fillOne(co)
+	if err != nil {
+		return ToError(err)
 	}
-
-	return nil, NewInnerErrorWithParams(GonerTypeNotFound, "Type(type=%s) not found%s", GetTypeName(t), extend)
+	return s.initOne(co)
 }
 
 func (s *Core) GetGonerByName(name string) any {
@@ -361,30 +352,6 @@ func (s *Core) GetGonerByType(t reflect.Type) any {
 	return s.getDefaultCoffinByType(t)
 }
 
-func (s *Core) getSliceDepsByType(t reflect.Type) (deps []*coffin) {
-	if t.Kind() != reflect.Slice {
-		return nil
-	}
-
-	co := s.getDefaultCoffinByType(t)
-	if co != nil {
-		return []*coffin{co}
-	}
-
-	co = s.typeProviderDepMap[t]
-	if co != nil {
-		return []*coffin{co}
-	}
-
-	coffins := s.getCoffinsByType(t.Elem())
-	deps = append(deps, coffins...)
-	co = s.typeProviderDepMap[t.Elem()]
-	if co != nil {
-		deps = append(deps, co)
-	}
-	return deps
-}
-
 func (s *Core) getCoffinsByType(t reflect.Type) (coffins []*coffin) {
 	for _, tomb := range s.coffins {
 		if tomb.onlyForName {
@@ -394,7 +361,6 @@ func (s *Core) getCoffinsByType(t reflect.Type) (coffins []*coffin) {
 			coffins = append(coffins, tomb)
 		}
 	}
-
 	return
 }
 
@@ -417,7 +383,7 @@ func (s *Core) getDefaultCoffinByType(t reflect.Type) *coffin {
 }
 
 func (s *Core) GonerName() string {
-	return defaultId
+	return defaultProviderName
 }
 
 func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
@@ -507,17 +473,26 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 			}
 		}
 
-		if !injected && pt.Kind() == reflect.Struct {
-			parameter := reflect.New(pt)
-			goner := parameter.Interface()
-			err = s.fillOne(&coffin{
-				goner: goner,
-			})
-			if err != nil {
-				return nil, ToErrorWithMsg(err, fmt.Sprintf("Inject %dth parameter of %s error", i+1, GetFuncName(fn)))
+		if !injected {
+			if pt.Kind() == reflect.Struct {
+				parameter := reflect.New(pt)
+				err = s.InjectStruct(parameter.Interface())
+				if err != nil {
+					return nil, ToErrorWithMsg(err, fmt.Sprintf("Inject %dth parameter of %s error", i+1, GetFuncName(fn)))
+				}
+				args = append(args, parameter.Elem())
+				injected = true
 			}
-			args = append(args, parameter.Elem())
-			injected = true
+
+			if pt.Kind() == reflect.Ptr {
+				parameter := reflect.New(pt.Elem())
+				err = s.InjectStruct(parameter.Interface())
+				if err != nil {
+					return nil, ToErrorWithMsg(err, fmt.Sprintf("Inject %dth parameter of %s error", i+1, GetFuncName(fn)))
+				}
+				args = append(args, parameter)
+				injected = true
+			}
 		}
 
 		if injectAfter != nil {

@@ -492,6 +492,10 @@ type FuncInjector interface {
 	InjectWrapFunc(fn any, injectBefore FuncInjectHook, injectAfter FuncInjectHook) (func() []any, error)
 }
 
+type StructInjector interface {
+	InjectStruct(goner any) error
+}
+
 var (
 	keyMtx     sync.Mutex
 	keyCounter uint64

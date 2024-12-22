@@ -105,6 +105,57 @@ func checkCircularDepsAndGetBestInitOrder[T comparable](initiatorDepsMap map[T][
 	return
 }
 
+func (s *Core) getDepByName(name string) (*coffin, error) {
+	co := s.nameMap[name]
+	if co != nil {
+		return co, nil
+	}
+	return nil, NewInnerErrorWithParams(GonerNameNotFound, "Goner(name=%s) not found", name)
+}
+
+func (s *Core) getDepByType(t reflect.Type) (*coffin, error) {
+	co := s.getDefaultCoffinByType(t)
+	if co != nil {
+		return co, nil
+	}
+
+	co = s.typeProviderDepMap[t]
+	if co != nil {
+		return co, nil
+	}
+
+	extend := ""
+	if t.Kind() == reflect.Struct {
+		extend = "; Maybe, you should use A Pointer to this type?"
+	}
+
+	return nil, NewInnerErrorWithParams(GonerTypeNotFound, "Type(type=%s) not found%s", GetTypeName(t), extend)
+}
+
+func (s *Core) getSliceDepsByType(t reflect.Type) (deps []*coffin) {
+	if t.Kind() != reflect.Slice {
+		return nil
+	}
+
+	co := s.getDefaultCoffinByType(t)
+	if co != nil {
+		return []*coffin{co}
+	}
+
+	co = s.typeProviderDepMap[t]
+	if co != nil {
+		return []*coffin{co}
+	}
+
+	coffins := s.getCoffinsByType(t.Elem())
+	deps = append(deps, coffins...)
+	co = s.typeProviderDepMap[t.Elem()]
+	if co != nil {
+		deps = append(deps, co)
+	}
+	return deps
+}
+
 func (s *Core) collectDeps() (map[dependency][]dependency, error) {
 	depsMap := make(map[dependency][]dependency)
 	for _, co := range s.coffins {
@@ -146,7 +197,7 @@ func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err 
 			field := elem.Field(i)
 			if tag, ok := field.Tag.Lookup(goneTag); ok {
 				gonerName, _ := ParseGoneTag(tag)
-				if gonerName != "" && gonerName != defaultId {
+				if gonerName != "" && gonerName != defaultProviderName {
 					depCo, err := s.getDepByName(gonerName)
 					if err != nil {
 						return nil, ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem)))
