@@ -413,3 +413,211 @@ func TestEnvConfigure_GetWithEmptyKey(t *testing.T) {
 		t.Errorf("EnvConfigure.Get() with empty key = %v, want %v", *value, "default")
 	}
 }
+
+func TestEnvConfigure_GetAllNumericTypes(t *testing.T) {
+	configure := &EnvConfigure{}
+	tests := []struct {
+		name       string
+		key        string
+		value      any
+		envValue   string
+		defaultVal string
+		want       any
+		wantErr    bool
+	}{
+		{
+			name:       "int8 value",
+			key:        "TEST_INT8",
+			value:      new(int8),
+			envValue:   "127",
+			defaultVal: "0",
+			want:       int8(127),
+			wantErr:    false,
+		},
+		{
+			name:       "int16 value",
+			key:        "TEST_INT16",
+			envValue:   "32767",
+			value:      new(int16),
+			defaultVal: "0",
+			want:       int16(32767),
+			wantErr:    false,
+		},
+		{
+			name:       "int32 value",
+			key:        "TEST_INT32",
+			envValue:   "2147483647",
+			value:      new(int32),
+			defaultVal: "0",
+			want:       int32(2147483647),
+			wantErr:    false,
+		},
+		{
+			name:       "uint8 value",
+			key:        "TEST_UINT8",
+			envValue:   "255",
+			value:      new(uint8),
+			defaultVal: "0",
+			want:       uint8(255),
+			wantErr:    false,
+		},
+		{
+			name:       "uint16 value",
+			key:        "TEST_UINT16",
+			envValue:   "65535",
+			value:      new(uint16),
+			defaultVal: "0",
+			want:       uint16(65535),
+			wantErr:    false,
+		},
+		{
+			name:       "uint32 value",
+			key:        "TEST_UINT32",
+			envValue:   "4294967295",
+			value:      new(uint32),
+			defaultVal: "0",
+			want:       uint32(4294967295),
+			wantErr:    false,
+		},
+		{
+			name:       "float32 value",
+			key:        "TEST_FLOAT32",
+			envValue:   "3.14159",
+			value:      new(float32),
+			defaultVal: "0",
+			want:       float32(3.14159),
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Setenv(GONE+"_"+tt.key, tt.envValue)
+			defer os.Unsetenv(GONE + "_" + tt.key)
+
+			err := configure.Get(tt.key, tt.value, tt.defaultVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnvConfigure.Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				got := reflect.ValueOf(tt.value).Elem().Interface()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("EnvConfigure.Get() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestEnvConfigure_GetEmptyEnvWithDefaults(t *testing.T) {
+	configure := &EnvConfigure{}
+	tests := []struct {
+		name       string
+		key        string
+		value      any
+		defaultVal string
+		want       any
+		wantErr    bool
+	}{
+		{
+			name:       "Empty int with default",
+			key:        "NONEXISTENT_INT",
+			value:      new(int),
+			defaultVal: "42",
+			want:       42,
+			wantErr:    false,
+		},
+		{
+			name:       "Empty float64 with default",
+			key:        "NONEXISTENT_FLOAT",
+			value:      new(float64),
+			defaultVal: "3.14",
+			want:       3.14,
+			wantErr:    false,
+		},
+		{
+			name:       "Empty bool with default",
+			key:        "NONEXISTENT_BOOL",
+			value:      new(bool),
+			defaultVal: "true",
+			want:       true,
+			wantErr:    false,
+		},
+		{
+			name:       "Empty duration with default",
+			key:        "NONEXISTENT_DURATION",
+			value:      new(time.Duration),
+			defaultVal: "1h",
+			want:       time.Hour,
+			wantErr:    false,
+		},
+		{
+			name:       "Empty string with empty default",
+			key:        "NONEXISTENT_STRING",
+			value:      new(string),
+			defaultVal: "",
+			want:       "",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := configure.Get(tt.key, tt.value, tt.defaultVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnvConfigure.Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				got := reflect.ValueOf(tt.value).Elem().Interface()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("EnvConfigure.Get() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestConfigProvider_ProvidePointerType(t *testing.T) {
+	mockConfigure := &MockConfigure{
+		values: map[string]string{
+			"ptr-string": "test-value",
+		},
+	}
+
+	provider := &ConfigProvider{
+		configure: mockConfigure,
+	}
+
+	tests := []struct {
+		name      string
+		tagConf   string
+		valueType reflect.Type
+		want      any
+		wantErr   bool
+	}{
+		{
+			name:      "Pointer string type",
+			tagConf:   "ptr-string",
+			valueType: reflect.PtrTo(reflect.TypeOf("")),
+			want:      func() any { s := "test-value"; return &s }(),
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := provider.Provide(tt.tagConf, tt.valueType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConfigProvider.Provide() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("ConfigProvider.Provide() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
