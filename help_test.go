@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTagStringParse(t *testing.T) {
@@ -68,13 +70,8 @@ func TestTagStringParse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMap, gotKeys := TagStringParse(tt.conf)
-
-			if !reflect.DeepEqual(gotMap, tt.wantMap) {
-				t.Errorf("TagStringParse() map = %v, want %v", gotMap, tt.wantMap)
-			}
-			if !reflect.DeepEqual(gotKeys, tt.wantKeys) {
-				t.Errorf("TagStringParse() keys = %v, want %v", gotKeys, tt.wantKeys)
-			}
+			assert.Equal(t, tt.wantMap, gotMap)
+			assert.Equal(t, tt.wantKeys, gotKeys)
 		})
 	}
 }
@@ -315,9 +312,147 @@ func TestRemoveRepeat(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := RemoveRepeat(tt.list)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("RemoveRepeat() = %v, want %v", got, tt.want)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestBlackMagic(t *testing.T) {
+	type testStruct struct {
+		Value int
+	}
+	v := testStruct{Value: 42}
+	rv := reflect.ValueOf(&v).Elem()
+
+	result := BlackMagic(rv)
+
+	assert.True(t, result.CanAddr(), "BlackMagic result should be addressable")
+	assert.Equal(t, 42, result.Interface().(testStruct).Value)
+}
+
+func TestOnceLoad(t *testing.T) {
+	counter := 0
+	testLoader := &mockLoader{}
+
+	fn := func(loader Loader) error {
+		counter++
+		return nil
+	}
+
+	wrappedFn := OnceLoad(fn)
+
+	// First call should execute
+	err := wrappedFn(testLoader)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, counter, "Function should be called once")
+
+	// Second call should not execute
+	err = wrappedFn(testLoader)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, counter, "Function should still be called once")
+}
+
+func TestSafeExecute(t *testing.T) {
+	tests := []struct {
+		name      string
+		fn        func()
+		wantError bool
+	}{
+		{
+			name: "Normal execution",
+			fn: func() {
+				// Do nothing
+			},
+			wantError: false,
+		},
+		{
+			name: "Panic execution",
+			fn: func() {
+				panic("test panic")
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := SafeExecute(tt.fn)
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
+}
+
+func TestConvertUppercaseCamel(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "Simple string",
+			input: "hello",
+			want:  "HELLO",
+		},
+		{
+			name:  "Dotted string",
+			input: "hello.world",
+			want:  "HELLO_WORLD",
+		},
+		{
+			name:  "Multiple dots",
+			input: "test.hello.world",
+			want:  "TEST_HELLO_WORLD",
+		},
+		{
+			name:  "Empty string",
+			input: "",
+			want:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := convertUppercaseCamel(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetInterfaceType(t *testing.T) {
+	type TestInterface interface {
+		Test()
+	}
+
+	var ti TestInterface
+	got := GetInterfaceType(&ti)
+
+	assert.Equal(t, reflect.Interface, got.Kind())
+	assert.Equal(t, "TestInterface", got.Name())
+}
+
+// Mock Loader for testing OnceLoad
+type mockLoader struct {
+	loadedKeys map[LoaderKey]bool
+}
+
+func (m *mockLoader) Load(goner Goner, options ...Option) error {
+	return nil
+}
+
+func (m *mockLoader) Loaded(key LoaderKey) bool {
+	if m.loadedKeys == nil {
+		m.loadedKeys = make(map[LoaderKey]bool)
+	}
+	return m.loadedKeys[key]
+}
+
+func TestGenLoaderKey(t *testing.T) {
+	key1 := GenLoaderKey()
+	key2 := GenLoaderKey()
+
+	assert.NotEqual(t, key1, key2, "Generated keys should be unique")
 }

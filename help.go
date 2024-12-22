@@ -143,6 +143,14 @@ func RemoveRepeat[T comparable](list []T) []T {
 	return out
 }
 
+// GenLoaderKey will return a brand new, never-before-used LoaderKey
+func GenLoaderKey() LoaderKey {
+	keyMtx.Lock()
+	defer keyMtx.Unlock()
+	keyCounter += 1
+	return LoaderKey{id: keyCounter}
+}
+
 func OnceLoad(fn LoadFunc) LoadFunc {
 	var key = GenLoaderKey()
 	return func(loader Loader) error {

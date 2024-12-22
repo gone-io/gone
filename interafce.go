@@ -504,14 +504,6 @@ var (
 // LoaderKey is a throwaway value you can use as a key to a ContextManager
 type LoaderKey struct{ id uint64 }
 
-// GenLoaderKey will return a brand new, never-before-used LoaderKey
-func GenLoaderKey() LoaderKey {
-	keyMtx.Lock()
-	defer keyMtx.Unlock()
-	keyCounter += 1
-	return LoaderKey{id: keyCounter}
-}
-
 type Loader interface {
 	Load(goner Goner, options ...Option) error
 
