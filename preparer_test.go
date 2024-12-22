@@ -246,3 +246,129 @@ func TestPreparer_DefaultInstance(t *testing.T) {
 		gone.Default.Load(worker)
 	})
 }
+
+func TestPreparer_Loads(t *testing.T) {
+	preparer := gone.Prepare()
+
+	// Test successful loads
+	loadFn1 := func(core gone.Loader) error {
+		return core.Load(&Worker{name: "worker1"})
+	}
+	loadFn2 := func(core gone.Loader) error {
+		return core.Load(&Worker{name: "worker2"})
+	}
+
+	assert.NotPanics(t, func() {
+		preparer.Loads(loadFn1, loadFn2)
+	})
+
+	// Test load function that returns error
+	errorLoadFn := func(core gone.Loader) error {
+		return errors.New("load error")
+	}
+
+	assert.Panics(t, func() {
+		preparer.Loads(errorLoadFn)
+	})
+}
+
+func TestPreparer_Test(t *testing.T) {
+	var testFuncCalled bool
+
+	testFunc := func(flag gone.TestFlag) {
+		assert.NotNil(t, flag)
+		testFuncCalled = true
+	}
+
+	preparer := gone.Prepare()
+	preparer.Test(testFunc)
+
+	assert.True(t, testFuncCalled, "Test function was not called")
+}
+
+func TestPreparer_GlobalFunctions(t *testing.T) {
+	// Test global Load function
+	worker := &Worker{name: "global-worker"}
+	assert.NotPanics(t, func() {
+		gone.Load(worker)
+	})
+
+	// Test global Loads function
+	loadFn := func(core gone.Loader) error {
+		return core.Load(&Worker{name: "global-worker2"})
+	}
+	assert.NotPanics(t, func() {
+		gone.Loads(loadFn)
+	})
+
+	// Test global Run function
+	var runCalled bool
+	assert.NotPanics(t, func() {
+		gone.Run(func() {
+			runCalled = true
+		})
+	})
+	assert.True(t, runCalled, "Global Run function did not execute")
+
+	// Test global Test function
+	var testCalled bool
+	assert.NotPanics(t, func() {
+		gone.Test(func(flag gone.TestFlag) {
+			assert.NotNil(t, flag)
+			testCalled = true
+		})
+	})
+	assert.True(t, testCalled, "Global Test function did not execute")
+}
+
+func TestPreparer_RunTest(t *testing.T) {
+	var testFuncCalled bool
+
+	testFunc := func(flag gone.TestFlag) {
+		assert.NotNil(t, flag)
+		testFuncCalled = true
+	}
+
+	loadFn := func(core gone.Loader) error {
+		return core.Load(&Worker{name: "test-worker"})
+	}
+
+	gone.RunTest(testFunc, loadFn)
+
+	assert.True(t, testFuncCalled, "RunTest function was not called")
+}
+
+func TestPreparer_PrepareWithLoads(t *testing.T) {
+	loadFn1 := func(core gone.Loader) error {
+		return core.Load(&Worker{name: "worker1"})
+	}
+	loadFn2 := func(core gone.Loader) error {
+		return core.Load(&Worker{name: "worker2"})
+	}
+
+	assert.NotPanics(t, func() {
+		preparer := gone.Prepare(loadFn1, loadFn2)
+		assert.NotNil(t, preparer)
+	})
+
+	// Test prepare with error load function
+	errorLoadFn := func(core gone.Loader) error {
+		return errors.New("load error")
+	}
+
+	assert.Panics(t, func() {
+		gone.Prepare(errorLoadFn)
+	})
+}
+
+func TestPreparer_ServeGlobal(t *testing.T) {
+	// Test global Serve function
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		gone.Default.End()
+	}()
+
+	assert.NotPanics(t, func() {
+		gone.Serve()
+	})
+}

@@ -17,7 +17,6 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/time v0.5.0
@@ -32,6 +31,8 @@ require (
 	gorm.io/gorm v1.25.12
 	xorm.io/xorm v1.3.9
 )
+
+require github.com/stretchr/testify v1.9.0
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect

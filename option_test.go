@@ -1,13 +1,15 @@
 package gone
 
 import (
+	"reflect"
 	"testing"
 )
 
 func TestOption_Apply(t *testing.T) {
 	tests := []struct {
-		name    string
-		apply   func(c *coffin) error
+		name  string
+		apply func(c *coffin) error
+
 		wantErr bool
 	}{
 		{
@@ -115,5 +117,119 @@ func TestForceReplace(t *testing.T) {
 
 	if !c.forceReplace {
 		t.Error("ForceReplace() did not set forceReplace to true")
+	}
+}
+
+func TestIsDefault(t *testing.T) {
+	type testStruct struct{}
+	tests := []struct {
+		name      string
+		input     []any
+		wantPanic bool
+	}{
+		{
+			name:      "Valid pointer",
+			input:     []any{&testStruct{}},
+			wantPanic: false,
+		},
+		{
+			name:      "Multiple valid pointers",
+			input:     []any{&testStruct{}, &testStruct{}},
+			wantPanic: false,
+		},
+		{
+			name:      "Non-pointer value should panic",
+			input:     []any{testStruct{}},
+			wantPanic: true,
+		},
+		{
+			name:      "Empty input",
+			input:     []any{},
+			wantPanic: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				r := recover()
+				if (r != nil) != tt.wantPanic {
+					t.Errorf("IsDefault() panic = %v, wantPanic = %v", r != nil, tt.wantPanic)
+				}
+			}()
+
+			c := &coffin{
+				defaultTypeMap: make(map[reflect.Type]bool),
+			}
+			opt := IsDefault(tt.input...)
+			err := opt.Apply(c)
+
+			if err != nil && !tt.wantPanic {
+				t.Errorf("IsDefault().Apply() error = %v", err)
+			}
+
+			// 验证类型是否被正确标记为默认
+			if !tt.wantPanic && len(tt.input) > 0 {
+				for _, input := range tt.input {
+					if ptr, ok := input.(*testStruct); ok {
+						if !c.defaultTypeMap[reflect.TypeOf(ptr).Elem()] {
+							t.Errorf("Type %v was not marked as default", reflect.TypeOf(ptr).Elem())
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestPriorityOptions(t *testing.T) {
+	tests := []struct {
+		name      string
+		option    Option
+		wantOrder int
+	}{
+		{
+			name:      "High priority",
+			option:    HighStartPriority(),
+			wantOrder: -100,
+		},
+		{
+			name:      "Medium priority",
+			option:    MediumStartPriority(),
+			wantOrder: 0,
+		},
+		{
+			name:      "Low priority",
+			option:    LowStartPriority(),
+			wantOrder: 100,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &coffin{}
+			err := tt.option.Apply(c)
+
+			if err != nil {
+				t.Errorf("%s().Apply() error = %v", tt.name, err)
+			}
+
+			if c.order != tt.wantOrder {
+				t.Errorf("%s() got order = %v, want %v", tt.name, c.order, tt.wantOrder)
+			}
+		})
+	}
+}
+
+func TestLazyFill(t *testing.T) {
+	c := &coffin{}
+	opt := LazyFill()
+
+	if err := opt.Apply(c); err != nil {
+		t.Errorf("LazyFill().Apply() error = %v", err)
+	}
+
+	if !c.lazyFill {
+		t.Error("LazyFill() did not set lazyFill to true")
 	}
 }
