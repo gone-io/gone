@@ -14,7 +14,7 @@ type dial struct {
 	dsn                  string `gone:"config,gorm.postgres.dsn"`
 	withoutQuotingCheck  bool   `gone:"config,gorm.postgres.without-quoting-check,default=false"`
 	preferSimpleProtocol bool   `gone:"config,gorm.postgres.prefer-simple-protocol,default=false"`
-	withoutReturning     bool   `gone:"config,gorm.postgres.without-returning=default"`
+	withoutReturning     bool   `gone:"config,gorm.postgres.without-returning=false"`
 }
 
 func (d *dial) Init() error {

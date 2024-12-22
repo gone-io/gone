@@ -1,11 +1,12 @@
 package gone
 
 import (
-	"github.com/gone-io/gone/internal/json"
 	"os"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/gone-io/gone/internal/json"
 )
 
 const ConfigureName = "configure"
@@ -52,11 +53,19 @@ func (s *ConfigProvider) Provide(tagConf string, t reflect.Type) (any, error) {
 		defaultValue = m["default"] // Fallback to "default" key if no value
 	}
 
+	var getType = t
+	if t.Kind() == reflect.Ptr {
+		getType = t.Elem()
+	}
+
 	// Create new value of requested type and configure it
-	value := reflect.New(t)
+	value := reflect.New(getType)
 	err := s.configure.Get(key, value.Interface(), defaultValue)
 	if err != nil {
 		return nil, ToError(err)
+	}
+	if t.Kind() == reflect.Ptr {
+		return value.Interface(), nil
 	}
 	return value.Elem().Interface(), nil
 }
@@ -93,62 +102,118 @@ func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 		return NewInnerError("Value must be a pointer", ConfigError)
 	}
 
+	// Set default "0" for numeric and boolean types when env is empty
+	if env == "" {
+		switch v.(type) {
+		case *int, *int8, *int16, *int32, *int64,
+			*uint, *uint8, *uint16, *uint32, *uint64,
+			*float32, *float64, *bool, *time.Duration:
+			env = "0"
+		}
+	}
+
 	// Type switch to handle different pointer types
 	switch ptr := v.(type) {
+	// String type
 	case *string:
-		// String type needs no conversion
 		*ptr = env
+
+	// Int types
 	case *int:
-		// Convert string to int
 		val, err := strconv.Atoi(env)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = val
+	case *int8:
+		val, err := strconv.ParseInt(env, 10, 8)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = int8(val)
+	case *int16:
+		val, err := strconv.ParseInt(env, 10, 16)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = int16(val)
+	case *int32:
+		val, err := strconv.ParseInt(env, 10, 32)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = int32(val)
 	case *int64:
-		// Convert string to int64
 		val, err := strconv.ParseInt(env, 10, 64)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = val
-	case *float64:
-		// Convert string to float64
-		val, err := strconv.ParseFloat(env, 64)
-		if err != nil {
-			return ToError(err)
-		}
-		*ptr = val
-	case *bool:
-		// Convert string to bool
-		val, err := strconv.ParseBool(env)
-		if err != nil {
-			return ToError(err)
-		}
-		*ptr = val
+
+	// Unsigned int types
 	case *uint:
-		// Convert string to uint
 		val, err := strconv.ParseUint(env, 10, 64)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = uint(val)
+	case *uint8:
+		val, err := strconv.ParseUint(env, 10, 8)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = uint8(val)
+	case *uint16:
+		val, err := strconv.ParseUint(env, 10, 16)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = uint16(val)
+	case *uint32:
+		val, err := strconv.ParseUint(env, 10, 32)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = uint32(val)
 	case *uint64:
-		// Convert string to uint64
 		val, err := strconv.ParseUint(env, 10, 64)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = val
+
+	// Float types
+	case *float32:
+		val, err := strconv.ParseFloat(env, 32)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = float32(val)
+	case *float64:
+		val, err := strconv.ParseFloat(env, 64)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = val
+
+	// Boolean type
+	case *bool:
+		val, err := strconv.ParseBool(env)
+		if err != nil {
+			return ToError(err)
+		}
+		*ptr = val
+
+	// Time duration type
 	case *time.Duration:
-		// Convert string to time.Duration
 		val, err := time.ParseDuration(env)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = val
+
+	// Struct and unsupported types
 	default:
-		// Handle struct types by JSON unmarshal
 		if rv.Elem().Kind() == reflect.Struct {
 			err := json.Unmarshal([]byte(env), v)
 			if err != nil {

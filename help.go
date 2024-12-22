@@ -163,15 +163,14 @@ func OnceLoad(fn LoadFunc) LoadFunc {
 }
 
 // SafeExecute 执行可能会触发panic的函数并将panic转换为error
-func SafeExecute(fn func()) (err error) {
+func SafeExecute(fn func() error) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = NewInnerErrorSkip(fmt.Sprintf("panic occurred: %v", r), FailInstall, 7)
 		}
 	}()
 	// 执行传入的函数
-	fn()
-	return nil
+	return fn()
 }
 
 func convertUppercaseCamel(input string) string {

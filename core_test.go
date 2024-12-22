@@ -59,6 +59,37 @@ func (m *MockInitiator) Init() error {
 	return m.initError
 }
 
+type MockBeforeInitNoError struct {
+	Flag
+	beforeInitCalled bool
+}
+
+func (m *MockBeforeInitNoError) BeforeInit() {
+	m.beforeInitCalled = true
+}
+
+type MockStructFieldInjector struct {
+	Flag
+}
+
+func (m *MockStructFieldInjector) GonerName() string {
+	return "field-injector"
+}
+
+func (m *MockStructFieldInjector) Inject(conf string, field reflect.StructField, v reflect.Value) error {
+	if conf == "error" {
+		return fmt.Errorf("injection error")
+	}
+	v.Set(reflect.ValueOf("injected value"))
+	return nil
+}
+
+type StructWithUnexportedField struct {
+	Flag
+	dep    *MockDependency `gone:"*"`
+	Public *MockDependency `gone:"*"`
+}
+
 func TestNewCore(t *testing.T) {
 	core := NewCore()
 
@@ -185,6 +216,60 @@ func TestCore_Fill(t *testing.T) {
 
 				_ = core.Load(&Circular1{})
 				_ = core.Load(&Circular2{})
+			},
+			wantErr: true,
+		},
+		{
+			name: "BeforeInitNoError implementation",
+			setup: func(core *Core) {
+				mock := &MockBeforeInitNoError{}
+				_ = core.Load(mock)
+			},
+			wantErr: false,
+		},
+		{
+			name: "Unexported field injection",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+				_ = core.Load(&StructWithUnexportedField{})
+			},
+			wantErr: false,
+		},
+		{
+			name: "StructFieldInjector success",
+			setup: func(core *Core) {
+				_ = core.Load(&MockStructFieldInjector{})
+				type TestStruct struct {
+					Flag
+					Value string `gone:"field-injector"`
+				}
+				_ = core.Load(&TestStruct{})
+			},
+			wantErr: false,
+		},
+		{
+			name: "StructFieldInjector error",
+			setup: func(core *Core) {
+				_ = core.Load(&MockStructFieldInjector{})
+				type TestStruct struct {
+					Flag
+					Value string `gone:"field-injector-error"`
+				}
+				_ = core.Load(&TestStruct{})
+			},
+			wantErr: true,
+		},
+		{
+			name: "Provider with invalid return type",
+			setup: func(core *Core) {
+				_ = core.Load(&MockProvider{
+					returnVal: "invalid",
+				})
+				type TestStruct struct {
+					Flag
+					Value *MockDependency `gone:"mock-provider"`
+				}
+				_ = core.Load(&TestStruct{})
 			},
 			wantErr: true,
 		},
@@ -577,6 +662,31 @@ func TestCore_Provide(t *testing.T) {
 			want:    false,
 			wantErr: true,
 		},
+		{
+			name: "Provider returns incompatible type",
+			setup: func(core *Core) {
+				_ = core.Load(&MockProvider{
+					returnVal: "invalid string instead of MockDependency",
+				})
+			},
+			typ:     reflect.TypeOf(&MockDependency{}),
+			tagConf: "mock-provider",
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name: "Slice with mixed sources",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+				_ = core.Load(&MockProvider{
+					returnVal: &MockDependency{},
+				})
+			},
+			typ:     reflect.TypeOf([]*MockDependency{}),
+			tagConf: "",
+			want:    true,
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -591,6 +701,54 @@ func TestCore_Provide(t *testing.T) {
 			}
 			if (got != nil) != tt.want {
 				t.Errorf("Core.Provide() = %v, want %v", got != nil, tt.want)
+			}
+		})
+	}
+}
+
+func TestCore_InjectStruct_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		target  interface{}
+		setup   func(*Core)
+		wantErr bool
+	}{
+		{
+			name: "Nil pointer",
+			target: (*struct {
+				Flag
+				Dep *MockDependency `gone:"*"`
+			})(nil),
+			setup:   func(core *Core) {},
+			wantErr: true,
+		},
+		{
+			name:    "Non-struct pointer",
+			target:  new(string),
+			setup:   func(core *Core) {},
+			wantErr: true,
+		},
+		{
+			name: "Invalid tag configuration",
+			target: &struct {
+				Flag
+				Dep *MockDependency `gone:"invalid,config"`
+			}{},
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			err := core.InjectStruct(tt.target)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InjectStruct() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

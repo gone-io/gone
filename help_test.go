@@ -355,20 +355,22 @@ func TestOnceLoad(t *testing.T) {
 func TestSafeExecute(t *testing.T) {
 	tests := []struct {
 		name      string
-		fn        func()
+		fn        func() error
 		wantError bool
 	}{
 		{
 			name: "Normal execution",
-			fn: func() {
+			fn: func() error {
 				// Do nothing
+				return nil
 			},
 			wantError: false,
 		},
 		{
 			name: "Panic execution",
-			fn: func() {
+			fn: func() error {
 				panic("test panic")
+				return nil
 			},
 			wantError: true,
 		},

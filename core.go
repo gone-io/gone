@@ -216,19 +216,16 @@ func (s *Core) Install() error {
 	return nil
 }
 
-func (s *Core) safeFillOne(coffin *coffin) error {
-	var err error
-	err = SafeExecute(func() {
-		err = s.fillOne(coffin)
+func (s *Core) safeFillOne(coffin *coffin) (err error) {
+	return SafeExecute(func() error {
+		return s.fillOne(coffin)
 	})
-	return err
 }
+
 func (s *Core) safeInitOne(coffin *coffin) error {
-	var err error
-	err = SafeExecute(func() {
-		err = s.initOne(coffin)
+	return SafeExecute(func() error {
+		return s.initOne(coffin)
 	})
-	return err
 }
 
 func (s *Core) fillOne(coffin *coffin) error {
@@ -333,11 +330,11 @@ func (s *Core) InjectStruct(goner any) error {
 	co := &coffin{
 		goner: goner,
 	}
-	err := s.fillOne(co)
+	err := s.safeFillOne(co)
 	if err != nil {
 		return ToError(err)
 	}
-	return s.initOne(co)
+	return s.safeFillOne(co)
 }
 
 func (s *Core) GetGonerByName(name string) any {
