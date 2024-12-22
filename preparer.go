@@ -50,10 +50,7 @@ func (s *Preparer) init() *Preparer {
 		Load(&BeforeStartProvider{}).
 		Load(&AfterStartProvider{}).
 		Load(&BeforeStopProvider{}).
-		Load(&AfterStopProvider{}).
-		Load(&ConfigProvider{}).
-		Load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)), OnlyForName()).
-		Load(defaultLog, IsDefault(new(Logger)))
+		Load(&AfterStopProvider{})
 	return s
 }
 

@@ -34,6 +34,9 @@ func NewCore() *Core {
 	}
 
 	_ = loader.Load(&loader, IsDefault())
+	_ = loader.Load(&ConfigProvider{})
+	_ = loader.Load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)), OnlyForName())
+	_ = loader.Load(defaultLog, IsDefault(new(Logger)))
 	return &loader
 }
 
@@ -103,6 +106,9 @@ type Core struct {
 //   - A Goner with same name already exists (without forceReplace)
 //   - A Provider for same type already exists (without forceReplace)
 func (s *Core) Load(goner Goner, options ...Option) error {
+	if goner == nil {
+		return NewInnerError("goner cannot be nil", LoadedError)
+	}
 	co := newCoffin(goner)
 
 	if namedGoner, ok := goner.(NamedGoner); ok {
@@ -133,7 +139,20 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 		}
 	}
 
-	s.coffins = append(s.coffins, co)
+	var forceReplaceFind = false
+	if co.forceReplace {
+		for i := range s.coffins {
+			if s.coffins[i] == co {
+				s.coffins[i] = co
+				forceReplaceFind = true
+				break
+			}
+		}
+	}
+
+	if !forceReplaceFind {
+		s.coffins = append(s.coffins, co)
+	}
 
 	if co.onlyForName {
 		return nil
@@ -499,6 +518,7 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 			v := injectAfter(pt, i, injected)
 			if v != nil {
 				args = append(args, reflect.ValueOf(v))
+				injected = true
 			}
 		}
 

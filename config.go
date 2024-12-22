@@ -214,7 +214,8 @@ func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 
 	// Struct and unsupported types
 	default:
-		if rv.Elem().Kind() == reflect.Struct {
+		k := rv.Elem().Kind()
+		if k == reflect.Struct || k == reflect.Slice || k == reflect.Map {
 			err := json.Unmarshal([]byte(env), v)
 			if err != nil {
 				return ToError(err)

@@ -621,3 +621,373 @@ func TestConfigProvider_ProvidePointerType(t *testing.T) {
 		})
 	}
 }
+
+func TestEnvConfigure_GetInvalidNumericValues(t *testing.T) {
+	configure := &EnvConfigure{}
+	tests := []struct {
+		name       string
+		key        string
+		value      any
+		envValue   string
+		defaultVal string
+		wantErr    bool
+	}{
+		{
+			name:       "Invalid int8 overflow",
+			key:        "TEST_INT8",
+			value:      new(int8),
+			envValue:   "128",
+			defaultVal: "0",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid int16 overflow",
+			key:        "TEST_INT16",
+			value:      new(int16),
+			envValue:   "32768",
+			defaultVal: "0",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid uint8 overflow",
+			key:        "TEST_UINT8",
+			value:      new(uint8),
+			envValue:   "256",
+			defaultVal: "0",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid uint16 overflow",
+			key:        "TEST_UINT16",
+			value:      new(uint16),
+			envValue:   "65536",
+			defaultVal: "0",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid negative uint",
+			key:        "TEST_UINT",
+			value:      new(uint),
+			envValue:   "-1",
+			defaultVal: "0",
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Setenv(GONE+"_"+tt.key, tt.envValue)
+			defer os.Unsetenv(GONE + "_" + tt.key)
+
+			err := configure.Get(tt.key, tt.value, tt.defaultVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnvConfigure.Get() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestConfigProvider_ProvideMultipleKeys(t *testing.T) {
+	mockConfigure := &MockConfigure{
+		values: map[string]string{
+			"second-key": "found-value",
+		},
+	}
+
+	provider := &ConfigProvider{
+		configure: mockConfigure,
+	}
+
+	tests := []struct {
+		name      string
+		tagConf   string
+		valueType reflect.Type
+		want      any
+		wantErr   bool
+	}{
+		{
+			name:      "Multiple keys with second key found",
+			tagConf:   "first-key,second-key",
+			valueType: reflect.TypeOf(""),
+			want:      "",
+			wantErr:   false,
+		},
+		{
+			name:      "Multiple keys with default",
+			tagConf:   "missing-key1,missing-key2,default=default-value",
+			valueType: reflect.TypeOf(""),
+			want:      "default-value",
+			wantErr:   false,
+		},
+		{
+			name:      "Multiple keys all missing no default",
+			tagConf:   "missing-key1,missing-key2",
+			valueType: reflect.TypeOf(""),
+			want:      "",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := provider.Provide(tt.tagConf, tt.valueType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConfigProvider.Provide() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ConfigProvider.Provide() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfigProvider_ProvideInvalidJSON(t *testing.T) {
+	mockConfigure := &MockConfigure{
+		values: map[string]string{
+			"invalid-json": "{invalid-json}",
+		},
+	}
+
+	provider := &ConfigProvider{
+		configure: mockConfigure,
+	}
+
+	type testStruct struct {
+		Name string `json:"name"`
+	}
+
+	_, err := provider.Provide("invalid-json", reflect.TypeOf(testStruct{}))
+	if err == nil {
+		t.Error("ConfigProvider.Provide() should return error for invalid JSON")
+	}
+}
+
+func TestEnvConfigure_GetEmptyValue(t *testing.T) {
+	configure := &EnvConfigure{}
+	tests := []struct {
+		name       string
+		key        string
+		value      any
+		defaultVal string
+		want       any
+		wantErr    bool
+	}{
+		{
+			name:       "Empty value for int",
+			key:        "EMPTY_INT",
+			value:      new(int),
+			defaultVal: "",
+			want:       0,
+			wantErr:    false,
+		},
+		{
+			name:       "Empty value for bool",
+			key:        "EMPTY_BOOL",
+			value:      new(bool),
+			defaultVal: "",
+			want:       false,
+			wantErr:    false,
+		},
+		{
+			name:       "Empty value for duration",
+			key:        "EMPTY_DURATION",
+			value:      new(time.Duration),
+			defaultVal: "",
+			want:       time.Duration(0),
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Setenv(GONE+"_"+tt.key, "")
+			defer os.Unsetenv(GONE + "_" + tt.key)
+
+			err := configure.Get(tt.key, tt.value, tt.defaultVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnvConfigure.Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				got := reflect.ValueOf(tt.value).Elem().Interface()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("EnvConfigure.Get() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestEnvConfigure_GetWithNilValue(t *testing.T) {
+	configure := &EnvConfigure{}
+	err := configure.Get("TEST_KEY", nil, "default")
+	if err == nil {
+		t.Error("EnvConfigure.Get() should return error for nil value")
+	}
+}
+
+func TestConfigProvider_ProvideWithInvalidType(t *testing.T) {
+	mockConfigure := &MockConfigure{
+		values: map[string]string{
+			"test-key": "test-value",
+		},
+	}
+
+	provider := &ConfigProvider{
+		configure: mockConfigure,
+	}
+
+	// Test with invalid type (chan)
+	_, err := provider.Provide("test-key", reflect.TypeOf(make(chan int)))
+	if err == nil {
+		t.Error("ConfigProvider.Provide() should return error for invalid type")
+	}
+}
+
+func TestEnvConfigure_GetWithComplexTypes(t *testing.T) {
+	configure := &EnvConfigure{}
+	tests := []struct {
+		name       string
+		key        string
+		value      any
+		envValue   string
+		defaultVal string
+		want       any
+		wantErr    bool
+	}{
+		{
+			name:       "Complex struct with nested fields",
+			key:        "TEST_COMPLEX",
+			value:      &struct{ Inner struct{ Value int } }{},
+			envValue:   `{"Inner":{"Value":42}}`,
+			defaultVal: "{}",
+			want:       struct{ Inner struct{ Value int } }{Inner: struct{ Value int }{Value: 42}},
+			wantErr:    false,
+		},
+		{
+			name:       "Array type",
+			key:        "TEST_ARRAY",
+			value:      &[]int{},
+			envValue:   "[1,2,3]",
+			defaultVal: "[]",
+			want:       []int{1, 2, 3},
+			wantErr:    false,
+		},
+		{
+			name:       "Map type",
+			key:        "TEST_MAP",
+			value:      &map[string]int{},
+			envValue:   `{"key":42}`,
+			defaultVal: "{}",
+			want:       map[string]int{"key": 42},
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Setenv(GONE+"_"+tt.key, tt.envValue)
+			defer os.Unsetenv(GONE + "_" + tt.key)
+
+			err := configure.Get(tt.key, tt.value, tt.defaultVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnvConfigure.Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				got := reflect.ValueOf(tt.value).Elem().Interface()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("EnvConfigure.Get() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestConfigProvider_ProvideWithEmptyKeys(t *testing.T) {
+	mockConfigure := &MockConfigure{
+		values: map[string]string{},
+	}
+
+	provider := &ConfigProvider{
+		configure: mockConfigure,
+	}
+
+	tests := []struct {
+		name      string
+		tagConf   string
+		valueType reflect.Type
+		wantErr   bool
+	}{
+		{
+			name:      "Empty tag config",
+			tagConf:   "",
+			valueType: reflect.TypeOf(""),
+			wantErr:   true,
+		},
+		{
+			name:      "Only default value",
+			tagConf:   "default=test",
+			valueType: reflect.TypeOf(""),
+			wantErr:   false,
+		},
+		{
+			name:      "Only comma",
+			tagConf:   ",",
+			valueType: reflect.TypeOf(""),
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := provider.Provide(tt.tagConf, tt.valueType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConfigProvider.Provide() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnvConfigure_GetWithInvalidDefaultValue(t *testing.T) {
+	configure := &EnvConfigure{}
+	tests := []struct {
+		name       string
+		key        string
+		value      any
+		defaultVal string
+		wantErr    bool
+	}{
+		{
+			name:       "Invalid default int",
+			key:        "TEST_INT_X",
+			value:      new(int),
+			defaultVal: "not-a-number",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid default duration",
+			key:        "TEST_DURATION_X",
+			value:      new(time.Duration),
+			defaultVal: "invalid-duration",
+			wantErr:    true,
+		},
+		{
+			name:       "Invalid default JSON",
+			key:        "TEST_STRUCT_X",
+			value:      &struct{ Value int }{},
+			defaultVal: "{invalid-json}",
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := configure.Get(tt.key, tt.value, tt.defaultVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnvConfigure.Get() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

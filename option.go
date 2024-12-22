@@ -31,6 +31,9 @@ func (o option) Apply(c *coffin) error {
 // This marks EnvConfigure as the default implementation to use when injecting its interface type.
 func IsDefault(objPointers ...any) Option {
 	for i, p := range objPointers {
+		if p == nil {
+			panic(NewInnerErrorWithParams(LoadedError, "gone: IsDefault() requires a non-nil pointer, %dth parameter got nil", i+1))
+		}
 		of := reflect.TypeOf(p)
 		if of.Kind() != reflect.Ptr {
 			panic(NewInnerErrorWithParams(LoadedError, "gone: IsDefault() requires a pointer, %dth parameter got <%T> ", i+1, p))

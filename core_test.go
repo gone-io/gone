@@ -90,6 +90,56 @@ type StructWithUnexportedField struct {
 	Public *MockDependency `gone:"*"`
 }
 
+// Test struct for provider error cases
+type ErrorProvider struct {
+	Flag
+	returnErr error
+}
+
+func (e *ErrorProvider) Provide(conf string, t reflect.Type) (any, error) {
+	return nil, e.returnErr
+}
+
+func (e *ErrorProvider) GonerName() string {
+	return "error-provider"
+}
+
+// Test struct for slice injection
+type SliceContainer struct {
+	Flag
+	Deps []*MockDependency `gone:"*"`
+}
+
+// Test struct for invalid field types
+type InvalidFieldType struct {
+	Flag
+	Channel chan int `gone:"*"` // Should fail
+}
+
+// Test struct for BeforeInit and Init combinations
+type MockInitCombinations struct {
+	Flag
+	beforeInitCalled bool
+	initCalled       bool
+	shouldError      bool
+}
+
+func (m *MockInitCombinations) BeforeInit() error {
+	m.beforeInitCalled = true
+	if m.shouldError {
+		return fmt.Errorf("before init error")
+	}
+	return nil
+}
+
+func (m *MockInitCombinations) Init() error {
+	m.initCalled = true
+	if m.shouldError {
+		return fmt.Errorf("init error")
+	}
+	return nil
+}
+
 func TestNewCore(t *testing.T) {
 	core := NewCore()
 
@@ -749,6 +799,562 @@ func TestCore_InjectStruct_EdgeCases(t *testing.T) {
 			err := core.InjectStruct(tt.target)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InjectStruct() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCore_Load_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		goner   Goner
+		options []Option
+		setup   func(*Core)
+		wantErr bool
+	}{
+		{
+			name:    "Nil goner",
+			goner:   nil,
+			wantErr: true,
+		},
+		{
+			name:  "Provider with same type and force replace",
+			goner: &MockProvider{},
+			options: []Option{
+				ForceReplace(),
+			},
+			setup: func(core *Core) {
+				_ = core.Load(&MockProvider{})
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Provider with same type without force replace",
+			goner: &MockProvider{},
+			setup: func(core *Core) {
+				_ = core.Load(&MockProvider{})
+			},
+			wantErr: true,
+		},
+		{
+			name:  "Named component with force replace",
+			goner: &MockNamed{},
+			options: []Option{
+				Name("test-name"),
+				ForceReplace(),
+			},
+			setup: func(core *Core) {
+				_ = core.Load(&MockComponent{}, Name("test-name"))
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Named component without force replace",
+			goner: &MockNamed{},
+			options: []Option{
+				Name("test-name"),
+			},
+			setup: func(core *Core) {
+				_ = core.Load(&MockComponent{}, Name("test-name"))
+			},
+			wantErr: true,
+		},
+		{
+			name:  "Component with only for name",
+			goner: &MockComponent{},
+			options: []Option{
+				Name("test-name"),
+				OnlyForName(),
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Component with lazy fill",
+			goner: &MockComponent{},
+			options: []Option{
+				LazyFill(),
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Component with order",
+			goner: &MockComponent{},
+			options: []Option{
+				Order(100),
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Component with priority options",
+			goner: &MockComponent{},
+			options: []Option{
+				HighStartPriority(),
+				MediumStartPriority(),
+				LowStartPriority(),
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Component with multiple options",
+			goner: &MockComponent{},
+			options: []Option{
+				Name("test-name"),
+				OnlyForName(),
+				LazyFill(),
+				Order(100),
+				IsDefault(),
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					if !tt.wantErr {
+						t.Errorf("Core.Load() unexpected panic = %v", r)
+					}
+				}
+			}()
+
+			core := NewCore()
+			if tt.setup != nil {
+				tt.setup(core)
+			}
+
+			err := core.Load(tt.goner, tt.options...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Core.Load() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if err == nil {
+				// Verify the options were applied correctly
+				if len(tt.options) > 0 {
+					var co *coffin
+					for _, c := range core.coffins {
+						if c.goner == tt.goner {
+							co = c
+							break
+						}
+					}
+					if co == nil {
+						t.Error("Core.Load() coffin not found after loading")
+						return
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestCore_Provide_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func(*Core)
+		typ     reflect.Type
+		tagConf string
+		wantErr bool
+	}{
+		{
+			name: "Provider returns error",
+			setup: func(core *Core) {
+				_ = core.Load(&ErrorProvider{
+					returnErr: fmt.Errorf("provider error"),
+				})
+			},
+			typ:     reflect.TypeOf(&MockDependency{}),
+			tagConf: "error-provider",
+			wantErr: true,
+		},
+		{
+			name: "Slice with provider error",
+			setup: func(core *Core) {
+				_ = core.Load(&ErrorProvider{
+					returnErr: fmt.Errorf("provider error"),
+				})
+			},
+			typ:     reflect.TypeOf([]*MockDependency{}),
+			tagConf: "error-provider",
+			wantErr: false, // Slice should still be returned even if provider fails
+		},
+		{
+			name: "Multiple providers for slice",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+				_ = core.Load(&MockDependency{})
+				_ = core.Load(&MockProvider{
+					returnVal: &MockDependency{},
+				})
+			},
+			typ:     reflect.TypeOf([]*MockDependency{}),
+			tagConf: "",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			got, err := core.Provide(tt.tagConf, tt.typ)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Core.Provide() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && got == nil {
+				t.Error("Core.Provide() returned nil but expected a value")
+			}
+		})
+	}
+}
+
+func TestCore_InjectFuncParameters_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		fn          interface{}
+		setup       func(*Core)
+		injectHooks struct {
+			before FuncInjectHook
+			after  FuncInjectHook
+		}
+		wantErr bool
+	}{
+		{
+			name: "Non-function input",
+			fn:   "not a function",
+			setup: func(core *Core) {
+			},
+			wantErr: true,
+		},
+		{
+			name: "Function with unsupported parameter type",
+			fn: func(ch chan int) {
+			},
+			setup: func(core *Core) {
+			},
+			wantErr: true,
+		},
+		{
+			name: "Before hook provides value",
+			fn: func(s string) {
+			},
+			setup: func(core *Core) {
+			},
+			injectHooks: struct {
+				before FuncInjectHook
+				after  FuncInjectHook
+			}{
+				before: func(pt reflect.Type, i int, injected bool) any {
+					return "injected value"
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "After hook provides value",
+			fn: func(s string) {
+			},
+			setup: func(core *Core) {
+			},
+			injectHooks: struct {
+				before FuncInjectHook
+				after  FuncInjectHook
+			}{
+				after: func(pt reflect.Type, i int, injected bool) any {
+					return "injected value"
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			_, err := core.InjectFuncParameters(tt.fn, tt.injectHooks.before, tt.injectHooks.after)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InjectFuncParameters() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCore_InjectWrapFunc_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		fn      interface{}
+		setup   func(*Core)
+		wantErr bool
+	}{
+		{
+			name: "Function returning nil interface",
+			fn: func() error {
+				return nil
+			},
+			setup:   func(core *Core) {},
+			wantErr: false,
+		},
+		{
+			name: "Function returning multiple values",
+			fn: func() (string, error, int) {
+				return "test", nil, 42
+			},
+			setup:   func(core *Core) {},
+			wantErr: false,
+		},
+		{
+			name: "Function with invalid parameter injection",
+			fn: func(ch chan int) {
+			},
+			setup:   func(core *Core) {},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			wrapper, err := core.InjectWrapFunc(tt.fn, nil, nil)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InjectWrapFunc() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && wrapper == nil {
+				t.Error("InjectWrapFunc() returned nil wrapper but expected a function")
+			}
+
+			if !tt.wantErr {
+				results := wrapper()
+				if results == nil {
+					t.Error("Wrapper function returned nil results")
+				}
+			}
+		})
+	}
+}
+
+func TestCore_Fill_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func(*Core)
+		wantErr bool
+	}{
+		{
+			name: "Fill with invalid tag format",
+			setup: func(core *Core) {
+				type InvalidTag struct {
+					Flag
+					Dep *MockDependency `gone:"invalid:tag:format"`
+				}
+				_ = core.Load(&InvalidTag{})
+			},
+			wantErr: true,
+		},
+		{
+			name: "Fill with non-existent provider",
+			setup: func(core *Core) {
+				type MissingProvider struct {
+					Flag
+					Dep *MockDependency `gone:"missing-provider"`
+				}
+				_ = core.Load(&MissingProvider{})
+			},
+			wantErr: true,
+		},
+		{
+			name: "Fill with incompatible provider type",
+			setup: func(core *Core) {
+				_ = core.Load(&MockProvider{
+					returnVal: "string instead of MockDependency",
+				})
+				type IncompatibleType struct {
+					Flag
+					Dep *MockDependency `gone:"mock-provider"`
+				}
+				_ = core.Load(&IncompatibleType{})
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+			err := core.Install()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Core.Fill() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCore_Init_Combinations(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func(*Core, *MockInitCombinations)
+		verify  func(*testing.T, *MockInitCombinations)
+		wantErr bool
+	}{
+		{
+			name: "All init methods success",
+			setup: func(core *Core, mock *MockInitCombinations) {
+				mock.shouldError = false
+				_ = core.Load(mock)
+			},
+			verify: func(t *testing.T, mock *MockInitCombinations) {
+				if !mock.beforeInitCalled {
+					t.Error("BeforeInit was not called")
+				}
+				if !mock.initCalled {
+					t.Error("Init was not called")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "BeforeInit returns error",
+			setup: func(core *Core, mock *MockInitCombinations) {
+				mock.shouldError = true
+				_ = core.Load(mock)
+			},
+			verify: func(t *testing.T, mock *MockInitCombinations) {
+				if !mock.beforeInitCalled {
+					t.Error("BeforeInit was not called")
+				}
+
+				if mock.initCalled {
+					t.Error("Init should not have been called")
+				}
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			mock := &MockInitCombinations{}
+			tt.setup(core, mock)
+
+			err := core.Install()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Core.Install() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.verify != nil {
+				tt.verify(t, mock)
+			}
+		})
+	}
+}
+
+func TestCore_GetGonerByType_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func(*Core)
+		typ     reflect.Type
+		wantNil bool
+	}{
+		{
+			name: "Multiple implementations without default",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+				_ = core.Load(&MockDependency{})
+			},
+			typ:     reflect.TypeOf(&MockDependency{}),
+			wantNil: false, // Should return first one
+		},
+		{
+			name: "Multiple implementations with default",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{})
+				_ = core.Load(&MockDependency{}, IsDefault())
+			},
+			typ:     reflect.TypeOf(&MockDependency{}),
+			wantNil: false,
+		},
+		{
+			name: "Only for name implementation",
+			setup: func(core *Core) {
+				_ = core.Load(&MockDependency{}, OnlyForName())
+			},
+			typ:     reflect.TypeOf(&MockDependency{}),
+			wantNil: true,
+		},
+		{
+			name: "Interface type",
+			setup: func(core *Core) {
+				type TestInterface interface {
+					Test()
+				}
+				type TestImpl struct {
+					Flag
+				}
+				_ = core.Load(&TestImpl{})
+			},
+			typ:     reflect.TypeOf((*error)(nil)).Elem(), // Use error interface as example
+			wantNil: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setup(core)
+
+			got := core.GetGonerByType(tt.typ)
+			if (got == nil) != tt.wantNil {
+				t.Errorf("GetGonerByType() = %v, want nil: %v", got, tt.wantNil)
+			}
+		})
+	}
+}
+
+func TestCore_SafeExecute(t *testing.T) {
+	tests := []struct {
+		name    string
+		fn      func() error
+		wantErr bool
+	}{
+		{
+			name: "Normal execution",
+			fn: func() error {
+				return nil
+			},
+			wantErr: false,
+		},
+		{
+			name: "Function returns error",
+			fn: func() error {
+				return fmt.Errorf("test error")
+			},
+			wantErr: true,
+		},
+		{
+			name: "Function panics",
+			fn: func() error {
+				panic("test panic")
+				return nil
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := SafeExecute(tt.fn)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SafeExecute() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
