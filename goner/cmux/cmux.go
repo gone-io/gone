@@ -64,6 +64,9 @@ func (s *server) Init() error {
 			}
 			var listener net.Listener
 			listener, err = s.listen(s.network, s.address)
+			if err != nil {
+				return
+			}
 			s.cMux = cmux.New(listener)
 		})
 	}
@@ -88,8 +91,8 @@ func (s *server) Start() error {
 	var mutex sync.Mutex
 	s.Go(func() {
 		mutex.Lock()
+		defer mutex.Unlock()
 		err = s.cMux.Serve()
-		mutex.Unlock()
 		s.processStartError(err)
 	})
 	<-time.After(20 * time.Millisecond)
@@ -99,8 +102,8 @@ func (s *server) Start() error {
 func (s *server) Stop() error {
 	s.Warnf("cMux server stopping!!")
 	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.stopFlag = true
-	s.lock.Unlock()
 	s.cMux.Close()
 	return nil
 }
@@ -108,11 +111,11 @@ func (s *server) Stop() error {
 func (s *server) processStartError(err error) {
 	if err != nil {
 		s.lock.Lock()
+		defer s.lock.Unlock()
 		if s.stopFlag {
 			s.Errorf("cMux Serve() err:%v", err)
 		} else {
 			s.Warnf("cMux Serve() err:%v", err)
 		}
-		s.lock.Unlock()
 	}
 }
