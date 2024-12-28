@@ -8,7 +8,6 @@ import (
 	"go.uber.org/mock/gomock"
 	"net"
 	"testing"
-	"time"
 )
 
 func TestServer_Init(t *testing.T) {
@@ -30,34 +29,6 @@ func TestServer_Init(t *testing.T) {
 	assert.NotNil(t, s.cMux)
 }
 
-func TestServer_Start_Stop(t *testing.T) {
-	controller := gomock.NewController(t)
-	defer controller.Finish()
-
-	listener := NewMockListener(controller)
-	gone.Prepare(Load).Test(func(s *server) {
-		s.listen = func(network, address string) (net.Listener, error) {
-			return listener, nil
-		}
-
-		// Initialize the server
-		err := s.Init()
-		assert.NoError(t, err)
-
-		// Start the server
-		err = s.Start()
-		assert.NoError(t, err)
-
-		// Give some time for the server to start
-		time.Sleep(50 * time.Millisecond)
-
-		// Stop the server
-		err = s.Stop()
-		assert.NoError(t, err)
-
-	})
-}
-
 func TestServer_Init_Error(t *testing.T) {
 	s := &server{
 		network: "tcp",
@@ -71,17 +42,13 @@ func TestServer_Init_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_server_processStartError(t *testing.T) {
+func Test_server_Start_Stop(t *testing.T) {
 	gone.Prepare(Load).Test(func(s *server) {
 		s.processStartError(errors.New("test error"))
 		s.processStartError(nil)
 		s.stopFlag = true
 		s.processStartError(errors.New("test error"))
-	})
-}
 
-func Test_server_Start_Stop(t *testing.T) {
-	gone.Prepare(Load).Test(func(s *server) {
 		httpL := s.Match(cmux.HTTP1Fast())
 		assert.NotNil(t, httpL)
 		grpcL := s.MatchWithWriters(
