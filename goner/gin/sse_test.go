@@ -81,7 +81,6 @@ func TestSSE(t *testing.T) {
 		writer := NewMockResponseWriter(controller)
 		writer.EXPECT().Header().Return(http.Header{}).AnyTimes()
 		writer.EXPECT().Flush().AnyTimes()
-		writer.EXPECT().WriteString(gomock.Any()).Return(100, nil)
 		writer.EXPECT().WriteString(gomock.Any()).Return(0, errors.New("error"))
 
 		sse := NewSSE(writer)
