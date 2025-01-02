@@ -37,10 +37,6 @@ func (s *Sse) Write(delta any) error {
 		return err
 	}
 
-	_, err = io.WriteString(s.Writer, "event: data\n")
-	if err != nil {
-		return err
-	}
 	_, err = io.WriteString(s.Writer, fmt.Sprintf("data: %s\n\n", jsonStr))
 	if err != nil {
 		return err
@@ -50,7 +46,7 @@ func (s *Sse) Write(delta any) error {
 }
 
 func (s *Sse) End() error {
-	_, err := io.WriteString(s.Writer, "event: done\n")
+	_, err := io.WriteString(s.Writer, "event: done\ndata: \n\ndata: [DONE]\n")
 	if err != nil {
 		return err
 	}

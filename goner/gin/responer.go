@@ -139,6 +139,13 @@ func (r *responser) ProcessResults(context XContext, writer gin.ResponseWriter, 
 			return
 		}
 
+		of := reflect.TypeOf(result)
+		if of.Kind() == reflect.Chan {
+			isNotEnd = true
+			r.dealChan(result, writer)
+			return
+		}
+
 		switch result.(type) {
 		case error:
 			r.Failed(context, result.(error))
@@ -148,9 +155,9 @@ func (r *responser) ProcessResults(context XContext, writer gin.ResponseWriter, 
 			if err != nil {
 				r.Warnf("copy data to writer failed, err: %v", err)
 			}
-		case chan any:
-			isNotEnd = true
-			r.dealChan(result.(chan any), writer)
+		//case chan any:
+		//	isNotEnd = true
+		//	r.dealChan(result.(chan any), writer)
 		default:
 			r.Success(context, result)
 		}
@@ -161,31 +168,30 @@ func (r *responser) ProcessResults(context XContext, writer gin.ResponseWriter, 
 	}
 }
 
-func (r *responser) dealChan(ch <-chan any, writer gin.ResponseWriter) {
+func (r *responser) dealChan(ch any, writer gin.ResponseWriter) {
 	sse := NewSSE(writer)
 	sse.Start()
 
-	for {
-		data, ok := <-ch
+	of := reflect.ValueOf(ch)
 
-		if !ok {
+	for {
+		if data, ok := of.Recv(); !ok {
 			err := sse.End()
 			if err != nil {
 				r.Errorf("write 'end' error: %v", err)
 			}
-			return
-		}
-		var err error
-		switch data.(type) {
-		case error:
-			err = sse.WriteError(ToError(data.(error)))
-		default:
-			err = sse.Write(data)
-		}
-
-		if err != nil {
-			r.Errorf("write data error: %v", err)
-			return
+			break
+		} else {
+			var err error
+			i := data.Interface()
+			if e, y := i.(error); y {
+				err = sse.WriteError(ToError(e))
+			} else {
+				err = sse.Write(i)
+			}
+			if err != nil {
+				r.Errorf("write data error: %v", err)
+			}
 		}
 	}
 }
