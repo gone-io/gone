@@ -238,6 +238,14 @@ func TestEnvConfigure_Get(t *testing.T) {
 			wantErr:    true,
 		},
 		{
+			name:       "uint64 value error",
+			key:        "TEST_UINT_ERROR",
+			defaultVal: "0",
+			value:      new(uint64),
+			want:       uint64(123),
+			wantErr:    true,
+		},
+		{
 			name:       "float32 value error",
 			key:        "TEST_UINT_ERROR",
 			defaultVal: "0",
