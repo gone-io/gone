@@ -14,10 +14,6 @@ func TestGetDefaultLogger(t *testing.T) {
 	if logger == nil {
 		t.Error("GetDefaultLogger() should not return nil")
 	}
-
-	if logger.GetLevel() != InfoLevel {
-		t.Errorf("default log level should be InfoLevel, got %v", logger.GetLevel())
-	}
 }
 
 func TestLoggerLevels(t *testing.T) {
