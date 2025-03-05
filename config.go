@@ -41,7 +41,7 @@ func (s *ConfigProvider) Init() {}
 func (s *ConfigProvider) Provide(tagConf string, t reflect.Type) (any, error) {
 	// Parse the tag string into a map and ordered keys
 	m, keys := TagStringParse(tagConf)
-	if len(keys) == 0 {
+	if len(keys) == 0 || len(keys) == 1 && keys[0] == "" {
 		return nil, NewInnerError("config-key is empty", ConfigError)
 	}
 

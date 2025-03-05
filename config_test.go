@@ -66,6 +66,13 @@ func TestConfigProvider_Provide(t *testing.T) {
 		wantErr   bool
 	}{
 		{
+			name:      "miss key",
+			tagConf:   "",
+			valueType: reflect.TypeOf(""),
+			want:      "",
+			wantErr:   true,
+		},
+		{
 			name:      "String value",
 			tagConf:   "test-key",
 			valueType: reflect.TypeOf(""),
@@ -128,15 +135,16 @@ func TestConfigProvider_Provide(t *testing.T) {
 func TestEnvConfigure_Get(t *testing.T) {
 	// Setup test environment variables
 	envVars := map[string]string{
-		"TEST_STRING":   "test-value",
-		"TEST_INT":      "42",
-		"TEST_INT64":    "9223372036854775807",
-		"TEST_FLOAT":    "3.14",
-		"TEST_BOOL":     "true",
-		"TEST_UINT":     "123",
-		"TEST_UINT64":   "18446744073709551615",
-		"TEST_DURATION": "1h30m",
-		"TEST_STRUCT":   `{"name":"test","value":123}`,
+		"TEST_STRING":     "test-value",
+		"TEST_INT":        "42",
+		"TEST_INT64":      "9223372036854775807",
+		"TEST_FLOAT":      "3.14",
+		"TEST_BOOL":       "true",
+		"TEST_UINT":       "123",
+		"TEST_UINT_ERROR": "1ss2",
+		"TEST_UINT64":     "18446744073709551615",
+		"TEST_DURATION":   "1h30m",
+		"TEST_STRUCT":     `{"name":"test","value":123}`,
 	}
 
 	for k, v := range envVars {
@@ -204,6 +212,38 @@ func TestEnvConfigure_Get(t *testing.T) {
 			value:      new(uint),
 			want:       uint(123),
 			wantErr:    false,
+		},
+		{
+			name:       "int32 value error",
+			key:        "TEST_UINT_ERROR",
+			defaultVal: "0",
+			value:      new(int32),
+			want:       int32(123),
+			wantErr:    true,
+		},
+		{
+			name:       "uint32 value error",
+			key:        "TEST_UINT_ERROR",
+			defaultVal: "0",
+			value:      new(uint32),
+			want:       uint32(123),
+			wantErr:    true,
+		},
+		{
+			name:       "int64 value error",
+			key:        "TEST_UINT_ERROR",
+			defaultVal: "0",
+			value:      new(int64),
+			want:       int64(123),
+			wantErr:    true,
+		},
+		{
+			name:       "float32 value error",
+			key:        "TEST_UINT_ERROR",
+			defaultVal: "0",
+			value:      new(float32),
+			want:       float32(123),
+			wantErr:    true,
 		},
 		{
 			name:       "Uint64 value",
