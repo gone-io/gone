@@ -162,14 +162,15 @@ func TestCheckCircularDepsAndGetBestInitOrder(t *testing.T) {
 	}
 }
 
-type testStruct struct {
-	Dep1 *string `gone:"dep1"`
-	Dep2 *int    `gone:"dep2"`
-}
-
 type testFunc func(*string, *int)
 
 func TestGetGonerFillDeps(t *testing.T) {
+	type testStruct struct {
+		Flag         // embed gone.Flag
+		Dep1 *string `gone:"dep1"`
+		Dep2 *int    `gone:"dep2"`
+	}
+
 	tests := []struct {
 		name          string
 		goner         interface{}
@@ -230,6 +231,11 @@ func TestGetGonerFillDeps(t *testing.T) {
 }
 
 func TestGetGonerDeps(t *testing.T) {
+	type testStruct struct {
+		Flag         // embed gone.Flag
+		Dep1 *string `gone:"dep1"`
+		Dep2 *int    `gone:"dep2"`
+	}
 	tests := []struct {
 		name              string
 		coffin            *coffin
@@ -424,5 +430,184 @@ func TestGetDepByType(t *testing.T) {
 				t.Error("getDepByType() returned nil but expected a coffin")
 			}
 		})
+	}
+}
+
+func TestGetSliceDepsByType(t *testing.T) {
+	type testStruct struct {
+		Flag // embed gone.Flag
+	}
+	type testPtrSlice []*testStruct
+
+	tests := []struct {
+		name          string
+		setupCore     func(*Core)
+		typeToGet     reflect.Type
+		wantDepsCount int
+		wantNilResult bool
+		description   string
+	}{
+		{
+			name:          "Non-slice type",
+			setupCore:     func(c *Core) {},
+			typeToGet:     reflect.TypeOf(testStruct{}),
+			wantNilResult: true,
+			description:   "Should return nil for non-slice types",
+		},
+
+		{
+			name: "Pointer slice type",
+			setupCore: func(c *Core) {
+				elemCoffin := &coffin{
+					name:  "elemCoffin",
+					goner: &testStruct{},
+				}
+				c.coffins = []*coffin{elemCoffin}
+			},
+			typeToGet:     reflect.TypeOf(testPtrSlice{}),
+			wantDepsCount: 1,
+			description:   "Should handle slice of pointers correctly",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := NewCore()
+			tt.setupCore(core)
+
+			got := core.getSliceDepsByType(tt.typeToGet)
+
+			if tt.wantNilResult {
+				if got != nil {
+					t.Errorf("getSliceDepsByType() = %v, want nil", got)
+				}
+				return
+			}
+
+			if len(got) != tt.wantDepsCount {
+				t.Errorf("getSliceDepsByType() returned %d deps, want %d deps - %s",
+					len(got), tt.wantDepsCount, tt.description)
+			}
+
+			// Check for duplicates
+			seen := make(map[*coffin]bool)
+			for _, dep := range got {
+				if seen[dep] {
+					t.Errorf("getSliceDepsByType() returned duplicate dependency: %v", dep.name)
+				}
+				seen[dep] = true
+			}
+		})
+	}
+}
+
+func TestCollectDeps(t *testing.T) {
+	type testStruct struct {
+		Flag         // embed gone.Flag
+		Dep1 *string `gone:"dep1"`
+		Dep2 *int    `gone:"dep2"`
+	}
+	tests := []struct {
+		name      string
+		setupCore func(*Core)
+		wantDeps  int
+		wantErr   bool
+	}{
+		{
+			name: "Non-pointer goner",
+			setupCore: func(c *Core) {
+				c.coffins = []*coffin{
+					{
+						name:  "non-pointer",
+						goner: testStruct{}, // Not a pointer
+					},
+				}
+			},
+			wantDeps: 0,
+			wantErr:  true,
+		},
+
+		{
+			name: "Invalid dependency",
+			setupCore: func(c *Core) {
+				c.coffins = []*coffin{
+					{
+						name:  "invalid",
+						goner: "not a valid goner",
+					},
+				}
+			},
+			wantDeps: 0,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a new core with debug logging
+			core := NewCore()
+			core.log = GetDefaultLogger()
+			core.log.SetLevel(DebugLevel)
+
+			// Setup the test case
+			tt.setupCore(core)
+
+			// Call collectDeps
+			depsMap, err := core.collectDeps()
+
+			// Check error condition
+			if (err != nil) != tt.wantErr {
+				t.Errorf("collectDeps() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			// If we expect success, verify the dependency count
+			if !tt.wantErr {
+				totalDeps := 0
+				for _, deps := range depsMap {
+					totalDeps += len(deps)
+				}
+				if totalDeps != tt.wantDeps {
+					t.Errorf("collectDeps() got %d total dependencies, want %d", totalDeps, tt.wantDeps)
+				}
+
+				// Verify that each dependency is valid
+				for d, deps := range depsMap {
+					if d.coffin == nil {
+						t.Error("collectDeps() returned a dependency with nil coffin")
+					}
+					for _, dep := range deps {
+						if dep.coffin == nil {
+							t.Error("collectDeps() returned a dependency with nil dependent coffin")
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestNeedInitBeforeUse(t *testing.T) {
+	type Test struct {
+		Flag
+		Dep1 *testNamedProvider   `gone:"dep1"`
+		Dep2 []*testNamedProvider `gone:"*"`
+	}
+
+	core := NewCore()
+	err := core.Load(&testNamedProvider{}, Name("dep1"))
+	if err != nil {
+		t.Fatalf("Failed to load testNamedProvider: %v", err)
+	}
+
+	err = core.Load(&Test{})
+
+	co := newCoffin(&Test{})
+	dependencies, err := core.getGonerFillDeps(co)
+	if err != nil {
+		t.Fatalf("Failed to get dependencies: %v", err)
+	}
+	if len(dependencies) == 0 {
+		t.Fatalf("Failed to get dependencies: %v", err)
 	}
 }

@@ -146,3 +146,89 @@ func formatLessTest(a, b *coffin) string {
 	return "Less " + a.name + "(" + string(rune('0'+a.order)) + ") " +
 		b.name + "(" + string(rune('0'+b.order)) + ")"
 }
+
+type testInitiator struct {
+	Flag
+}
+
+func (t *testInitiator) Init() error {
+	return nil
+}
+
+type testInitiatorNoError struct {
+	Flag
+}
+
+func (t *testInitiatorNoError) Init() {}
+
+type testStructFieldInjector struct {
+	Flag
+}
+
+func (t *testStructFieldInjector) GonerName() string {
+	return "testInjector"
+}
+
+func (t *testStructFieldInjector) Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error {
+	return nil
+}
+
+type testNormalGoner struct {
+	Flag
+}
+
+type testNamedProvider struct {
+	Flag
+}
+
+func (t *testNamedProvider) GonerName() string {
+	return "testProvider"
+}
+
+func (t *testNamedProvider) Provide(tagConf string, typ reflect.Type) (any, error) {
+	return nil, nil
+}
+
+func TestNewCoffin_NeedInitBeforeUse(t *testing.T) {
+	tests := []struct {
+		name            string
+		goner           Goner
+		wantNeedInitUse bool
+	}{
+		{
+			name:            "Initiator implementation",
+			goner:           &testInitiator{},
+			wantNeedInitUse: true,
+		},
+		{
+			name:            "InitiatorNoError implementation",
+			goner:           &testInitiatorNoError{},
+			wantNeedInitUse: true,
+		},
+		{
+			name:            "NamedProvider implementation",
+			goner:           &testNamedProvider{},
+			wantNeedInitUse: true,
+		},
+		{
+			name:            "StructFieldInjector implementation",
+			goner:           &testStructFieldInjector{},
+			wantNeedInitUse: true,
+		},
+		{
+			name:            "Normal Goner without special interfaces",
+			goner:           &testNormalGoner{},
+			wantNeedInitUse: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			co := newCoffin(tt.goner)
+			if co.needInitBeforeUse != tt.wantNeedInitUse {
+				t.Errorf("newCoffin() needInitBeforeUse = %v, want %v",
+					co.needInitBeforeUse, tt.wantNeedInitUse)
+			}
+		})
+	}
+}
