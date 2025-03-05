@@ -166,7 +166,7 @@ func OnceLoad(fn LoadFunc) LoadFunc {
 func SafeExecute(fn func() error) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = NewInnerErrorSkip(fmt.Sprintf("panic occurred: %v", r), FailInstall, 7)
+			err = NewInnerErrorSkip(fmt.Sprintf("panic occurred: %v", r), FailInstall, 3)
 		}
 	}()
 	// 执行传入的函数

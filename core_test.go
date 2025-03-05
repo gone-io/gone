@@ -1358,3 +1358,105 @@ func TestCore_SafeExecute(t *testing.T) {
 		})
 	}
 }
+
+func TestActionType_String(t *testing.T) {
+	tests := []struct {
+		name   string
+		action actionType
+		want   string
+	}{
+		{
+			name:   "fill",
+			action: fillAction,
+			want:   "fill fields",
+		},
+		{
+			name:   "init",
+			action: initAction,
+			want:   "initialize",
+		},
+		{
+			name:   "unknown",
+			action: actionType(0),
+			want:   "unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.action.String() != tt.want {
+				t.Errorf("ActionType.String() = %v, want %v", tt.action.String(), tt.want)
+			}
+		})
+	}
+}
+
+type testOption struct {
+}
+
+func (t testOption) Apply(c *coffin) error {
+	return ToError("apply-error")
+}
+
+func TestLoadWithOptionApplyError(t *testing.T) {
+	core := NewCore()
+	type Test struct {
+		Flag
+	}
+	err := core.Load(&Test{}, testOption{})
+	if err == nil {
+		t.Error("Expected error, but got nil")
+	}
+}
+
+func TestLoadWithReplaceOption(t *testing.T) {
+	core := NewCore()
+	type Test struct {
+		Flag
+	}
+
+	var test Test
+
+	provider := WrapFunctionProvider(func(tagConf string, in struct{}) (Test, error) {
+		return test, ToError("test error")
+	})
+
+	_ = core.Load(provider)
+	err := core.Load(provider)
+	if err == nil {
+		t.Error("Expected error, but got nil")
+	}
+
+	provider2 := WrapFunctionProvider(func(tagConf string, in struct{}) (Test, error) {
+		return test, ToError("test error")
+	})
+	err = core.Load(provider2)
+	if err == nil {
+		t.Error("Expected error, but got nil")
+	}
+	err = core.Load(provider2, ForceReplace())
+	if err != nil {
+		t.Error("Expected no error, but got:", err)
+	}
+
+}
+
+type errInit struct {
+	Flag
+}
+
+func (e *errInit) Init() {
+	panic("error")
+}
+
+func TestInstallWithError(t *testing.T) {
+	core := NewCore()
+	err := core.Load(&errInit{})
+	if err != nil {
+		t.Error("Expected no error, but got:", err)
+	}
+	err = core.Install()
+	if err == nil {
+		t.Error("Expected error, but got nil")
+	}
+}

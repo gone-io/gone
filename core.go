@@ -116,8 +116,7 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 	}
 
 	for _, option := range options {
-		err := option.Apply(co)
-		if err != nil {
+		if err := option.Apply(co); err != nil {
 			return ToError(err)
 		}
 	}
@@ -163,6 +162,10 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 		co.needInitBeforeUse = true
 
 		if oldCo, ok := s.typeProviderDepMap[provider.Type()]; ok {
+			if oldCo.goner == goner {
+				return NewInnerErrorWithParams(LoadedError, "Provider provided %s already registered", GetTypeName(provider.Type()))
+			}
+
 			if co.forceReplace {
 				for i := range s.coffins {
 					if s.coffins[i] == oldCo {
@@ -217,21 +220,18 @@ func (s *Core) Install() error {
 
 	for i, dep := range orders {
 		if dep.action == fillAction {
-			err = s.safeFillOne(dep.coffin)
-			if err != nil {
+			if err := s.safeFillOne(dep.coffin); err != nil {
 				s.log.Debugf("Failed to %s at order[%d]: %s", dep, i, err)
 				return ToError(err)
 			}
 		}
 		if dep.action == initAction {
-			err = s.safeInitOne(dep.coffin)
-			if err != nil {
+			if err = s.safeInitOne(dep.coffin); err != nil {
 				s.log.Debugf("Failed to %s at order[%d]: %s", dep, i, err)
 				return ToError(err)
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -263,7 +263,7 @@ func (s *Core) fillOne(coffin *coffin) error {
 
 	elem := reflect.TypeOf(goner).Elem()
 	if elem.Kind() != reflect.Struct {
-		return fmt.Errorf("goner must be a struct")
+		return NewInnerErrorWithParams(GonerTypeNotMatch, "goner must be a struct")
 	}
 
 	elemV := reflect.ValueOf(goner).Elem()
