@@ -1460,3 +1460,128 @@ func TestInstallWithError(t *testing.T) {
 		t.Error("Expected error, but got nil")
 	}
 }
+
+func TestFillOne(t *testing.T) {
+	core := NewCore()
+
+	var test string
+
+	c := newCoffin(&test)
+
+	err := core.fillOne(c)
+	if err == nil {
+		t.Error("Expected error")
+	}
+
+	type testStruct struct {
+		Flag
+		dep  *Core  `gone:""`
+		test string `gone:"*"`
+	}
+
+	co := newCoffin(&testStruct{})
+
+	err = core.fillOne(co)
+	if err == nil {
+		t.Error("Expected error")
+	}
+	type testStruct2 struct {
+		test string `gone:"okk"`
+	}
+
+	co2 := newCoffin(&testStruct2{})
+
+	_ = core.Load(&testStruct{}, Name("okk"))
+	err = core.fillOne(co2)
+	if err == nil {
+		t.Error("Expected error")
+	}
+
+}
+
+type initEr struct {
+	Flag
+}
+
+func (i *initEr) Init() error {
+	return ToError("init-error")
+}
+
+func TestInitOneError(t *testing.T) {
+	core := NewCore()
+	c := newCoffin(&initEr{})
+
+	err := core.initOne(c)
+	if err == nil {
+		t.Error("Expected error")
+	}
+}
+
+func TestProvide(t *testing.T) {
+	type Test struct {
+	}
+
+	var test Test
+
+	provider := WrapFunctionProvider(func(tagConf string, in struct{}) (Test, error) {
+		return test, ToError("test error")
+	})
+
+	var test2 []Test
+
+	Prepare(func(loader Loader) error {
+		return loader.Load(provider)
+	}).
+		Test(func(core *Core) {
+			_, err := core.Provide("", reflect.TypeOf(test2))
+			if err == nil {
+				t.Errorf("Expected error, got nil")
+			}
+		})
+
+	provider2 := WrapFunctionProvider(func(tagConf string, in struct{}) (Test, error) {
+		return test, nil
+	})
+
+	Prepare(func(loader Loader) error {
+		return loader.Load(provider2)
+	}).
+		Test(func(core *Core) {
+			_, err := core.Provide("", reflect.TypeOf(test2))
+			if err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+		})
+}
+
+func TestInjectFuncParametersWithStructParameter(t *testing.T) {
+	Prepare().
+		Test(func(core *Core) {
+			_, err := core.InjectFuncParameters(func(in *struct {
+				core *Core `gone:"*"`
+			}) {
+			}, nil, nil)
+			if err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+		})
+
+	Prepare().
+		Test(func(core *Core) {
+			_, err := core.InjectFuncParameters(func(in *struct {
+				core string `gone:"*"`
+			}) {
+			}, nil, nil)
+			if err == nil {
+				t.Errorf("Expected error, got nil")
+			}
+
+			_, err = core.InjectFuncParameters(func(in struct {
+				core string `gone:"*"`
+			}) {
+			}, nil, nil)
+			if err == nil {
+				t.Errorf("Expected error, got nil")
+			}
+		})
+}

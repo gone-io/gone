@@ -329,8 +329,7 @@ func (s *Core) initOne(c *coffin) error {
 		initiator.Init()
 	}
 	if initiator, ok := goner.(Initiator); ok {
-		err := initiator.Init()
-		if err != nil {
+		if err := initiator.Init(); err != nil {
 			return ToError(err)
 		}
 	}
@@ -430,14 +429,12 @@ func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
 				v.Set(reflect.Append(v, reflect.ValueOf(co.goner)))
 			}
 		}
-		if provider, ok := s.typeProviderMap[elem]; ok {
-			if provider != nil {
-				provide, err := provider.Provide(tagConf)
-				if err != nil {
-					return nil, err
-				}
-				v.Set(reflect.Append(v, reflect.ValueOf(provide)))
+		if provider, ok := s.typeProviderMap[elem]; ok && provider != nil {
+			provide, err := provider.Provide(tagConf)
+			if err != nil {
+				return nil, err
 			}
+			v.Set(reflect.Append(v, reflect.ValueOf(provide)))
 		}
 		return v.Interface(), nil
 	}
@@ -482,11 +479,9 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 		}
 
 		if !injected {
-			v, err := s.Provide("", pt)
-			if err != nil && !IsError(err, NotSupport) {
+			if v, err := s.Provide("", pt); err != nil && !IsError(err, NotSupport) {
 				return nil, ToErrorWithMsg(err, fmt.Sprintf("Inject %dth parameter of %s error", i+1, GetFuncName(fn)))
-			}
-			if v != nil {
+			} else if v != nil {
 				args = append(args, reflect.ValueOf(v))
 				injected = true
 			}
@@ -495,18 +490,16 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 		if !injected {
 			if pt.Kind() == reflect.Struct {
 				parameter := reflect.New(pt)
-				err = s.InjectStruct(parameter.Interface())
-				if err != nil {
+				if err = s.InjectStruct(parameter.Interface()); err != nil {
 					return nil, ToErrorWithMsg(err, fmt.Sprintf("Inject %dth parameter of %s error", i+1, GetFuncName(fn)))
 				}
 				args = append(args, parameter.Elem())
 				injected = true
 			}
 
-			if pt.Kind() == reflect.Ptr {
+			if pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct {
 				parameter := reflect.New(pt.Elem())
-				err = s.InjectStruct(parameter.Interface())
-				if err != nil {
+				if err = s.InjectStruct(parameter.Interface()); err != nil {
 					return nil, ToErrorWithMsg(err, fmt.Sprintf("Inject %dth parameter of %s error", i+1, GetFuncName(fn)))
 				}
 				args = append(args, parameter)
