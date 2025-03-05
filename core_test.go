@@ -1344,7 +1344,6 @@ func TestCore_SafeExecute(t *testing.T) {
 			name: "Function panics",
 			fn: func() error {
 				panic("test panic")
-				return nil
 			},
 			wantErr: true,
 		},

@@ -386,7 +386,6 @@ func TestSafeExecute(t *testing.T) {
 			name: "Panic execution",
 			fn: func() error {
 				panic("test panic")
-				return nil
 			},
 			wantError: true,
 		},
