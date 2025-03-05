@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewError(t *testing.T) {
@@ -293,7 +291,9 @@ func Test_iError_Error(t *testing.T) {
 				defaultErr: tt.fields.defaultErr,
 				trace:      tt.fields.trace,
 			}
-			assert.Equalf(t, tt.want, e.Error(), "Error()")
+			if got := e.Error(); got != tt.want {
+				t.Errorf("Error() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
@@ -334,9 +334,12 @@ func TestBError_SetMsg(t *testing.T) {
 				data: tt.fields.data,
 			}
 			e.SetMsg(tt.args.msg)
-			msg := e.Msg()
-			assert.Equalf(t, tt.want, msg, "SetMsg(%v)", tt.args.msg)
-			assert.Equalf(t, tt.wantCode, e.Code(), "SetMsg(%v)", tt.args.msg)
+			if got := e.Msg(); got != tt.want {
+				t.Errorf("SetMsg(%v) = %v, want %v", tt.args.msg, got, tt.want)
+			}
+			if got := e.Code(); got != tt.wantCode {
+				t.Errorf("Code() after SetMsg(%v) = %v, want %v", tt.args.msg, got, tt.wantCode)
+			}
 		})
 	}
 }

@@ -1,12 +1,11 @@
 package gone
 
 import (
+	"encoding/json"
 	"os"
 	"reflect"
 	"strconv"
 	"time"
-
-	"github.com/gone-io/gone/internal/json"
 )
 
 const ConfigureName = "configure"

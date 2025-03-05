@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/gone-io/gone"
-	"github.com/stretchr/testify/assert"
 )
 
 type Boss struct {
@@ -60,9 +59,17 @@ func TestPreparer_Run(t *testing.T) {
 		Load(&Worker{name: "Bob"}).
 		Run(func(b *Boss) {
 			b.Work()
-			assert.NotNil(t, b.first)
-			assert.NotNil(t, b.second)
-			assert.Equal(t, "Tom", b.name)
-			assert.Equal(t, 2, len(b.workers))
+			if b.first == nil {
+				t.Error("expected b.first to not be nil")
+			}
+			if b.second == nil {
+				t.Error("expected b.second to not be nil")
+			}
+			if b.name != "Tom" {
+				t.Errorf("expected name to be 'Tom', got '%s'", b.name)
+			}
+			if len(b.workers) != 2 {
+				t.Errorf("expected 2 workers, got %d", len(b.workers))
+			}
 		})
 }

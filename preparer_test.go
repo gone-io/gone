@@ -2,12 +2,12 @@ package gone_test
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/gone-io/gone"
-	"github.com/stretchr/testify/assert"
 )
 
 // MockDaemon implements Daemon interface for testing
@@ -80,11 +80,17 @@ func TestPreparer_Lifecycle(t *testing.T) {
 		"afterStop",
 	}
 
-	assert.Equal(t, expectedOrder, hooksCalled, "Hooks called in wrong order")
+	if !reflect.DeepEqual(expectedOrder, hooksCalled) {
+		t.Errorf("Hooks called in wrong order. Expected %v, got %v", expectedOrder, hooksCalled)
+	}
 
 	// Verify daemon methods were called
-	assert.True(t, daemon.startCalled, "Daemon Start() was not called")
-	assert.True(t, daemon.stopCalled, "Daemon Stop() was not called")
+	if !daemon.startCalled {
+		t.Error("Daemon Start() was not called")
+	}
+	if !daemon.stopCalled {
+		t.Error("Daemon Stop() was not called")
+	}
 }
 
 func TestPreparer_DaemonErrors(t *testing.T) {
@@ -115,13 +121,17 @@ func TestPreparer_DaemonErrors(t *testing.T) {
 			preparer.Load(tt.daemon)
 
 			if tt.wantPanic {
-				assert.Panics(t, func() {
-					go func() {
-						time.Sleep(100 * time.Millisecond)
-						preparer.End()
-					}()
-					preparer.Serve()
-				})
+				defer func() {
+					if r := recover(); r == nil {
+						t.Error("Expected panic but got none")
+					}
+				}()
+
+				go func() {
+					time.Sleep(100 * time.Millisecond)
+					preparer.End()
+				}()
+				preparer.Serve()
 			}
 		})
 	}
@@ -140,7 +150,9 @@ func TestPreparer_SignalHandling(t *testing.T) {
 	preparer.Serve()
 	duration := time.Since(start)
 
-	assert.Less(t, duration, 200*time.Millisecond, "Signal handling took too long")
+	if duration >= 200*time.Millisecond {
+		t.Errorf("Signal handling took too long: %v", duration)
+	}
 }
 
 func TestPreparer_MultipleHooks(t *testing.T) {
@@ -169,7 +181,9 @@ func TestPreparer_MultipleHooks(t *testing.T) {
 
 	preparer.Serve()
 
-	assert.Equal(t, 12, counter, "Not all hooks were called")
+	if counter != 12 {
+		t.Errorf("Not all hooks were called, expected 12, got %d", counter)
+	}
 }
 
 func TestPreparer_LoadErrors(t *testing.T) {
@@ -199,14 +213,17 @@ func TestPreparer_LoadErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			preparer := gone.Prepare()
-			if tt.wantPanic {
-				assert.Panics(t, func() {
-					tt.setup(preparer)
-				})
-			} else {
-				assert.NotPanics(t, func() {
-					tt.setup(preparer)
-				})
+			didPanic := false
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						didPanic = true
+					}
+				}()
+				tt.setup(preparer)
+			}()
+			if tt.wantPanic != didPanic {
+				t.Errorf("Test %s: wantPanic = %v, got panic = %v", tt.name, tt.wantPanic, didPanic)
 			}
 		})
 	}
@@ -224,27 +241,48 @@ func TestPreparer_RunWithDependencies(t *testing.T) {
 		Load(boss)
 
 	var executed bool
-	assert.NotPanics(t, func() {
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
 		preparer.Run(func(b *Boss) {
-			assert.Equal(t, "boss", b.name)
-			assert.NotNil(t, b.first)
-			assert.NotNil(t, b.second)
-			assert.Equal(t, 2, len(b.workers))
+			if b.name != "boss" {
+				t.Errorf("Expected boss name to be 'boss', got %s", b.name)
+			}
+			if b.first == nil {
+				t.Error("Expected first worker to not be nil")
+			}
+			if b.second == nil {
+				t.Error("Expected second worker to not be nil")
+			}
+			if len(b.workers) != 2 {
+				t.Errorf("Expected 2 workers, got %d", len(b.workers))
+			}
 			executed = true
 		})
-	})
+	}()
 
-	assert.True(t, executed, "Run function was not executed")
+	if !executed {
+		t.Error("Run function was not executed")
+	}
 }
 
 func TestPreparer_DefaultInstance(t *testing.T) {
-	assert.NotNil(t, gone.Default, "Default preparer instance should not be nil")
+	if gone.Default == nil {
+		t.Error("Default preparer instance should not be nil")
+	}
 
-	// Test that Default instance is properly initialized
 	worker := &Worker{name: "test"}
-	assert.NotPanics(t, func() {
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
 		gone.Default.Load(worker)
-	})
+	}()
 }
 
 func TestPreparer_Loads(t *testing.T) {
@@ -258,74 +296,121 @@ func TestPreparer_Loads(t *testing.T) {
 		return core.Load(&Worker{name: "worker2"})
 	}
 
-	assert.NotPanics(t, func() {
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
 		preparer.Loads(loadFn1, loadFn2)
-	})
+	}()
 
 	// Test load function that returns error
 	errorLoadFn := func(core gone.Loader) error {
 		return errors.New("load error")
 	}
 
-	assert.Panics(t, func() {
+	didPanic := false
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				didPanic = true
+			}
+		}()
 		preparer.Loads(errorLoadFn)
-	})
+	}()
+
+	if !didPanic {
+		t.Error("Expected Loads to panic with error load function")
+	}
 }
 
 func TestPreparer_Test(t *testing.T) {
 	var testFuncCalled bool
 
 	testFunc := func(flag gone.TestFlag) {
-		assert.NotNil(t, flag)
+		if flag == nil {
+			t.Error("TestFlag should not be nil")
+		}
 		testFuncCalled = true
 	}
 
 	preparer := gone.Prepare()
 	preparer.Test(testFunc)
 
-	assert.True(t, testFuncCalled, "Test function was not called")
+	if !testFuncCalled {
+		t.Error("Test function was not called")
+	}
 }
 
 func TestPreparer_GlobalFunctions(t *testing.T) {
 	// Test global Load function
 	worker := &Worker{name: "global-worker"}
-	assert.NotPanics(t, func() {
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
 		gone.Load(worker)
-	})
+	}()
 
 	// Test global Loads function
 	loadFn := func(core gone.Loader) error {
 		return core.Load(&Worker{name: "global-worker2"})
 	}
-	assert.NotPanics(t, func() {
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
 		gone.Loads(loadFn)
-	})
+	}()
 
 	// Test global Run function
 	var runCalled bool
-	assert.NotPanics(t, func() {
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
 		gone.Run(func() {
 			runCalled = true
 		})
-	})
-	assert.True(t, runCalled, "Global Run function did not execute")
+	}()
+	if !runCalled {
+		t.Error("Global Run function did not execute")
+	}
 
 	// Test global Test function
 	var testCalled bool
-	assert.NotPanics(t, func() {
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
 		gone.Test(func(flag gone.TestFlag) {
-			assert.NotNil(t, flag)
+			if flag == nil {
+				t.Error("TestFlag should not be nil")
+			}
 			testCalled = true
 		})
-	})
-	assert.True(t, testCalled, "Global Test function did not execute")
+	}()
+	if !testCalled {
+		t.Error("Global Test function did not execute")
+	}
 }
 
 func TestPreparer_RunTest(t *testing.T) {
 	var testFuncCalled bool
 
 	testFunc := func(flag gone.TestFlag) {
-		assert.NotNil(t, flag)
+		if flag == nil {
+			t.Error("TestFlag should not be nil")
+		}
 		testFuncCalled = true
 	}
 
@@ -335,7 +420,9 @@ func TestPreparer_RunTest(t *testing.T) {
 
 	gone.RunTest(testFunc, loadFn)
 
-	assert.True(t, testFuncCalled, "RunTest function was not called")
+	if !testFuncCalled {
+		t.Error("RunTest function was not called")
+	}
 }
 
 func TestPreparer_PrepareWithLoads(t *testing.T) {
@@ -346,19 +433,38 @@ func TestPreparer_PrepareWithLoads(t *testing.T) {
 		return core.Load(&Worker{name: "worker2"})
 	}
 
-	assert.NotPanics(t, func() {
-		preparer := gone.Prepare(loadFn1, loadFn2)
-		assert.NotNil(t, preparer)
-	})
+	var preparer *gone.Preparer
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
+		preparer = gone.Prepare(loadFn1, loadFn2)
+	}()
+
+	if preparer == nil {
+		t.Error("Preparer should not be nil")
+	}
 
 	// Test prepare with error load function
 	errorLoadFn := func(core gone.Loader) error {
 		return errors.New("load error")
 	}
 
-	assert.Panics(t, func() {
+	didPanic := false
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				didPanic = true
+			}
+		}()
 		gone.Prepare(errorLoadFn)
-	})
+	}()
+
+	if !didPanic {
+		t.Error("Expected Prepare to panic with error load function")
+	}
 }
 
 func TestPreparer_ServeGlobal(t *testing.T) {
@@ -368,7 +474,12 @@ func TestPreparer_ServeGlobal(t *testing.T) {
 		gone.Default.End()
 	}()
 
-	assert.NotPanics(t, func() {
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
 		gone.Serve()
-	})
+	}()
 }

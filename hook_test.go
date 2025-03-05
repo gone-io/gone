@@ -3,8 +3,6 @@ package gone
 import (
 	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBeforeStartProvider_Provide(t *testing.T) {
@@ -18,11 +16,17 @@ func TestBeforeStartProvider_Provide(t *testing.T) {
 	hook, err := provider.Provide()
 
 	// 验证结果
-	assert.NoError(t, err)
-	assert.NotNil(t, hook)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if hook == nil {
+		t.Error("Expected hook to not be nil")
+	}
 	var beforeStart = BeforeStart(preparer.beforeStart)
 
-	assert.Equal(t, reflect.ValueOf(hook).Pointer(), reflect.ValueOf(beforeStart).Pointer())
+	if reflect.ValueOf(hook).Pointer() != reflect.ValueOf(beforeStart).Pointer() {
+		t.Error("Hook functions do not match")
+	}
 }
 
 func TestAfterStartProvider_Provide(t *testing.T) {
@@ -36,10 +40,16 @@ func TestAfterStartProvider_Provide(t *testing.T) {
 	hook, err := provider.Provide()
 
 	// 验证结果
-	assert.NoError(t, err)
-	assert.NotNil(t, hook)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if hook == nil {
+		t.Error("Expected hook to not be nil")
+	}
 	var fn = AfterStart(preparer.afterStart)
-	assert.Equal(t, reflect.ValueOf(hook).Pointer(), reflect.ValueOf(fn).Pointer())
+	if reflect.ValueOf(hook).Pointer() != reflect.ValueOf(fn).Pointer() {
+		t.Error("Hook functions do not match")
+	}
 }
 
 func TestBeforeStopProvider_Provide(t *testing.T) {
@@ -53,10 +63,16 @@ func TestBeforeStopProvider_Provide(t *testing.T) {
 	hook, err := provider.Provide()
 
 	// 验证结果
-	assert.NoError(t, err)
-	assert.NotNil(t, hook)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if hook == nil {
+		t.Error("Expected hook to not be nil")
+	}
 	var fn = BeforeStop(preparer.beforeStop)
-	assert.Equal(t, reflect.ValueOf(hook).Pointer(), reflect.ValueOf(fn).Pointer())
+	if reflect.ValueOf(hook).Pointer() != reflect.ValueOf(fn).Pointer() {
+		t.Error("Hook functions do not match")
+	}
 }
 
 func TestAfterStopProvider_Provide(t *testing.T) {
@@ -70,8 +86,14 @@ func TestAfterStopProvider_Provide(t *testing.T) {
 	hook, err := provider.Provide()
 
 	// 验证结果
-	assert.NoError(t, err)
-	assert.NotNil(t, hook)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if hook == nil {
+		t.Error("Expected hook to not be nil")
+	}
 	var fn = AfterStop(preparer.afterStop)
-	assert.Equal(t, reflect.ValueOf(hook).Pointer(), reflect.ValueOf(fn).Pointer())
+	if reflect.ValueOf(hook).Pointer() != reflect.ValueOf(fn).Pointer() {
+		t.Error("Hook functions do not match")
+	}
 }

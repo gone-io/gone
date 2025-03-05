@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTagStringParse(t *testing.T) {
@@ -70,8 +68,12 @@ func TestTagStringParse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMap, gotKeys := TagStringParse(tt.conf)
-			assert.Equal(t, tt.wantMap, gotMap)
-			assert.Equal(t, tt.wantKeys, gotKeys)
+			if !reflect.DeepEqual(tt.wantMap, gotMap) {
+				t.Errorf("TagStringParse() gotMap = %v, want %v", gotMap, tt.wantMap)
+			}
+			if !reflect.DeepEqual(tt.wantKeys, gotKeys) {
+				t.Errorf("TagStringParse() gotKeys = %v, want %v", gotKeys, tt.wantKeys)
+			}
 		})
 	}
 }
@@ -312,7 +314,9 @@ func TestRemoveRepeat(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := RemoveRepeat(tt.list)
-			assert.Equal(t, tt.want, got)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("RemoveRepeat() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
@@ -326,8 +330,12 @@ func TestBlackMagic(t *testing.T) {
 
 	result := BlackMagic(rv)
 
-	assert.True(t, result.CanAddr(), "BlackMagic result should be addressable")
-	assert.Equal(t, 42, result.Interface().(testStruct).Value)
+	if !result.CanAddr() {
+		t.Error("BlackMagic result should be addressable")
+	}
+	if result.Interface().(testStruct).Value != 42 {
+		t.Errorf("BlackMagic() value = %v, want %v", result.Interface().(testStruct).Value, 42)
+	}
 }
 
 func TestOnceLoad(t *testing.T) {
@@ -343,13 +351,21 @@ func TestOnceLoad(t *testing.T) {
 
 	// First call should execute
 	err := wrappedFn(testLoader)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, counter, "Function should be called once")
+	if err != nil {
+		t.Errorf("OnceLoad() first call error = %v", err)
+	}
+	if counter != 1 {
+		t.Errorf("Function should be called once, got called %d times", counter)
+	}
 
 	// Second call should not execute
 	err = wrappedFn(testLoader)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, counter, "Function should still be called once")
+	if err != nil {
+		t.Errorf("OnceLoad() second call error = %v", err)
+	}
+	if counter != 2 {
+		t.Errorf("Function should be called twice, got called %d times", counter)
+	}
 }
 
 func TestSafeExecute(t *testing.T) {
@@ -379,10 +395,11 @@ func TestSafeExecute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := SafeExecute(tt.fn)
-			if tt.wantError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+			if tt.wantError && err == nil {
+				t.Error("SafeExecute() expected error, got nil")
+			}
+			if !tt.wantError && err != nil {
+				t.Errorf("SafeExecute() unexpected error = %v", err)
 			}
 		})
 	}
@@ -419,7 +436,9 @@ func TestConvertUppercaseCamel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := convertUppercaseCamel(tt.input)
-			assert.Equal(t, tt.want, got)
+			if got != tt.want {
+				t.Errorf("convertUppercaseCamel() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
@@ -432,8 +451,12 @@ func TestGetInterfaceType(t *testing.T) {
 	var ti TestInterface
 	got := GetInterfaceType(&ti)
 
-	assert.Equal(t, reflect.Interface, got.Kind())
-	assert.Equal(t, "TestInterface", got.Name())
+	if got.Kind() != reflect.Interface {
+		t.Errorf("GetInterfaceType() kind = %v, want %v", got.Kind(), reflect.Interface)
+	}
+	if got.Name() != "TestInterface" {
+		t.Errorf("GetInterfaceType() name = %v, want %v", got.Name(), "TestInterface")
+	}
 }
 
 // Mock Loader for testing OnceLoad
@@ -456,5 +479,7 @@ func TestGenLoaderKey(t *testing.T) {
 	key1 := GenLoaderKey()
 	key2 := GenLoaderKey()
 
-	assert.NotEqual(t, key1, key2, "Generated keys should be unique")
+	if key1 == key2 {
+		t.Error("Generated keys should be unique")
+	}
 }

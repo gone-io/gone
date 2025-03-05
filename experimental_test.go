@@ -1,7 +1,6 @@
 package gone
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -19,6 +18,8 @@ func TestWrapFunctionProvider(t *testing.T) {
 		return loader.Load(provider)
 	}).
 		Test(func(test2 Test) {
-			assert.Equal(t, test, test2)
+			if test != test2 {
+				t.Errorf("Expected %v, got %v", test, test2)
+			}
 		})
 }
