@@ -1,6 +1,8 @@
 package gone
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -71,6 +73,58 @@ func TestCheckCircularDepsAndGetBestInitOrder(t *testing.T) {
 			}(),
 			wantCircular: false,
 			wantOrderLen: 4,
+		},
+		{
+			name: "Self dependency",
+			initiatorDepsMap: func() map[*coffin][]*coffin {
+				a := createTestCoffin("A")
+				return map[*coffin][]*coffin{
+					a: {a}, // Self dependency
+				}
+			}(),
+			wantCircular: true,
+			wantOrderLen: 0,
+		},
+		{
+			name: "Multiple circular dependencies",
+			initiatorDepsMap: func() map[*coffin][]*coffin {
+				a := createTestCoffin("A")
+				b := createTestCoffin("B")
+				c := createTestCoffin("C")
+				d := createTestCoffin("D")
+				return map[*coffin][]*coffin{
+					a: {b},
+					b: {c},
+					c: {a}, // First cycle
+					d: {d}, // Second cycle (self dependency)
+				}
+			}(),
+			wantCircular: true,
+			wantOrderLen: 0,
+		},
+		{
+			name: "Single node with no dependencies",
+			initiatorDepsMap: func() map[*coffin][]*coffin {
+				a := createTestCoffin("A")
+				return map[*coffin][]*coffin{
+					a: {},
+				}
+			}(),
+			wantCircular: false,
+			wantOrderLen: 1,
+		},
+		{
+			name: "Node with empty dependency slice",
+			initiatorDepsMap: func() map[*coffin][]*coffin {
+				a := createTestCoffin("A")
+				b := createTestCoffin("B")
+				return map[*coffin][]*coffin{
+					a: {b},
+					b: make([]*coffin, 0), // Explicitly empty slice
+				}
+			}(),
+			wantCircular: false,
+			wantOrderLen: 2,
 		},
 	}
 
@@ -241,6 +295,133 @@ func TestGetGonerDeps(t *testing.T) {
 				if len(initDeps) != tt.wantInitDepsCount {
 					t.Errorf("getGonerDeps() got %d init dependencies, want %d", len(initDeps), tt.wantInitDepsCount)
 				}
+			}
+		})
+	}
+}
+
+func TestGetDepByName(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupCore func(*Core)
+		depName   string
+		wantErr   bool
+	}{
+		{
+			name: "Existing dependency",
+			setupCore: func(c *Core) {
+				c.nameMap = map[string]*coffin{
+					"test": {name: "test"},
+				}
+			},
+			depName: "test",
+			wantErr: false,
+		},
+		{
+			name: "Non-existing dependency",
+			setupCore: func(c *Core) {
+				c.nameMap = map[string]*coffin{}
+			},
+			depName: "missing",
+			wantErr: true,
+		},
+		{
+			name: "Empty name",
+			setupCore: func(c *Core) {
+				c.nameMap = map[string]*coffin{}
+			},
+			depName: "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := &Core{}
+			tt.setupCore(core)
+
+			got, err := core.getDepByName(tt.depName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getDepByName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && got == nil {
+				t.Error("getDepByName() returned nil but expected a coffin")
+			}
+		})
+	}
+}
+
+func TestGetDepByType(t *testing.T) {
+	type testStruct struct{}
+	tests := []struct {
+		name      string
+		setupCore func(*Core)
+		typeToGet reflect.Type
+		wantErr   bool
+		errMsg    string
+	}{
+		{
+			name: "Existing type in default coffins",
+			setupCore: func(c *Core) {
+				c.coffins = []*coffin{{
+					goner: &testStruct{},
+				}}
+			},
+			typeToGet: reflect.TypeOf(&testStruct{}),
+			wantErr:   false,
+		},
+		{
+			name: "Existing type in provider map",
+			setupCore: func(c *Core) {
+				c.typeProviderDepMap = map[reflect.Type]*coffin{
+					reflect.TypeOf(&testStruct{}): {name: "provider"},
+				}
+			},
+			typeToGet: reflect.TypeOf(&testStruct{}),
+			wantErr:   false,
+		},
+		{
+			name: "Non-pointer struct type",
+			setupCore: func(c *Core) {
+				c.coffins = []*coffin{}
+			},
+			typeToGet: reflect.TypeOf(testStruct{}),
+			wantErr:   true,
+			errMsg:    "Maybe, you should use A Pointer to this type?",
+		},
+		{
+			name: "Non-existing type",
+			setupCore: func(c *Core) {
+				c.coffins = []*coffin{}
+			},
+			typeToGet: reflect.TypeOf(&struct{}{}),
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core := &Core{
+				log: GetDefaultLogger(),
+			}
+			tt.setupCore(core)
+
+			got, err := core.getDepByType(tt.typeToGet)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getDepByType() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr && tt.errMsg != "" && err != nil {
+				if !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("getDepByType() error message = %v, want to contain %v", err, tt.errMsg)
+				}
+			}
+
+			if !tt.wantErr && got == nil {
+				t.Error("getDepByType() returned nil but expected a coffin")
 			}
 		})
 	}
