@@ -69,6 +69,9 @@ Gone is a lightweight dependency injection framework for Golang, designed to int
 If you have a bug report or feature request, you can [open an issue](https://github.com/gone-io/gone/issues/new), and [pull requests](https://github.com/gone-io/gone/pulls) are also welcome.
 
 ## Changelog
+### v2.0.0-beta
+[Gone@v2 update content](./docs/v2-update.md)
+
 ### v1.2.1
 - Introduced **gone.Provider**, a factory function for injecting external components (such as structs, struct pointers, functions, and interfaces) that are not **Goner** into Goners filed which tag by `gone`.
 - Fixed an issue where `gone.NewProviderPriest` failed to create a Priest for **gone.Provider** instances that generate interface types.

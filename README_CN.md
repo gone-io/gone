@@ -64,6 +64,9 @@ Gone 是一个轻量级的golang依赖注入框架，并且适配了一些列第
 ## 📚[完整文档](https://goner.fun/zh/)
 
 ## 更新记录
+### v2.0.0-beta
+[Gone@v2 使用说明](./docs/v2-update.md)
+
 ### v1.2.1
 - 定义 **gone.Provider**，一个工厂函数用于将 不是 **Goner** 的外部组件（结构体、结构体指针、函数、接口）注入到 属性需要注入的Goner；
 - 修复 `gone.NewProviderPriest` 无法为 生成接口类型的**gone.Provider**生成Priest; 
