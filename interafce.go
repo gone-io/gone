@@ -215,7 +215,7 @@ type NoneParamProvider[T any] interface {
 //
 // Parameters for Provide:
 //   - tagConf: Configuration string from the struct tag that requested this dependency
-//   - t: The reflect.Type of the dependency being requested
+//   - t: The `reflect.Type` of the dependency being requested
 //
 // Returns:
 //   - any: The created dependency instance of the requested type

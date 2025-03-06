@@ -160,6 +160,7 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 	provider := tryWrapGonerToProvider(goner)
 	if provider != nil {
 		co.needInitBeforeUse = true
+		co.provider = provider
 
 		if oldCo, ok := s.typeProviderDepMap[provider.Type()]; ok {
 			if oldCo.goner == goner {
@@ -175,7 +176,9 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 				s.typeProviderDepMap[provider.Type()] = co
 				s.typeProviderMap[provider.Type()] = provider
 			} else {
-				return NewInnerErrorWithParams(LoadedError, "Provider provided %s already registered", GetTypeName(provider.Type()))
+				if !co.onlyForName {
+					return NewInnerErrorWithParams(LoadedError, "Provider provided %s already registered", GetTypeName(provider.Type()))
+				}
 			}
 		} else {
 			s.typeProviderMap[provider.Type()] = provider
@@ -291,22 +294,29 @@ func (s *Core) fillOne(coffin *coffin) error {
 				continue
 			}
 
+			if co.provider != nil && field.Type == co.provider.Type() {
+				provide, err := co.provider.Provide(extend)
+				if err != nil {
+					return ToErrorWithMsg(err, fmt.Sprintf("provide value for field %q of %q by provider(%T) error:", field.Name, GetTypeName(elem), co.goner))
+				} else if provide != nil {
+					v.Set(reflect.ValueOf(provide))
+					continue
+				}
+			}
+
 			if provider, ok := co.goner.(NamedProvider); ok {
 				provide, err := provider.Provide(extend, field.Type)
 				if err != nil {
 					return ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem)))
-				}
-
-				if provide == nil {
+				} else if provide != nil {
+					if IsCompatible(field.Type, provide) {
+						v.Set(reflect.ValueOf(provide))
+						continue
+					}
 					return NewInnerErrorWithParams(GonerTypeNotMatch, "The value provided by provider(%T) cannot match to field %q of %q", provider, field.Name, GetTypeName(elem))
 				}
-
-				if IsCompatible(field.Type, provide) {
-					v.Set(reflect.ValueOf(provide))
-					continue
-				}
-				return NewInnerErrorWithParams(GonerTypeNotMatch, "The value provided by provider(%T) cannot match to field %q of %q", provider, field.Name, GetTypeName(elem))
 			}
+
 			if injector, ok := co.goner.(StructFieldInjector); ok {
 				err = injector.Inject(extend, field, v)
 				if err != nil {
@@ -394,7 +404,7 @@ func (s *Core) getDefaultCoffinByType(t reflect.Type) *coffin {
 			}
 		}
 		if len(coffins) > 1 {
-			s.log.Warnf("Found multiple Goner for type %s; should set default one when loading", GetTypeName(t))
+			s.log.Warnf("Found multiple Goner for type %s; should set default one when loading: `loader.Load(..., gone.IsDefault())`", GetTypeName(t))
 		}
 		return coffins[0]
 	}
@@ -406,15 +416,18 @@ func (s *Core) GonerName() string {
 }
 
 func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
+	if provider, ok := s.typeProviderMap[t]; ok && provider != nil {
+		provide, err := provider.Provide(tagConf)
+		if err != nil {
+			s.log.Warnf("Cannot find matched value for type %s by provider(%T) error: %s", GetTypeName(t), provider, err)
+		} else if provide != nil {
+			return provide, nil
+		}
+	}
+
 	c := s.getDefaultCoffinByType(t)
 	if c != nil {
 		return c.goner, nil
-	}
-
-	if provider, ok := s.typeProviderMap[t]; ok {
-		if provider != nil {
-			return provider.Provide(tagConf)
-		}
 	}
 
 	if t.Kind() == reflect.Slice {

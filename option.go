@@ -150,6 +150,14 @@ func ForceReplace() Option {
 	}
 }
 
+// LazyFill returns an Option that marks a component as lazy-filled.
+// When this option is used, the component will not be loaded until it is actually injected.
+// This can be useful for components that are expensive to load or have external dependencies.
+//
+// Example usage:
+//
+//	gone.Load(&MyService{}, gone.GonerName("service"), gone.LazyFill())
+//	// This will load the component only when it is actually injected
 func LazyFill() Option {
 	return option{
 		apply: func(c *coffin) error {

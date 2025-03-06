@@ -19,6 +19,7 @@ type coffin struct {
 	needInitBeforeUse bool
 	isFill            bool
 	isInit            bool
+	provider          *wrapProvider
 }
 
 func newCoffin(goner any) *coffin {
