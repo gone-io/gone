@@ -82,6 +82,15 @@ func Load(goner Goner, options ...Option) *Preparer {
 	return Default.Load(goner, options...)
 }
 
+// Loads executes multiple LoadFuncs in sequence to configure the Preparer
+// Parameters:
+//   - loads: Variadic LoadFunc parameters that will be executed in order
+//
+// Each LoadFunc typically loads configurations or components.
+// If any LoadFunc fails during execution, it will trigger a panic.
+//
+// Returns:
+//   - *Preparer: Returns the Preparer instance itself for method chaining
 func (s *Preparer) Loads(loads ...LoadFunc) *Preparer {
 	for _, fn := range loads {
 		err := fn(s.loader)
@@ -105,7 +114,7 @@ func (s *Preparer) BeforeStart(fn Process) *Preparer {
 }
 
 func (s *Preparer) beforeStart(fn Process) {
-	s.beforeStartHooks = append(s.beforeStartHooks, fn)
+	s.beforeStartHooks = append([]Process{fn}, s.beforeStartHooks...)
 }
 
 // AfterStart registers a function to be called after starting the application.
@@ -129,7 +138,7 @@ func (s *Preparer) BeforeStop(fn Process) *Preparer {
 }
 
 func (s *Preparer) beforeStop(fn Process) {
-	s.beforeStopHooks = append(s.beforeStopHooks, fn)
+	s.beforeStopHooks = append([]Process{fn}, s.beforeStopHooks...)
 }
 
 // AfterStop registers a function to be called after stopping the application.
@@ -159,6 +168,13 @@ func (s *Preparer) End() *Preparer {
 	return s
 }
 
+// End triggers application termination
+// It terminates the application by sending a SIGINT signal to the default Preparer instance
+// This is a convenience method equivalent to calling Default.End()
+func End() {
+	Default.End()
+}
+
 func (s *Preparer) start() {
 	for _, fn := range s.beforeStartHooks {
 		fn()
@@ -181,8 +197,8 @@ func (s *Preparer) stop() {
 		fn()
 	}
 
-	for _, daemon := range s.daemons {
-		err := daemon.Stop()
+	for i := len(s.daemons) - 1; i >= 0; i-- {
+		err := s.daemons[i].Stop()
 		if err != nil {
 			panic(err)
 		}
@@ -207,15 +223,17 @@ func (s *Preparer) install() {
 //
 // Parameters:
 //   - fn: The function to execute with injected dependencies
-func (s *Preparer) Run(fn any) {
+func (s *Preparer) Run(fn ...any) {
 	s.install()
 	s.start()
 
-	f, err := s.loader.InjectWrapFunc(fn, nil, nil)
-	if err != nil {
-		panic(err)
+	for _, fn := range fn {
+		f, err := s.loader.InjectWrapFunc(fn, nil, nil)
+		if err != nil {
+			panic(err)
+		}
+		_ = f()
 	}
-	_ = f()
 	s.stop()
 }
 

@@ -52,6 +52,10 @@ func IsDefault(objPointers ...any) Option {
 					typeMap[of.Elem()] = true
 				}
 			}
+			if len(objPointers) == 0 {
+				of := reflect.TypeOf(c.goner)
+				typeMap[of] = true
+			}
 
 			for t := range typeMap {
 				c.defaultTypeMap[t] = true
