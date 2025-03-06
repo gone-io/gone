@@ -162,6 +162,10 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 		co.needInitBeforeUse = true
 		co.provider = provider
 
+		if co.onlyForName {
+			return nil
+		}
+
 		if oldCo, ok := s.typeProviderDepMap[provider.Type()]; ok {
 			if oldCo.goner == goner {
 				return NewInnerErrorWithParams(LoadedError, "provider for type %s is already registered with the same goner instance", GetTypeName(provider.Type()))
@@ -176,9 +180,7 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 				s.typeProviderDepMap[provider.Type()] = co
 				s.typeProviderMap[provider.Type()] = provider
 			} else {
-				if !co.onlyForName {
-					return NewInnerErrorWithParams(LoadedError, "provider for type %s is already registered - use ForceReplace() option to override", GetTypeName(provider.Type()))
-				}
+				return NewInnerErrorWithParams(LoadedError, "provider for type %s is already registered - use ForceReplace() option to override", GetTypeName(provider.Type()))
 			}
 		} else {
 			s.typeProviderMap[provider.Type()] = provider
