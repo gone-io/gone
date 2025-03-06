@@ -3,7 +3,7 @@ package gone_test
 import (
 	"testing"
 
-	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/v2"
 )
 
 type Boss struct {

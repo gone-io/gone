@@ -1,7 +1,7 @@
 package use_case
 
 import (
-	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/v2"
 	"testing"
 )
 

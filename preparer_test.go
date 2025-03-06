@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/v2"
 )
 
 // MockDaemon implements Daemon interface for testing

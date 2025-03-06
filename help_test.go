@@ -211,7 +211,7 @@ func TestGetTypeName(t *testing.T) {
 		{
 			name: "Pointer",
 			t:    reflect.TypeOf(&LocalType{}),
-			want: "*github.com/gone-io/gone.LocalType",
+			want: "*github.com/gone-io/gone/v2.LocalType",
 		},
 		{
 			name: "Empty interface",
@@ -221,7 +221,7 @@ func TestGetTypeName(t *testing.T) {
 		{
 			name: "Named struct",
 			t:    reflect.TypeOf(LocalType{}),
-			want: "github.com/gone-io/gone.LocalType",
+			want: "github.com/gone-io/gone/v2.LocalType",
 		},
 		{
 			name: "Anonymous struct",
@@ -250,12 +250,12 @@ func TestGetFuncName(t *testing.T) {
 		{
 			name: "Named function",
 			f:    TestGetFuncName,
-			want: "github.com/gone-io/gone.TestGetFuncName",
+			want: "github.com/gone-io/gone/v2.TestGetFuncName",
 		},
 		{
 			name: "Anonymous function",
 			f:    namedFunc,
-			want: "github.com/gone-io/gone.TestGetFuncName.func1",
+			want: "github.com/gone-io/gone/v2.TestGetFuncName.func1",
 		},
 		{
 			name: "Non-function",
