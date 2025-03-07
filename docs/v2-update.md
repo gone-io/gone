@@ -62,8 +62,7 @@ func main() {
 
 1. 直接加载：使用`gone.Load()`方法可以直接加载一个Goner。例如`gone.Load(&Dep{})`将加载一个默认的Dep组件。
 
-2. 命名加载：通过`gone.Name()`选项可以为加载的Goner指定一个名称。例如`gone.Load(&Dep{}, gone.Name("dep1"))`将加载一个名为"
-   dep1"的Dep组件。
+2. 命名加载：通过`gone.Name()`选项可以为加载的Goner指定一个名称。例如`gone.Load(&Dep{}, gone.Name("dep1"))`将加载一个名为"dep1"的Dep组件。
 
 3. 链式加载：Gone框架支持链式调用方式加载多个Goner。可以通过`.Load()`方法连续加载多个组件，使代码更加简洁。
 
