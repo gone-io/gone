@@ -665,3 +665,67 @@ func TestFuncInjector(t *testing.T) {
 		})
 }
 ```
+## 内置的`Config`和`Logger`
+
+在v2版本中，内核代码内置了`Config`和`Logger`组件，分别用于配置管理和日志记录。
+
+### Config
+内置的`Config`组件，是从环境变量中读取配置，可以通过实现`gone.Configure`来实现自定义读取配置的方式。
+下面结束如何读取配置的示例代码，注意环境变量的名需要加上`GONE_`前缀，并且需要全部大写，如果被注入的不是简单类型，默认的Configure会尝试使用json解析环境变量的值。
+```go
+package use_case
+
+import (
+	"github.com/gone-io/gone/v2"
+	"os"
+	"testing"
+)
+
+type useConfig struct {
+	gone.Flag
+	goneVersion string `gone:"config,gone-version"` //框架在启动时，会自动加载配置，并注入到goRoot字段中。
+}
+
+func TestUseConfig(t *testing.T) {
+	os.Setenv("GONE_GONE-VERSION", "v2.0.0")
+
+	gone.
+		Load(&useConfig{}).
+		Run(func(c *useConfig) {
+			println("goRoot:", c.goneVersion)
+			if c.goneVersion != "v2.0.0" {
+				t.Fatal("配置注入失败")
+			}
+		})
+}
+```
+
+
+### Logger
+v2内核内置的Logger，只是简单在控制台打印日志，可以通过实现`gone.Logger`来实现自定义日志记录的方式。
+```go
+package use_case
+
+import (
+	"github.com/gone-io/gone/v2"
+	"testing"
+)
+
+type app struct {
+	gone.Flag
+	log gone.Logger `gone:"*"`
+}
+
+func TestUseLogger(t *testing.T) {
+	gone.
+		Load(&app{}).
+		Run(func(app *app) {
+			app.log.Infof("hello world")
+			app.log.Errorf("hello world")
+			app.log.Warnf("hello world")
+			app.log.Debugf("hello world")
+		})
+}
+```
+
+
