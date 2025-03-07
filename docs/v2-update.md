@@ -301,9 +301,7 @@ NamedProvider 接口定义了一个`Provide`
 > 	Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error
 > }
 > ```
-> 它是一个接口，它只有一个方法`InjectStructField`
->
-，这个方法接收三个参数，第一个参数是v，第二个参数是tagConf，第三个参数是t，t是reflect.Type类型，用于获取字段的类型，然后根据字段的类型返回对应的值。它的应用场景是，需要通过一个Provider给组件注入多个类型的值。
+> 它是一个接口，它只有一个方法`InjectStructField`，这个方法接收三个参数，第一个参数是v，第二个参数是tagConf，第三个参数是t，t是reflect.Type类型，用于获取字段的类型，然后根据字段的类型返回对应的值。它的应用场景是，需要通过一个Provider给组件注入多个类型的值。
 
 从接口的定义上可以看到，Provider、NoneParamProvider、NamedProvider和StructFieldInjector都是Goner的子接口，要实现他们都必须嵌入
 `gone.Flag`。他们的用途都是将第三方的值提给Gone框架，让框架来进行依赖注入。
