@@ -4,7 +4,7 @@ package gone
 // This provider allows other components to register functions to be called before application start.
 type BeforeStartProvider struct {
 	Flag
-	preparer *Preparer `gone:"*"`
+	preparer *Application `gone:"*"`
 }
 
 func (s *BeforeStartProvider) Provide() (BeforeStart, error) {
@@ -15,7 +15,7 @@ func (s *BeforeStartProvider) Provide() (BeforeStart, error) {
 // This provider allows other components to register functions to be called after application start.
 type AfterStartProvider struct {
 	Flag
-	preparer *Preparer `gone:"*"`
+	preparer *Application `gone:"*"`
 }
 
 func (s *AfterStartProvider) Provide() (AfterStart, error) {
@@ -26,7 +26,7 @@ func (s *AfterStartProvider) Provide() (AfterStart, error) {
 // This provider allows other components to register functions to be called before application stop.
 type BeforeStopProvider struct {
 	Flag
-	preparer *Preparer `gone:"*"`
+	preparer *Application `gone:"*"`
 }
 
 func (s *BeforeStopProvider) Provide() (BeforeStop, error) {
@@ -37,7 +37,7 @@ func (s *BeforeStopProvider) Provide() (BeforeStop, error) {
 // This provider allows other components to register functions to be called after application stop.
 type AfterStopProvider struct {
 	Flag
-	preparer *Preparer `gone:"*"`
+	preparer *Application `gone:"*"`
 }
 
 func (s *AfterStopProvider) Provide() (AfterStop, error) {

@@ -28,7 +28,7 @@ func TestServe(t *testing.T) {
 	daemon := &testDaemon{}
 	var t1, t2 time.Time
 	ins := gone.
-		Prepare()
+		NewApp()
 
 	ins.
 		Load(daemon).

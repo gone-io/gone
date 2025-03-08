@@ -42,7 +42,7 @@ func (f *funcTest) Test(t *testing.T) {
 
 func TestFuncInjector(t *testing.T) {
 	gone.
-		Prepare().
+		NewApp().
 		Load(&funcTest{}).
 		Load(&factory{}, gone.Name("factory")).
 		Load(&workerImpl{name: "worker1"}, gone.Name("worker1")).

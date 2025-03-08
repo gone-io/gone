@@ -7,7 +7,7 @@ import (
 
 func TestBeforeStartProvider_Provide(t *testing.T) {
 	// 准备测试数据
-	preparer := &Preparer{}
+	preparer := &Application{}
 	provider := &BeforeStartProvider{
 		preparer: preparer,
 	}
@@ -31,7 +31,7 @@ func TestBeforeStartProvider_Provide(t *testing.T) {
 
 func TestAfterStartProvider_Provide(t *testing.T) {
 	// 准备测试数据
-	preparer := &Preparer{}
+	preparer := &Application{}
 	provider := &AfterStartProvider{
 		preparer: preparer,
 	}
@@ -54,7 +54,7 @@ func TestAfterStartProvider_Provide(t *testing.T) {
 
 func TestBeforeStopProvider_Provide(t *testing.T) {
 	// 准备测试数据
-	preparer := &Preparer{}
+	preparer := &Application{}
 	provider := &BeforeStopProvider{
 		preparer: preparer,
 	}
@@ -77,7 +77,7 @@ func TestBeforeStopProvider_Provide(t *testing.T) {
 
 func TestAfterStopProvider_Provide(t *testing.T) {
 	// 准备测试数据
-	preparer := &Preparer{}
+	preparer := &Application{}
 	provider := &AfterStopProvider{
 		preparer: preparer,
 	}

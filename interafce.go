@@ -20,6 +20,9 @@ type Goner interface {
 	goneFlag()
 }
 
+// Component is an alias for Goner.
+type Component = Goner
+
 // NamedGoner extends the Goner interface to add naming capability to components.
 // Components implementing this interface can be registered and looked up by name in the Gone container.
 //
@@ -194,7 +197,7 @@ type Provider[T any] interface {
 //
 //	type BeforeStartProvider struct {
 //	    gone.Flag
-//	    preparer *Preparer
+//	    preparer *Application
 //	}
 //
 //	func (p *BeforeStartProvider) Provide() (BeforeStart, error) {
@@ -440,7 +443,7 @@ type AfterStop func(Process)
 //
 // ```
 //
-// Daemons are started in order of registration when Preparer.Serve() or Preparer.start() is called.
+// Daemons are started in order of registration when Application.Serve() or Application.start() is called.
 // The Start() method should initialize and start the daemon's main functionality.
 // If Start() returns an error, the application will panic.
 //

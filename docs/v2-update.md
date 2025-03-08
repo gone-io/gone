@@ -75,7 +75,7 @@ func main() {
 查看源代码，可以看到`gone.Loads()`方法的定义:
 
 ```go
-func (s *Preparer) Loads(loads ...LoadFunc) *Preparer {
+func (s *Application) Loads(loads ...LoadFunc) *Application {
 //...
 }
 ```
@@ -94,7 +94,7 @@ type LoadFunc func (Loader) error
 查到源代码，可以看到`gone.Load()`方法的定义:
 
 ```go
-func Load(goner Goner, options ...Option) *Preparer {
+func Load(goner Goner, options ...Option) *Application {
 //...
 }
 ```
@@ -197,8 +197,8 @@ Goner支持两种方式设置名称：
 
 ```go
 type NamedGoner interface {
-Goner
-GonerName() string
+	Goner
+	GonerName() string
 }
 ```
 
@@ -218,8 +218,8 @@ confStr string `gone:"config,configKeyName"` // 通过标签注入配置参数
 
 ```go
 type Provider[T any] interface {
-Goner
-Provide(tagConf string) (T, error)
+	Goner
+	Provide(tagConf string) (T, error)
 }
 ```
 
@@ -242,11 +242,11 @@ return config.Get(tagConf)
 
 ```go
 type ConfigProvider struct {
-gone.Flag
+	gone.Flag
 }
 
 func (c *ConfigProvider) Provide(tagConf string) (int, error) {
-return config.Get(tagConf)
+	return config.Get(tagConf)
 }
 ```
 
@@ -254,8 +254,8 @@ return config.Get(tagConf)
 
 ```go
 type NamedProvider interface {
-NamedGoner
-Provide(tagConf string, t reflect.Type) (any, error)
+	NamedGoner
+	Provide(tagConf string, t reflect.Type) (any, error)
 }
 ```
 
@@ -355,7 +355,7 @@ func (t *testDaemon) Stop() error {
 func TestServe(t *testing.T) {
 	daemon := &testDaemon{}
 	var t1, t2 time.Time
-	ins := gone.Prepare() //这里创建了一个实例，在后面的##Preparer章节有说明。 
+	ins := gone.NewApp() //这里创建了一个实例，在后面的##Application章节有说明。 
 
 	ins.
 		Load(daemon).
@@ -465,48 +465,49 @@ hook函数也可以直接在加载Goner组件后注册，像这样：
 
 ```go
 func TestUseHookDirectly(t *testing.T) {
-type testGoner struct {
-gone.Flag
-}
-gone.
-Load(&testGoner{}).
-// 直接注册Hook函数
-BeforeStart(func () {
-println(" BeforeStart")
-}).
-AfterStart(func () {
-println(" AfterStart")
-}).
-Run()
+    type testGoner struct {
+        gone.Flag
+    }
+    gone.
+        Load(&testGoner{}).
+        // 直接注册Hook函数
+        BeforeStart(func () {
+            println(" BeforeStart")
+        }).
+        AfterStart(func () {
+            println(" AfterStart")
+        }).
+        Run()
 }
 ```
 
-## Preparer
+## Application
 
-查看源代码，可以发现：`gone.Load`、`gone.Loads`、`gone.Run`、`gone.Serve`等函数实际是调用的`Preparer`的一个实例`Default`
+查看源代码，可以发现：`gone.Load`、`gone.Loads`、`gone.Run`、`gone.Serve`等函数实际是调用的`Application`的一个实例`Default`
 上的对应方法。
 
 ```go
-func Prepare(loads ...LoadFunc) *Preparer {
-preparer := Preparer{}
-//....
-return &preparer
-}
-
-var Default = Prepare()
+var Default = NewApp()
 //...
-func Load(goner Goner, options ...Option) *Preparer {
-return Default.Load(goner, options...)
+func Load(goner Goner, options ...Option) *Application {
+    return Default.Load(goner, options...)
 }
 //...
-func Loads(loads ...LoadFunc) *Preparer {
-return Default.Loads(loads...)
+func Loads(loads ...LoadFunc) *Application {
+    return Default.Loads(loads...)
 }
 //...
 ```
 
-所以，如果我们希望使用多个Gone框架示例，可以使用 `gone.Prepare` 函数来创建多个 `Preparer` 实例，然后分别调用 `Run` 或
-`Serve` 方法。
+所以，如果希望在同一个进程中使用多个Gone框架实例，可以使用 `gone.NewApp` 函数来创建多个 `Application` 实例，然后分别调用 `Run` 或`Serve` 方法启动框架。
+下面是`NewApp`的定义：
+```go
+func NewApp(loads ...LoadFunc) *Application {
+    application := Application{}
+    //....
+    return &application
+}
+```
 
 ## GonerKeeper
 
@@ -542,7 +543,7 @@ func (u *useKeeper) Test(t *testing.T) {
 
 func TestGonerKeeper(t *testing.T) {
 	gone.
-		Prepare().
+		NewApp().
 		Load(&useKeeper{}).
 		Run(func(k *useKeeper) {
 			k.Test(t)
@@ -590,7 +591,7 @@ type factory struct {
 
 func TestUseSlice(t *testing.T) {
 	gone.
-		Prepare().
+		NewApp().
 		Load(&factory{}, gone.Name("factory")).
 		Load(&workerImpl{name: "worker1"}, gone.Name("worker1")).
 		Load(&workerImpl2{name: "worker2"}, gone.Name("worker2")).
@@ -653,7 +654,7 @@ func (f *funcTest) Test(t *testing.T) {
 
 func TestFuncInjector(t *testing.T) {
 	gone.
-		Prepare().
+		NewApp().
 		Load(&funcTest{}).
 		Load(&factory{}, gone.Name("factory")).
 		Load(&workerImpl{name: "worker1"}, gone.Name("worker1")).
@@ -708,14 +709,14 @@ import (
 	"testing"
 )
 
-type app struct {
+type worker struct {
 	gone.Flag
 	log gone.Logger `gone:"*"`
 }
 
 func TestUseLogger(t *testing.T) {
 	gone.
-		Load(&app{}).
+		Load(&worker{}).
 		Run(func(app *app) {
 			app.log.Infof("hello world")
 			app.log.Errorf("hello world")

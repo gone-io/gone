@@ -6,28 +6,7 @@ import (
 	"syscall"
 )
 
-// Prepare creates and initializes a new Preparer instance.
-// It creates an empty Preparer struct and calls init() to:
-// 1. Initialize signal channel
-// 2. Create new Core
-// 3. Load core components like providers and default configure
-// Returns the initialized Preparer instance ready for use.
-func Prepare(loads ...LoadFunc) *Preparer {
-	preparer := Preparer{}
-
-	preparer.init()
-	for _, fn := range loads {
-		err := fn(preparer.loader)
-		if err != nil {
-			panic(err)
-		}
-	}
-	return &preparer
-}
-
-var Default = Prepare()
-
-type Preparer struct {
+type Application struct {
 	Flag
 
 	loader  *Core    `gone:"*"`
@@ -41,7 +20,36 @@ type Preparer struct {
 	signal chan os.Signal
 }
 
-func (s *Preparer) init() *Preparer {
+var Default = NewApp()
+
+// NewApp creates and initializes a new Application instance.
+// It creates an empty Application struct and calls init() to:
+// 1. Initialize signal channel
+// 2. Create new Core
+// 3. Load core components like providers and default configure
+// Returns the initialized Application instance ready for use.
+func NewApp(loads ...LoadFunc) *Application {
+	preparer := Application{}
+
+	preparer.init()
+	for _, fn := range loads {
+		err := fn(preparer.loader)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &preparer
+}
+
+// Preparer is a type alias for Application, representing the main entry point for application setup and execution.
+type Preparer = Application
+
+// Prepare is alias for NewApp
+func Prepare(loads ...LoadFunc) *Application {
+	return NewApp()
+}
+
+func (s *Application) init() *Application {
 	s.signal = make(chan os.Signal, 1)
 	s.loader = NewCore()
 
@@ -54,7 +62,7 @@ func (s *Preparer) init() *Preparer {
 	return s
 }
 
-// Load loads a Goner into the Preparer's loader with optional configuration options.
+// Load loads a Goner into the Application's loader with optional configuration options.
 // It wraps the Core.Load() method and panics if loading fails.
 //
 // Parameters:
@@ -69,8 +77,8 @@ func (s *Preparer) init() *Preparer {
 //   - Order(order int): Set initialization order (lower runs first)
 //   - FillWhenInit(): Fill dependencies during initialization
 //
-// Returns the Preparer instance for method chaining
-func (s *Preparer) Load(goner Goner, options ...Option) *Preparer {
+// Returns the Application instance for method chaining
+func (s *Application) Load(goner Goner, options ...Option) *Application {
 	err := s.loader.Load(goner, options...)
 	if err != nil {
 		panic(err)
@@ -78,11 +86,11 @@ func (s *Preparer) Load(goner Goner, options ...Option) *Preparer {
 	return s
 }
 
-func Load(goner Goner, options ...Option) *Preparer {
+func Load(goner Goner, options ...Option) *Application {
 	return Default.Load(goner, options...)
 }
 
-// Loads executes multiple LoadFuncs in sequence to configure the Preparer
+// Loads executes multiple LoadFuncs in sequence to configure the Application
 // Parameters:
 //   - loads: Variadic LoadFunc parameters that will be executed in order
 //
@@ -90,8 +98,8 @@ func Load(goner Goner, options ...Option) *Preparer {
 // If any LoadFunc fails during execution, it will trigger a panic.
 //
 // Returns:
-//   - *Preparer: Returns the Preparer instance itself for method chaining
-func (s *Preparer) Loads(loads ...LoadFunc) *Preparer {
+//   - *Application: Returns the Application instance itself for method chaining
+func (s *Application) Loads(loads ...LoadFunc) *Application {
 	for _, fn := range loads {
 		err := fn(s.loader)
 		if err != nil {
@@ -101,81 +109,81 @@ func (s *Preparer) Loads(loads ...LoadFunc) *Preparer {
 	return s
 }
 
-func Loads(loads ...LoadFunc) *Preparer {
+func Loads(loads ...LoadFunc) *Application {
 	return Default.Loads(loads...)
 }
 
 // BeforeStart registers a function to be called before starting the application.
 // The function will be executed before any daemons are started.
-// Returns the Preparer instance for method chaining.
-func (s *Preparer) BeforeStart(fn Process) *Preparer {
+// Returns the Application instance for method chaining.
+func (s *Application) BeforeStart(fn Process) *Application {
 	s.beforeStart(fn)
 	return s
 }
 
-func (s *Preparer) beforeStart(fn Process) {
+func (s *Application) beforeStart(fn Process) {
 	s.beforeStartHooks = append([]Process{fn}, s.beforeStartHooks...)
 }
 
 // AfterStart registers a function to be called after starting the application.
 // The function will be executed after all daemons have been started.
-// Returns the Preparer instance for method chaining.
-func (s *Preparer) AfterStart(fn Process) *Preparer {
+// Returns the Application instance for method chaining.
+func (s *Application) AfterStart(fn Process) *Application {
 	s.afterStart(fn)
 	return s
 }
 
-func (s *Preparer) afterStart(fn Process) {
+func (s *Application) afterStart(fn Process) {
 	s.afterStartHooks = append(s.afterStartHooks, fn)
 }
 
 // BeforeStop registers a function to be called before stopping the application.
 // The function will be executed before any daemons are stopped.
-// Returns the Preparer instance for method chaining.
-func (s *Preparer) BeforeStop(fn Process) *Preparer {
+// Returns the Application instance for method chaining.
+func (s *Application) BeforeStop(fn Process) *Application {
 	s.beforeStop(fn)
 	return s
 }
 
-func (s *Preparer) beforeStop(fn Process) {
+func (s *Application) beforeStop(fn Process) {
 	s.beforeStopHooks = append([]Process{fn}, s.beforeStopHooks...)
 }
 
 // AfterStop registers a function to be called after stopping the application.
 // The function will be executed after all daemons have been stopped.
-// Returns the Preparer instance for method chaining.
-func (s *Preparer) AfterStop(fn Process) *Preparer {
+// Returns the Application instance for method chaining.
+func (s *Application) AfterStop(fn Process) *Application {
 	s.afterStop(fn)
 	return s
 }
 
-func (s *Preparer) afterStop(fn Process) {
+func (s *Application) afterStop(fn Process) {
 	s.afterStopHooks = append(s.afterStopHooks, fn)
 }
 
 // WaitEnd blocks until the application receives a termination signal (SIGINT, SIGTERM, or SIGQUIT).
-// Returns the Preparer instance for method chaining.
-func (s *Preparer) WaitEnd() *Preparer {
+// Returns the Application instance for method chaining.
+func (s *Application) WaitEnd() *Application {
 	signal.Notify(s.signal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-s.signal
 	return s
 }
 
 // End triggers application termination by sending a SIGINT signal.
-// Returns the Preparer instance for method chaining.
-func (s *Preparer) End() *Preparer {
+// Returns the Application instance for method chaining.
+func (s *Application) End() *Application {
 	s.signal <- syscall.SIGINT
 	return s
 }
 
 // End triggers application termination
-// It terminates the application by sending a SIGINT signal to the default Preparer instance
+// It terminates the application by sending a SIGINT signal to the default Application instance
 // This is a convenience method equivalent to calling Default.End()
 func End() {
 	Default.End()
 }
 
-func (s *Preparer) start() {
+func (s *Application) start() {
 	for _, fn := range s.beforeStartHooks {
 		fn()
 	}
@@ -192,7 +200,7 @@ func (s *Preparer) start() {
 	}
 }
 
-func (s *Preparer) stop() {
+func (s *Application) stop() {
 	for _, fn := range s.beforeStopHooks {
 		fn()
 	}
@@ -209,7 +217,7 @@ func (s *Preparer) stop() {
 	}
 }
 
-func (s *Preparer) install() {
+func (s *Application) install() {
 	err := s.loader.Install()
 	if err != nil {
 		panic(err)
@@ -223,7 +231,7 @@ func (s *Preparer) install() {
 //
 // Parameters:
 //   - fn: The function to execute with injected dependencies
-func (s *Preparer) Run(fn ...any) {
+func (s *Application) Run(fn ...any) {
 	s.install()
 	s.start()
 
@@ -243,7 +251,7 @@ func Run(fn any) {
 
 // Serve initializes the application, starts all daemons, and waits for termination signal.
 // After receiving termination signal, performs cleanup by stopping all daemons.
-func (s *Preparer) Serve() {
+func (s *Application) Serve() {
 	s.install()
 	s.start()
 	s.WaitEnd()
@@ -264,7 +272,7 @@ type testFlag struct {
 
 func (*testFlag) forTest() {}
 
-func (s *Preparer) Test(fn any) {
+func (s *Application) Test(fn any) {
 	s.Load(&testFlag{})
 	s.Run(fn)
 }
@@ -276,5 +284,5 @@ func Test(fn any) {
 
 // RunTest Deprecated, use Test instead
 func RunTest(fn any, priests ...LoadFunc) {
-	Prepare(priests...).Test(fn)
+	NewApp(priests...).Test(fn)
 }

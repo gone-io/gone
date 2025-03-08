@@ -26,7 +26,7 @@ func TestInjectByStructPointer(t *testing.T) {
 
 	t.Run("inject single one", func(t *testing.T) {
 		gone.
-			Prepare(func(loader gone.Loader) error {
+			NewApp(func(loader gone.Loader) error {
 				_ = loader.Load(dep1)
 				return nil
 			}).
@@ -38,7 +38,7 @@ func TestInjectByStructPointer(t *testing.T) {
 	})
 	t.Run("use first when multi", func(t *testing.T) {
 		gone.
-			Prepare(func(loader gone.Loader) error {
+			NewApp(func(loader gone.Loader) error {
 				_ = loader.Load(dep1)
 				_ = loader.Load(dep2)
 				return nil
@@ -52,7 +52,7 @@ func TestInjectByStructPointer(t *testing.T) {
 
 	t.Run("use option.IsDefault when multi", func(t *testing.T) {
 		gone.
-			Prepare(func(loader gone.Loader) error {
+			NewApp(func(loader gone.Loader) error {
 				_ = loader.Load(dep1)
 				_ = loader.Load(dep2, gone.IsDefault())
 				return nil
@@ -66,7 +66,7 @@ func TestInjectByStructPointer(t *testing.T) {
 
 	t.Run("use gone flag", func(t *testing.T) {
 		gone.
-			Prepare(func(loader gone.Loader) error {
+			NewApp(func(loader gone.Loader) error {
 				return loader.Load(dep1)
 			}).
 			Run(func(in struct {

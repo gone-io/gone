@@ -44,7 +44,7 @@ func TestPreparer_Lifecycle(t *testing.T) {
 		hooksCalled = append(hooksCalled, name)
 	}
 
-	preparer := gone.Prepare()
+	preparer := gone.NewApp()
 
 	// Register hooks
 	preparer.BeforeStart(func() {
@@ -117,7 +117,7 @@ func TestPreparer_DaemonErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			preparer := gone.Prepare()
+			preparer := gone.NewApp()
 			preparer.Load(tt.daemon)
 
 			if tt.wantPanic {
@@ -138,7 +138,7 @@ func TestPreparer_DaemonErrors(t *testing.T) {
 }
 
 func TestPreparer_SignalHandling(t *testing.T) {
-	preparer := gone.Prepare()
+	preparer := gone.NewApp()
 
 	// Test SIGINT
 	go func() {
@@ -156,7 +156,7 @@ func TestPreparer_SignalHandling(t *testing.T) {
 }
 
 func TestPreparer_MultipleHooks(t *testing.T) {
-	preparer := gone.Prepare()
+	preparer := gone.NewApp()
 	var counter int
 	var mu sync.Mutex
 
@@ -189,12 +189,12 @@ func TestPreparer_MultipleHooks(t *testing.T) {
 func TestPreparer_LoadErrors(t *testing.T) {
 	tests := []struct {
 		name      string
-		setup     func(*gone.Preparer)
+		setup     func(*gone.Application)
 		wantPanic bool
 	}{
 		{
 			name: "Duplicate named component",
-			setup: func(p *gone.Preparer) {
+			setup: func(p *gone.Application) {
 				p.Load(&Worker{name: "test"})
 				p.Load(&Worker{name: "test"})
 			},
@@ -202,7 +202,7 @@ func TestPreparer_LoadErrors(t *testing.T) {
 		},
 		{
 			name: "Valid components",
-			setup: func(p *gone.Preparer) {
+			setup: func(p *gone.Application) {
 				p.Load(&Worker{name: "worker1"})
 				p.Load(&Worker{name: "worker2"})
 			},
@@ -212,7 +212,7 @@ func TestPreparer_LoadErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			preparer := gone.Prepare()
+			preparer := gone.NewApp()
 			didPanic := false
 			func() {
 				defer func() {
@@ -230,7 +230,7 @@ func TestPreparer_LoadErrors(t *testing.T) {
 }
 
 func TestPreparer_RunWithDependencies(t *testing.T) {
-	preparer := gone.Prepare()
+	preparer := gone.NewApp()
 
 	worker1 := &Worker{name: "worker1"}
 	worker2 := &Worker{name: "worker2"}
@@ -286,7 +286,7 @@ func TestPreparer_DefaultInstance(t *testing.T) {
 }
 
 func TestPreparer_Loads(t *testing.T) {
-	preparer := gone.Prepare()
+	preparer := gone.NewApp()
 
 	// Test successful loads
 	loadFn1 := func(core gone.Loader) error {
@@ -335,7 +335,7 @@ func TestPreparer_Test(t *testing.T) {
 		testFuncCalled = true
 	}
 
-	preparer := gone.Prepare()
+	preparer := gone.NewApp()
 	preparer.Test(testFunc)
 
 	if !testFuncCalled {
@@ -433,18 +433,18 @@ func TestPreparer_PrepareWithLoads(t *testing.T) {
 		return core.Load(&Worker{name: "worker2"})
 	}
 
-	var preparer *gone.Preparer
+	var preparer *gone.Application
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
 				t.Errorf("Unexpected panic: %v", r)
 			}
 		}()
-		preparer = gone.Prepare(loadFn1, loadFn2)
+		preparer = gone.NewApp(loadFn1, loadFn2)
 	}()
 
 	if preparer == nil {
-		t.Error("Preparer should not be nil")
+		t.Error("Application should not be nil")
 	}
 
 	// Test prepare with error load function
@@ -459,11 +459,11 @@ func TestPreparer_PrepareWithLoads(t *testing.T) {
 				didPanic = true
 			}
 		}()
-		gone.Prepare(errorLoadFn)
+		gone.NewApp(errorLoadFn)
 	}()
 
 	if !didPanic {
-		t.Error("Expected Prepare to panic with error load function")
+		t.Error("Expected NewApp to panic with error load function")
 	}
 }
 

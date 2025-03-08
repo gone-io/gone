@@ -20,7 +20,7 @@ func (u *useKeeper) Test(t *testing.T) {
 
 func TestGonerKeeper(t *testing.T) {
 	gone.
-		Prepare().
+		NewApp().
 		Load(&useKeeper{}).
 		Run(func(k *useKeeper) {
 			k.Test(t)

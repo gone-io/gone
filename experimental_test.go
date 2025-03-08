@@ -15,7 +15,7 @@ func TestWrapFunctionProvider(t *testing.T) {
 		return test, nil
 	})
 
-	Prepare(func(loader Loader) error {
+	NewApp(func(loader Loader) error {
 		return loader.Load(provider)
 	}).
 		Test(func(test2 Test) {
@@ -35,7 +35,7 @@ func TestWrapFunctionProvider_Error(t *testing.T) {
 		return test, ToError("test error")
 	})
 
-	Prepare(func(loader Loader) error {
+	NewApp(func(loader Loader) error {
 		return loader.Load(provider)
 	}).
 		Test(func(core *Core) {

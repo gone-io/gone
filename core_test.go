@@ -1529,7 +1529,7 @@ func TestProvide(t *testing.T) {
 
 	var test2 []Test
 
-	Prepare(func(loader Loader) error {
+	NewApp(func(loader Loader) error {
 		return loader.Load(provider)
 	}).
 		Test(func(core *Core) {
@@ -1543,7 +1543,7 @@ func TestProvide(t *testing.T) {
 		return test, nil
 	})
 
-	Prepare(func(loader Loader) error {
+	NewApp(func(loader Loader) error {
 		return loader.Load(provider2)
 	}).
 		Test(func(core *Core) {
@@ -1555,7 +1555,7 @@ func TestProvide(t *testing.T) {
 }
 
 func TestInjectFuncParametersWithStructParameter(t *testing.T) {
-	Prepare().
+	NewApp().
 		Test(func(core *Core) {
 			_, err := core.InjectFuncParameters(func(in *struct {
 				core *Core `gone:"*"`
@@ -1566,7 +1566,7 @@ func TestInjectFuncParametersWithStructParameter(t *testing.T) {
 			}
 		})
 
-	Prepare().
+	NewApp().
 		Test(func(core *Core) {
 			_, err := core.InjectFuncParameters(func(in *struct {
 				core string `gone:"*"`

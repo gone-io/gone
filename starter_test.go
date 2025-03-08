@@ -53,7 +53,7 @@ func (s *Worker) GonerName() string {
 }
 
 func TestPreparer_Run(t *testing.T) {
-	gone.Prepare().
+	gone.NewApp().
 		Load(&Boss{name: "Tom"}).
 		Load(&Worker{name: "Jim"}).
 		Load(&Worker{name: "Bob"}).

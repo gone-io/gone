@@ -34,7 +34,7 @@ type factory struct {
 
 func TestUseSlice(t *testing.T) {
 	gone.
-		Prepare().
+		NewApp().
 		Load(&factory{}, gone.Name("factory")).
 		Load(&workerImpl{name: "worker1"}, gone.Name("worker1")).
 		Load(&workerImpl2{name: "worker2"}, gone.Name("worker2")).
