@@ -75,7 +75,11 @@ func main() {
 - 支持编写服务类型的Goner：实现 `Start() error` 和 `Stop() error`，框架会自动调用Start()和Stop()方法。
 - 支持`BeforeStart`、`AfterStart`、`BeforeStop`、`AfterStop`等钩子函数，用于在服务启动和停止时执行自定义操作。
 
+### 架构
 <img src="docs/assert/architecture.png" width = "600" alt="architecture"/>
+
+### 生命周期
+<img src="docs/assert/flow.png" width = "600" alt="flow"/>
 
 ## 快速开始
 
