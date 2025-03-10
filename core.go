@@ -366,14 +366,9 @@ func (s *Core) InjectStruct(goner any) error {
 	if of.Elem().Kind() != reflect.Struct {
 		return NewInnerError("goner must be a pointer to a struct, got pointer to non-struct type", InjectError)
 	}
-	co := &coffin{
+	return ToError(s.safeFillOne(&coffin{
 		goner: goner,
-	}
-	err := s.safeFillOne(co)
-	if err != nil {
-		return ToError(err)
-	}
-	return s.safeFillOne(co)
+	}))
 }
 
 func (s *Core) GetGonerByName(name string) any {
