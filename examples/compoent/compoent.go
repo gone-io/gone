@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/gone-io/gone"
+	"github.com/gone-io/gone/v2"
 )
 
 type Dep struct {

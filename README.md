@@ -65,11 +65,11 @@ func main() {
 
 ## 特性
 
-- 支持结构体属性的注入，支持私有字段注入
-- 支持函数参数的注入，按函数参数类型注入
+- 支持结构体属性的注入，支持私有字段注入 [👉🏻依赖注入介绍](docs/inject.md)
+- 支持函数参数的注入，按函数参数类型注入  [👉🏻依赖注入介绍](docs/inject.md)
+- Provider机制，支持将外部组件注入到Goner中: [👉🏻Gone V2 Provider 机制介绍](docs/provider.md)
 - 支持代码生成，自动完成组件注册加载（通过[Gonectr](https://github.com/gone-io/gonectr)完成）
 - 支持基于接口mock的单元测试
-- Provider机制，支持将外部组件注入到Goner中: [👉🏻Gone V2 Provider 机制介绍](docs/provider.md)
 - 支持微服务开发的相关[Goner组件](https://github.com/gone-io/goner)
 - 支持给Goner定义初始化方法`Init()` 和 `BeforeInit()`
 - 支持编写服务类型的Goner：实现 `Start() error` 和 `Stop() error`，框架会自动调用Start()和Stop()方法。

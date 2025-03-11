@@ -22,5 +22,10 @@ func main() {
 		NewApp().
 		Load(&Dep{Name: "Component Dep"}).
 		Load(&Component{}).
+		Loads(func(l gone.Loader) error {
+			_ = l.Load(&Component{})
+			_ = l.Load(&Dep{Name: "Loads Dep"})
+			return nil
+		}).
 		Run()
 }

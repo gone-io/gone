@@ -1,6 +1,6 @@
 package main
 
-import "github.com/gone-io/gone"
+import "github.com/gone-io/gone/v2"
 
 func main() {
 	type Dep struct {
@@ -20,13 +20,14 @@ func main() {
 		Load(&Dep{}, gone.Name("dep2"))
 
 	//通过加载函数批量加载
-	gone.Loads(func(loader gone.Loader) error {
-		err := loader.Load(&Dep{}, gone.Name("dep4"))
-		if err != nil {
-			return gone.ToError(err)
-		}
-		err = loader.Load(&Dep{}, gone.Name("dep5"))
+	gone.
+		Loads(func(loader gone.Loader) error {
+			err := loader.Load(&Dep{}, gone.Name("dep4"))
+			if err != nil {
+				return gone.ToError(err)
+			}
+			err = loader.Load(&Dep{}, gone.Name("dep5"))
 
-		return err
-	})
+			return err
+		})
 }
