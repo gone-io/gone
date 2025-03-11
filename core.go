@@ -153,10 +153,6 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 		s.coffins = append(s.coffins, co)
 	}
 
-	if co.onlyForName {
-		return nil
-	}
-
 	provider := tryWrapGonerToProvider(goner)
 	if provider != nil {
 		co.needInitBeforeUse = true
