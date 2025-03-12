@@ -46,7 +46,7 @@ type Preparer = Application
 
 // Prepare is alias for NewApp
 func Prepare(loads ...LoadFunc) *Application {
-	return NewApp()
+	return NewApp(loads...)
 }
 
 func (s *Application) init() *Application {

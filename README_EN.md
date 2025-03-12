@@ -14,32 +14,68 @@
 
 
 - [Gone](#gone)
-  - [What Is Gone?](#what-is-gone)
+  - [Gone is a Golang tag-based dependency injection framework](#gone-is-a-golang-tag-based-dependency-injection-framework)
   - [Features](#features)
+    - [Architecture](#architecture)
+    - [Lifecycle](#lifecycle)
   - [Quick Start](#quick-start)
-  - [Full Documentation](#full-documentation)
-  - [Contributing](#contributing)
-  - [Changelog](#changelog)
-    - [v2.0.0-beta](#v200-beta)
+  - [Update History](#update-history)
+    - [v2.0.0](#v200)
     - [v1.2.1](#v121)
     - [v1.2.0](#v120)
     - [v1.1.1](#v111)
+  - [Contribution](#contribution)
   - [Contact](#contact)
   - [License](#license)
 
 
 # Gone
-## What Is Gone?
+## Gone is a Golang tag-based dependency injection framework
 
-Gone is a lightweight dependency injection framework for Golang, designed to integrate with a variety of third-party components, enabling rapid development of cloud-native microservices.
+Gone is a lightweight golang dependency injection framework. Here's a simple example (a structure that embeds gone.Flag, which we call a "Goner"):
+
+```go
+package main
+import "github.com/gone-io/gone/v2"
+type Dep struct {
+    gone.Flag
+    Name string
+}
+type Component struct {
+    gone.Flag
+    dep *Dep        *`gone:""` //dependency injection
+    log gone.Logger `gone:"*"`
+}
+func (c *Component) Init() {
+    c.log.Infof(c.dep.Name) //using dependency
+}
+func main() {
+    gone.
+       NewApp().
+       // Register and load components
+       Load(&Dep{Name: "Component Dep"}).
+       Load(&Component{}).
+       //run
+       Run()
+}
+```
 
 ## Features
-- Dependency injection: Supports automatic injection of struct fields and function parameters.
-- **[Gonectr](https://github.com/gone-io/gonectr)**: Generates projects, auxiliary code, compiles, and starts the project.
-- Unit testing solution: Mock testing based on interfaces.
-- Multiple pluggable components: Supports cloud-native and microservices architectures.
-  
+- Supports struct property injection, including private field injection [👉🏻 Dependency Injection Introduction](docs/inject.md)
+- Supports function parameter injection, injecting by function parameter type [👉🏻 Dependency Injection Introduction](docs/inject.md)
+- Provider mechanism, supports injecting external components into Goners: [👉🏻 Gone V2 Provider Mechanism Introduction](docs/provider.md)
+- Supports code generation, automatically completing component registration and loading (via [Gonectr](https://github.com/gone-io/gonectr))
+- Supports interface-based mock unit testing
+- Supports [Goner components](https://github.com/gone-io/goner) for microservice development
+- Supports defining initialization methods `Init()` and `BeforeInit()` for Goners
+- Supports writing service-type Goners: implementing `Start() error` and `Stop() error`, the framework will automatically call Start() and Stop() methods
+- Supports hooks like `BeforeStart`, `AfterStart`, `BeforeStop`, `AfterStop` for executing custom operations when services start and stop
+
+### Architecture
 <img src="docs/assert/architecture.png" width = "600" alt="architecture"/>
+
+### Lifecycle
+<img src="docs/assert/flow.png" width = "600" alt="flow"/>
 
 ## Quick Start
 1. Install [gonectr](https://github.com/gone-io/gonectr) and [mockgen](https://github.com/uber-go/mock/tree/main)
@@ -47,55 +83,44 @@ Gone is a lightweight dependency injection framework for Golang, designed to int
     go install github.com/gone-io/gonectr@latest
     go install go.uber.org/mock/mockgen@latest
     ```
-2. Create a new project
+2. Create a project
     ```bash
     gonectr create myproject
     ```
 3. Run the project
     ```bash
     cd myproject
+    go mod tidy
     gonectr run ./cmd/server
     ```
-    Or use run Make command if you have installed [make](https://www.gnu.org/software/make/):
-    ```bash
-    cd myproject
-    make run
-    ```
-    Or with docker compose:
-    ```bash
-    cd myproject
-    docker compose build
-    docker compose up
-    ```
 
-## [Full Documentation](https://goner.fun/)
-
-## Contributing
-If you have a bug report or feature request, you can [open an issue](https://github.com/gone-io/gone/issues/new), and [pull requests](https://github.com/gone-io/gone/pulls) are also welcome.
-
-## Changelog
-### v2.0.0-beta
-[Gone@v2 update content](./docs/v2-update.md)
+## Update History
+### v2.0.0
+Version 2 has been extensively updated, removing unnecessary concepts. Please refer to: [Gone@v2 Instructions](./docs/v2-update.md) before use.
 
 ### v1.2.1
-- Introduced **gone.Provider**, a factory function for injecting external components (such as structs, struct pointers, functions, and interfaces) that are not **Goner** into Goners filed which tag by `gone`.
-- Fixed an issue where `gone.NewProviderPriest` failed to create a Priest for **gone.Provider** instances that generate interface types.
-- Added test cases for `goner/gorm` and completed other missing test cases; updated documentation accordingly.
+- Defined **gone.Provider**, a factory function for injecting external components (structs, struct pointers, functions, interfaces) that are not **Goners** into Goner properties requiring injection
+- Fixed `gone.NewProviderPriest` which couldn't generate Priests for interface-type **gone.Provider**
+- Wrote test code for `goner/gorm`, completed other test codes; documentation updated.
 
 ### v1.2.0
-- Introduced a new `gone.GonerOption`, enabling type-based injection by delegating the task of constructing injected type instances to a **Goner** that implements `Suck(conf string, v reflect.Value, field reflect.StructField) error`.
-- Added a helper function for implementing **Goner Provider**: `func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)) Priest`.
-- Provided a strategy configuration solution for the cluster mode in `goner/xorm`.
-- Improved the `goner/gorm` code and conducted functional tests to support integration with multiple databases.
+- Provided a new `gone.GonerOption` that can inject by type, delegating the task of constructing type instances to a **Goner** that implements `Suck(conf string, v reflect.Value, field reflect.StructField) error`
+- Provided a helper function for implementing **Goner Provider**: `func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)) Priest`
+- Provided strategy configuration for cluster mode in `goner/xorm`
+- Improved `goner/gorm` code and functional testing, supporting connection to various databases.
 
 ### v1.1.1
-- `goner/xorm` now supports clustering and multiple databases. Latest documentation: https://goner.fun/references/xorm.html
-- Added `goner/gorm`, a wrapper for `gorm.io/gorm` for database access. Currently, only MySQL is supported, and improvements are ongoing.
+- goner/xorm supports clusters and multiple databases, latest documentation: https://goner.fun/zh/references/xorm.html
+- Added goner/gorm, encapsulating `gorm.io/gorm` for database access, currently only supports MySQL, in progress...
 
+## Contribution
+If you find errors or have feature requests, feel free to [submit an issue](https://github.com/gone-io/gone/issues/new), and [pull requests](https://github.com/gone-io/gone/pulls) are welcome.
 
 ## Contact
-If you have questions, feel free to reach out to us in the following ways:
-- [Github Discussion](https://github.com/gone-io/gone/discussions)
+If you have any questions, please contact us through:
+- [Github Discussions](https://github.com/gone-io/gone/discussions)
+- Scan the QR code to add WeChat, with the message: gone
+  <img src="docs/assert/qr_dapeng.png" width = "250" alt="dapeng wx qr code"/>
 
 ## License
-`gone` released under MIT license, refer [LICENSE](./LICENSE) file.
+`gone` is released under the MIT License, please see the [LICENSE](./LICENSE) file for details.
