@@ -102,7 +102,7 @@ func main() {
 ## 更新记录
 
 ### v2.0.0
-v2版本做了大量更新，去掉不必要的概念，使用前请参考：[Gone@v2 使用说明](./docs/v2-update.md)
+v2版本做了大量更新，去掉不必要的概念，使用前请参考：[Gone@v2 使用说明](./docs/v2-update.md) 和 [Gone 从 v1 到 v2 的更新分析](./docs/gone-v1-to-v2-analysis.md)
 
 ### v1.2.1
 
