@@ -3,7 +3,7 @@
 </p>
 
 [![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)
-[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](http://godoc.org/github.com/gone-io/gone)
+[![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](https://pkg.go.dev/github.com/gone-io/gone/v2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gone-io/gone)](https://goreportcard.com/report/github.com/gone-io/gone)
 [![codecov](https://codecov.io/gh/gone-io/gone/graph/badge.svg?token=H3CROTTDZ1)](https://codecov.io/gh/gone-io/gone)
 [![Build and Test](https://github.com/gone-io/gone/actions/workflows/go.yml/badge.svg)](https://github.com/gone-io/gone/actions/workflows/go.yml)
@@ -15,6 +15,8 @@
 - [Gone](#gone)
   - [Gone 是基于Golang标签的依赖注入框架](#gone-是基于golang标签的依赖注入框架)
   - [特性](#特性)
+    - [架构](#架构)
+    - [生命周期](#生命周期)
   - [快速开始](#快速开始)
   - [更新记录](#更新记录)
     - [v2.0.0](#v200)
