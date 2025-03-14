@@ -202,7 +202,10 @@ func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err 
 			field := elem.Field(i)
 			if tag, ok := field.Tag.Lookup(goneTag); ok {
 				gonerName, _ := ParseGoneTag(tag)
-				if gonerName != "" && gonerName != defaultProviderName {
+				if gonerName == "" || gonerName == "*" {
+					gonerName = DefaultProviderName
+				}
+				if gonerName != DefaultProviderName {
 					depCo, err := s.getDepByName(gonerName)
 					if err != nil {
 						return nil, ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem)))
@@ -227,10 +230,13 @@ func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err 
 						}
 					} else {
 						depCo, err := s.getDepByType(field.Type)
-
 						if err != nil {
+							if t, ok := field.Tag.Lookup(optionTag); ok && t == allowNil {
+								continue
+							}
 							return nil, ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem)))
 						}
+
 						if depCo != nil {
 							if depCo.needInitBeforeUse {
 								fillDependencies = append(fillDependencies, dependency{

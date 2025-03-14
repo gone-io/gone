@@ -179,7 +179,7 @@ func (e *iError) Stack() []byte {
 //
 // Returns Error interface implementation with stack trace
 func NewInnerError(msg string, code int) Error {
-	return NewInnerErrorSkip(msg, code, 1)
+	return NewInnerErrorSkip(msg, code, 2)
 }
 
 // NewInnerErrorWithParams creates a new InnerError with formatted message and stack trace.

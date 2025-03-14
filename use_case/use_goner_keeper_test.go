@@ -12,7 +12,7 @@ type useKeeper struct {
 }
 
 func (u *useKeeper) Test(t *testing.T) {
-	goner := u.keeper.GetGonerByName("*")
+	goner := u.keeper.GetGonerByName(gone.DefaultProviderName)
 	if goner != u.core {
 		t.Fatal("keeper get core error")
 	}

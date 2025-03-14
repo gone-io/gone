@@ -11,7 +11,9 @@ const (
 	fillAction          actionType = 1
 	initAction          actionType = 2
 	goneTag                        = "gone"
-	defaultProviderName            = "*"
+	DefaultProviderName            = "core-provider"
+	optionTag                      = "option"
+	allowNil                       = "allowNil"
 )
 
 // Flag is a marker struct used to identify components that can be managed by the gone framework.
@@ -279,12 +281,18 @@ func (s *Core) fillOne(coffin *coffin) error {
 
 		if tag, ok := field.Tag.Lookup(goneTag); ok {
 			goneName, extend := ParseGoneTag(tag)
-			if goneName == "" {
-				goneName = defaultProviderName
+			if goneName == "" || goneName == "*" {
+				goneName = DefaultProviderName
 			}
+
+			op, y := field.Tag.Lookup(optionTag)
+			isAllowNil := y && op == allowNil
 
 			co, err := s.getDepByName(goneName)
 			if err != nil {
+				if isAllowNil {
+					continue
+				}
 				return ToErrorWithMsg(err, fmt.Sprintf("failed to find dependency %q for field %q in type %q", goneName, field.Name, GetTypeName(elem)))
 			}
 
@@ -296,6 +304,9 @@ func (s *Core) fillOne(coffin *coffin) error {
 			if co.provider != nil && field.Type == co.provider.Type() {
 				provide, err := co.provider.Provide(extend)
 				if err != nil {
+					if isAllowNil {
+						continue
+					}
 					return ToErrorWithMsg(err, fmt.Sprintf("provider %T failed to provide value for field %q in type %q", co.goner, field.Name, GetTypeName(elem)))
 				} else if provide != nil {
 					v.Set(reflect.ValueOf(provide))
@@ -306,6 +317,10 @@ func (s *Core) fillOne(coffin *coffin) error {
 			if provider, ok := co.goner.(NamedProvider); ok {
 				provide, err := provider.Provide(extend, field.Type)
 				if err != nil {
+					if isAllowNil {
+						continue
+					}
+
 					return ToErrorWithMsg(err,
 						fmt.Sprintf("provider %T failed to provide value for field %q in %s",
 							provider, field.Name, GetTypeName(elem)))
@@ -323,10 +338,18 @@ func (s *Core) fillOne(coffin *coffin) error {
 			if injector, ok := co.goner.(StructFieldInjector); ok {
 				err = injector.Inject(extend, field, v)
 				if err != nil {
+					if isAllowNil {
+						continue
+					}
+
 					return ToErrorWithMsg(err,
 						fmt.Sprintf("failed to inject value into field %q in %s using %T",
 							field.Name, GetTypeName(elem), injector))
 				}
+				continue
+			}
+
+			if isAllowNil {
 				continue
 			}
 
@@ -416,7 +439,7 @@ func (s *Core) getDefaultCoffinByType(t reflect.Type) *coffin {
 }
 
 func (s *Core) GonerName() string {
-	return defaultProviderName
+	return DefaultProviderName
 }
 
 func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
