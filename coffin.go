@@ -27,6 +27,10 @@ func newCoffin(goner any) *coffin {
 	if !needInitBeforeUse {
 		_, needInitBeforeUse = goner.(InitiatorNoError)
 	}
+	provider := tryWrapGonerToProvider(goner)
+	if provider != nil {
+		needInitBeforeUse = true
+	}
 	if !needInitBeforeUse {
 		_, needInitBeforeUse = goner.(NamedProvider)
 	}
@@ -38,6 +42,7 @@ func newCoffin(goner any) *coffin {
 		goner:             goner,
 		defaultTypeMap:    make(map[reflect.Type]bool),
 		needInitBeforeUse: needInitBeforeUse,
+		provider:          provider,
 	}
 }
 

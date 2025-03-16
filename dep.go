@@ -12,10 +12,13 @@ import (
 // Returns: error object containing information about the circular dependency components
 func circularDepsError(circularDeps []dependency) Error {
 	var names []string
+	prefix := "\t"
+
 	for _, dep := range circularDeps {
-		names = append(names, dep.String())
+		prefix = strings.Join([]string{prefix, "\t"}, "")
+		names = append(names, strings.Join([]string{prefix, dep.String()}, ""))
 	}
-	return NewInnerErrorWithParams(CircularDependency, "Circular dependency: %s", strings.Join(names, ", "))
+	return NewInnerErrorWithParams(CircularDependency, "circular dependency:\n%s", strings.Join(names, " depend on\n"))
 }
 
 // checkCircularDepsAndGetBestInitOrder checks for circular dependencies and determines the optimal initialization order
