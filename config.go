@@ -110,40 +110,43 @@ func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 			env = "0"
 		}
 	}
+	return SetValue(rv, v, env)
+}
 
+func SetValue(rv reflect.Value, v any, value string) error {
 	// Type switch to handle different pointer types
 	switch ptr := v.(type) {
 	// String type
 	case *string:
-		*ptr = env
+		*ptr = value
 
 	// Int types
 	case *int:
-		val, err := strconv.Atoi(env)
+		val, err := strconv.Atoi(value)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = val
 	case *int8:
-		val, err := strconv.ParseInt(env, 10, 8)
+		val, err := strconv.ParseInt(value, 10, 8)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = int8(val)
 	case *int16:
-		val, err := strconv.ParseInt(env, 10, 16)
+		val, err := strconv.ParseInt(value, 10, 16)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = int16(val)
 	case *int32:
-		val, err := strconv.ParseInt(env, 10, 32)
+		val, err := strconv.ParseInt(value, 10, 32)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = int32(val)
 	case *int64:
-		val, err := strconv.ParseInt(env, 10, 64)
+		val, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return ToError(err)
 		}
@@ -151,31 +154,31 @@ func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 
 	// Unsigned int types
 	case *uint:
-		val, err := strconv.ParseUint(env, 10, 64)
+		val, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = uint(val)
 	case *uint8:
-		val, err := strconv.ParseUint(env, 10, 8)
+		val, err := strconv.ParseUint(value, 10, 8)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = uint8(val)
 	case *uint16:
-		val, err := strconv.ParseUint(env, 10, 16)
+		val, err := strconv.ParseUint(value, 10, 16)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = uint16(val)
 	case *uint32:
-		val, err := strconv.ParseUint(env, 10, 32)
+		val, err := strconv.ParseUint(value, 10, 32)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = uint32(val)
 	case *uint64:
-		val, err := strconv.ParseUint(env, 10, 64)
+		val, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
 			return ToError(err)
 		}
@@ -183,13 +186,13 @@ func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 
 	// Float types
 	case *float32:
-		val, err := strconv.ParseFloat(env, 32)
+		val, err := strconv.ParseFloat(value, 32)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = float32(val)
 	case *float64:
-		val, err := strconv.ParseFloat(env, 64)
+		val, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return ToError(err)
 		}
@@ -197,7 +200,7 @@ func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 
 	// Boolean type
 	case *bool:
-		val, err := strconv.ParseBool(env)
+		val, err := strconv.ParseBool(value)
 		if err != nil {
 			return ToError(err)
 		}
@@ -205,22 +208,109 @@ func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 
 	// Time duration type
 	case *time.Duration:
-		val, err := time.ParseDuration(env)
+		val, err := time.ParseDuration(value)
 		if err != nil {
 			return ToError(err)
 		}
 		*ptr = val
 
-	// Struct and unsupported types
 	default:
-		k := rv.Elem().Kind()
-		if k == reflect.Struct || k == reflect.Slice || k == reflect.Map {
-			err := json.Unmarshal([]byte(env), v)
-			if err != nil {
-				return ToError(err)
-			}
-			return nil
+		return setValueByReflectValue(rv, v, value)
+	}
+	return nil
+}
+
+func setValueByReflectValue(rv reflect.Value, v any, value string) error {
+	k := rv.Elem().Kind()
+	switch k {
+	case reflect.Struct, reflect.Slice, reflect.Map:
+		return ToError(json.Unmarshal([]byte(value), v))
+	case reflect.String:
+		rv.Elem().SetString(value)
+	case reflect.Int:
+		val, err := strconv.Atoi(value)
+		if err != nil {
+			return ToError(err)
 		}
+		rv.Elem().SetInt(int64(val))
+	case reflect.Int8:
+		val, err := strconv.ParseInt(value, 10, 8)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetInt(val)
+	case reflect.Int16:
+		val, err := strconv.ParseInt(value, 10, 16)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetInt(val)
+	case reflect.Int32:
+		val, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetInt(val)
+	case reflect.Int64:
+		val, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetInt(val)
+
+	case reflect.Uint:
+		val, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetUint(val)
+	case reflect.Uint8:
+		val, err := strconv.ParseUint(value, 10, 8)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetUint(val)
+	case reflect.Uint16:
+		val, err := strconv.ParseUint(value, 10, 16)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetUint(val)
+	case reflect.Uint32:
+		val, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetUint(val)
+	case reflect.Uint64:
+		val, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetUint(val)
+
+	case reflect.Float32:
+		val, err := strconv.ParseFloat(value, 32)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetFloat(val)
+	case reflect.Float64:
+		val, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetFloat(val)
+
+	case reflect.Bool:
+		val, err := strconv.ParseBool(value)
+		if err != nil {
+			return ToError(err)
+		}
+		rv.Elem().SetBool(val)
+
+	default:
+		// Struct and unsupported types
 		return NewInnerError("Unsupported type by EnvConfigure", ConfigError)
 	}
 	return nil

@@ -381,6 +381,195 @@ func TestConfigProvider_ProvideWithDefaultTag(t *testing.T) {
 	}
 }
 
+func TestSetValueByReflectValue(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   any
+		strVal  string
+		want    any
+		wantErr bool
+	}{
+		{
+			name:    "String value",
+			value:   new(string),
+			strVal:  "test-value",
+			want:    "test-value",
+			wantErr: false,
+		},
+		{
+			name:    "Int value",
+			value:   new(int),
+			strVal:  "42",
+			want:    42,
+			wantErr: false,
+		},
+		{
+			name:    "Int8 value",
+			value:   new(int8),
+			strVal:  "127",
+			want:    int8(127),
+			wantErr: false,
+		},
+		{
+			name:    "Int16 value",
+			value:   new(int16),
+			strVal:  "32767",
+			want:    int16(32767),
+			wantErr: false,
+		},
+		{
+			name:    "Int32 value",
+			value:   new(int32),
+			strVal:  "2147483647",
+			want:    int32(2147483647),
+			wantErr: false,
+		},
+		{
+			name:    "Int64 value",
+			value:   new(int64),
+			strVal:  "9223372036854775807",
+			want:    int64(9223372036854775807),
+			wantErr: false,
+		},
+		{
+			name:    "Uint value",
+			value:   new(uint),
+			strVal:  "123",
+			want:    uint(123),
+			wantErr: false,
+		},
+		{
+			name:    "Uint8 value",
+			value:   new(uint8),
+			strVal:  "255",
+			want:    uint8(255),
+			wantErr: false,
+		},
+		{
+			name:    "Uint16 value",
+			value:   new(uint16),
+			strVal:  "65535",
+			want:    uint16(65535),
+			wantErr: false,
+		},
+		{
+			name:    "Uint32 value",
+			value:   new(uint32),
+			strVal:  "4294967295",
+			want:    uint32(4294967295),
+			wantErr: false,
+		},
+		{
+			name:    "Uint64 value",
+			value:   new(uint64),
+			strVal:  "18446744073709551615",
+			want:    uint64(18446744073709551615),
+			wantErr: false,
+		},
+		{
+			name:    "Float32 value",
+			value:   new(float32),
+			strVal:  "3.14",
+			want:    float32(3.14),
+			wantErr: false,
+		},
+		{
+			name:    "Float64 value",
+			value:   new(float64),
+			strVal:  "3.141592653589793",
+			want:    3.141592653589793,
+			wantErr: false,
+		},
+		{
+			name:    "Bool value true",
+			value:   new(bool),
+			strVal:  "true",
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:    "Bool value false",
+			value:   new(bool),
+			strVal:  "false",
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:    "Struct value",
+			value:   &struct{ Name string }{},
+			strVal:  `{"Name":"test"}`,
+			want:    struct{ Name string }{Name: "test"},
+			wantErr: false,
+		},
+		{
+			name:    "Slice value",
+			value:   &[]string{},
+			strVal:  `["a","b","c"]`,
+			want:    []string{"a", "b", "c"},
+			wantErr: false,
+		},
+		{
+			name:    "Map value",
+			value:   &map[string]int{},
+			strVal:  `{"a":1,"b":2}`,
+			want:    map[string]int{"a": 1, "b": 2},
+			wantErr: false,
+		},
+		{
+			name:    "Invalid int format",
+			value:   new(int),
+			strVal:  "not-a-number",
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name:    "Invalid uint format",
+			value:   new(uint),
+			strVal:  "not-a-number",
+			want:    uint(0),
+			wantErr: true,
+		},
+		{
+			name:    "Invalid float format",
+			value:   new(float64),
+			strVal:  "not-a-number",
+			want:    0.0,
+			wantErr: true,
+		},
+		{
+			name:    "Invalid bool format",
+			value:   new(bool),
+			strVal:  "not-a-bool",
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name:    "Unsupported type",
+			value:   new(complex128),
+			strVal:  "1+2i",
+			want:    complex128(0),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rv := reflect.ValueOf(tt.value)
+			err := setValueByReflectValue(rv, tt.value, tt.strVal)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("setValueByReflectValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				got := reflect.ValueOf(tt.value).Elem().Interface()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("setValueByReflectValue() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
 func TestEnvConfigure_GetInvalidValues(t *testing.T) {
 	configure := &EnvConfigure{}
 

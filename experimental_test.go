@@ -35,9 +35,8 @@ func TestWrapFunctionProvider_Error(t *testing.T) {
 		return test, ToError("test error")
 	})
 
-	NewApp(func(loader Loader) error {
-		return loader.Load(provider)
-	}).
+	NewApp().
+		Load(provider).
 		Test(func(core *Core) {
 			_, err := core.Provide("", reflect.TypeOf(test))
 			if err == nil {
