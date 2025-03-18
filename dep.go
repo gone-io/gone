@@ -9,7 +9,7 @@ import (
 // circularDepsError creates an error for circular dependencies
 // Parameters:
 // - circularDeps: list of coffins involved in circular dependencies
-// Returns: error object containing information about the circular dependency components
+// Returns: error object containing information about the circular dependency Goners
 func circularDepsError(circularDeps []dependency) Error {
 	var names []string
 	prefix := "\t"
@@ -203,6 +203,11 @@ func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err 
 	case reflect.Struct:
 		for i := 0; i < elem.NumField(); i++ {
 			field := elem.Field(i)
+
+			if isLazyField(&field) {
+				continue
+			}
+
 			if tag, ok := field.Tag.Lookup(goneTag); ok {
 				gonerName, _ := ParseGoneTag(tag)
 				if gonerName == "" || gonerName == "*" {
@@ -234,7 +239,7 @@ func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err 
 					} else {
 						depCo, err := s.getDepByType(field.Type)
 						if err != nil {
-							if t, ok := field.Tag.Lookup(optionTag); ok && t == allowNil {
+							if isAllowNilField(&field) {
 								continue
 							}
 							return nil, ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem)))

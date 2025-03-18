@@ -3,6 +3,7 @@ package gone
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 type actionType int8
@@ -14,7 +15,32 @@ const (
 	DefaultProviderName            = "core-provider"
 	optionTag                      = "option"
 	allowNil                       = "allowNil"
+	lazy                           = "lazy"
 )
+
+func filedHasOption(filed *reflect.StructField, tagName string, optionName string) bool {
+	value, ok := filed.Tag.Lookup(tagName)
+	if !ok {
+		return false
+	}
+	if value == "" {
+		return false
+	}
+	split := strings.Split(value, ",")
+	for _, v := range split {
+		if v == optionName {
+			return true
+		}
+	}
+	return false
+}
+
+func isAllowNilField(filed *reflect.StructField) bool {
+	return filedHasOption(filed, optionTag, allowNil)
+}
+func isLazyField(filed *reflect.StructField) bool {
+	return filedHasOption(filed, optionTag, lazy)
+}
 
 // Flag is a marker struct used to identify components that can be managed by the gone framework.
 // Embedding this struct in another struct indicates that it can be used with gone's dependency injection.
@@ -283,8 +309,7 @@ func (s *Core) fillOne(coffin *coffin) error {
 				goneName = DefaultProviderName
 			}
 
-			op, y := field.Tag.Lookup(optionTag)
-			isAllowNil := y && op == allowNil
+			isAllowNil := isAllowNilField(&field)
 
 			co, err := s.getDepByName(goneName)
 			if err != nil {

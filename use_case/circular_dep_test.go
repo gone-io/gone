@@ -44,6 +44,8 @@ func TestCircularDependency2(t *testing.T) {
 			if !strings.Contains(r.(error).Error(), "circular dependency") {
 				t.Errorf("Expected panic with circular dependency error, got: %v", r)
 			}
+		} else {
+			t.Errorf("Expected panic with circular dependency error, got: %v", r)
 		}
 	}()
 	gone.

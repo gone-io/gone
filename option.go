@@ -4,7 +4,7 @@ import (
 	"reflect"
 )
 
-// Option is an interface for configuring components loaded into the gone framework.
+// Option is an interface for configuring Goners loaded into the gone framework.
 type Option interface {
 	Apply(c *coffin) error
 }
@@ -20,8 +20,8 @@ func (o option) Apply(c *coffin) error {
 	return o.apply(c)
 }
 
-// IsDefault returns an Option that marks a component as the default implementation for its type.
-// When multiple components of the same type exist, the default one will be used for injection
+// IsDefault returns an Option that marks a Goner as the default implementation for its type.
+// When multiple Goners of the same type exist, the default one will be used for injection
 // if no specific name is requested.
 //
 // Example usage:
@@ -68,7 +68,7 @@ func IsDefault(objPointers ...any) Option {
 	}
 }
 
-// Order returns an Option that sets the start order for a component.
+// Order returns an Option that sets the start order for a Goner.
 // Components with lower order values will be started before those with higher values.
 // This can be used to control started sequence when specific ordering is required.
 //
@@ -100,7 +100,7 @@ func LowStartPriority() Option {
 	return Order(100)
 }
 
-// Name returns an Option that sets a custom name for a component.
+// Name returns an Option that sets a custom name for a Goner.
 // Components can be looked up by this name when injecting dependencies.
 //
 // Example usage:
@@ -108,7 +108,7 @@ func LowStartPriority() Option {
 //	gone.Load(&EnvConfigure{}, gone.GonerName("configure"))
 //
 // Parameters:
-//   - name: String identifier to use for this component
+//   - name: String identifier to use for this Goner
 func Name(name string) Option {
 	return option{
 		apply: func(c *coffin) error {
@@ -118,8 +118,8 @@ func Name(name string) Option {
 	}
 }
 
-// OnlyForName returns an Option that marks a component as only available for name-based injection.
-// When this option is used, the component will not be registered as a type provider,
+// OnlyForName returns an Option that marks a Goner as only available for name-based injection.
+// When this option is used, the Goner will not be registered as a type provider,
 // meaning it can only be injected by explicitly referencing its name.
 //
 // Example usage:
@@ -136,15 +136,15 @@ func OnlyForName() Option {
 	}
 }
 
-// ForceReplace returns an Option that allows replacing existing components with the same name or type.
-// When loading a component with this option:
-// - If a component with the same name already exists, it will be replaced
+// ForceReplace returns an Option that allows replacing loaded Goners with the same name or type.
+// When loading a Goner with this option:
+// - If a Goner with the same name already exists, it will be replaced
 // - If a provider for the same type already exists, it will be replaced
 //
 // Example usage:
 //
 //	gone.Load(&MyService{}, gone.GonerName("service"), gone.ForceReplace())
-//	// This will replace any existing component named "service"
+//	// This will replace any existing Goner named "service"
 func ForceReplace() Option {
 	return option{
 		apply: func(c *coffin) error {
@@ -154,14 +154,12 @@ func ForceReplace() Option {
 	}
 }
 
-// LazyFill returns an Option that marks a component as lazy-filled.
-// When this option is used, the component will not be loaded until it is actually injected.
-// This can be useful for components that are expensive to load or have external dependencies.
+// LazyFill returns an Option that marks a Goner as lazy-filled.
+// When this option is used, the Goner will be filled at last.
 //
 // Example usage:
 //
 //	gone.Load(&MyService{}, gone.GonerName("service"), gone.LazyFill())
-//	// This will load the component only when it is actually injected
 func LazyFill() Option {
 	return option{
 		apply: func(c *coffin) error {
