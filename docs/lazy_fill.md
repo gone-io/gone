@@ -101,7 +101,7 @@ func TestCircularDependency5(t *testing.T) {
 
 使用`LazyFill()`选项时，需要注意以下几点：
 
-1. 被延迟的Goner在`Init()`、`Provide()`、`Inject()`等方法中，无法使用依赖注入的字段，因为这些方法可能在字段填充之前被调用。
+1. 被延迟的Goner在`Init()`、`Provide()`、`Inject()`等方法[1]中，无法使用依赖注入的字段，因为这些方法可能在字段填充之前被调用。
 2. `LazyFill()`是一个全局选项，会影响整个Goner的装配过程。
 
 ## option:"lazy"标签
@@ -184,7 +184,7 @@ func TestCircularDependency4(t *testing.T) {
 
 使用`option:"lazy"`标签时，需要注意以下几点：
 
-1. 被标记为lazy的字段不能在`Init()`、`Provide()`、`Inject()`等方法中使用，因为这些方法可能在字段填充之前被调用。
+1. 被标记为lazy的字段不能在`Init()`、`Provide()`、`Inject()`等方法[1]中使用，因为这些方法可能在字段填充之前被调用。
 2. `option:"lazy"`是一个字段级别的选项，只影响特定字段的装配过程。
 
 ## LazyFill()与option:"lazy"的异同点
@@ -193,7 +193,7 @@ func TestCircularDependency4(t *testing.T) {
 
 1. **目的相同**：两者都是为了解决循环依赖问题。
 2. **原理相似**：都是通过延迟依赖注入来打破循环依赖。
-3. **使用限制**：被延迟的依赖都不能在`Init()`、`Provide()`、`Inject()`等方法中使用。
+3. **使用限制**：被延迟的依赖都不能在`Init()`、`Provide()`、`Inject()`等方法[1]中使用。
 
 ### 不同点
 
@@ -229,3 +229,12 @@ func TestCircularDependency4(t *testing.T) {
 Gone框架提供了两种延迟依赖注入的机制：`LazyFill()`选项和`option:"lazy"`标签，它们都可以有效解决循环依赖问题。在实际应用中，应该根据具体需求选择合适的机制，并遵循最佳实践，以确保代码的可维护性和可靠性。
 
 通过合理使用这两种机制，可以在保持组件间依赖关系的同时，避免循环依赖带来的问题，从而构建更加健壮的应用程序。
+
+备注：
+   1. `Init()`、`Provide()`、`Inject()`等方法 包括：
+      - `Init()` 没有返回值的Init方法
+      - `Init() error` 有返回值的Init方法
+      - `Provide(tagConf string) (T, error)` 参数为 tagConf 的Provide方法
+      - `Provide() (T, error)` 没有参数的Provide方法
+      - `Provide(tagConf string, t reflect.Type) (any, error)` 按类型提供值的Provide方法
+      - `Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error` 可以用于给字段注入值的Inject方法
