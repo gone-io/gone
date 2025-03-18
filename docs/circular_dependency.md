@@ -72,6 +72,38 @@ func TestCircularDependency3(t *testing.T) {
 }
 ```
 
+- 用例4：
+```go
+type depA4 struct {
+	gone.Flag
+	dep *depB4 `gone:"*"`
+}
+
+func (d *depA4) Init() {}
+
+type depB4 struct {
+	gone.Flag
+	dep *depA4 `gone:"*" option:"lazy"`
+}
+
+func (d *depB4) Init() {}
+
+func TestCircularDependency4(t *testing.T) {
+	gone.
+		NewApp().
+		Load(&depA4{}).
+		Load(&depB4{}).
+		Run(func(a4 *depA4, b4 *depB4) {
+			if a4.dep == nil {
+				t.Error("a4.dep should be not nil")
+			}
+			if b4.dep == nil {
+				t.Error("b4.dep should be not nil")
+			}
+		})
+}
+```
+
 测试结果：
 - 用例1，正常；
 - 用例2，panic，输出：
@@ -91,10 +123,11 @@ panic: GoneError(code=1003); circular dependency:
 		/Users/jim/works/gone-io/gone/core.go:204 +0x70
 	...
 ```
-- 用例3，正常
+- 用例3，正常；
+- 用例4，正常；
 
 
-在3个用例中，都是两个struct相互依赖，但是却只有"用例2"抛出了循环依赖的错误， 为什么呢？
+在4个用例中，都是两个struct相互依赖，但是却只有"用例2"抛出了循环依赖的错误， 为什么呢？
 
 ## 循环依赖分析
 
@@ -231,14 +264,19 @@ Gone框架设计了循环依赖检测机制，主要是为了解决以下问题�
    - 如用例3所示，这样可以避免形成完整的循环依赖
 
 4. **使用延迟初始化**：
-   - 使用`LazyFill()`选项加载组件，延迟依赖注入
-   - 这样可以在需要时才进行依赖注入，避免初始化阶段的循环依赖
+   - 使用`LazyFill()`选项加载Goner， 延迟Goner的装配(`fillAction`)
+   - **请注意**：使用`LazyFill()`选项加载Goner的副作用：
+      a. 被延迟的Goner，在名为`Init`、`Provide`、`Inject`这些方法中，无法使用依赖注入的字段
 
-5. **使用事件机制**：
+5. **使用`option:"lazy"`延迟字段注入**
+   - 使用`option:"lazy"`选项，延迟字段注入
+   - **请注意**：使用`option:"lazy"`标记的字段，不能在名为`Init`、`Provide`、`Inject`的这些方法中使用；
+
+6. **使用事件机制**：
    - 通过事件或消息机制实现组件间的间接通信
    - 这样可以避免直接的循环引用
 
-6. **使用第三方组件**：
+7. **使用第三方组件**：
    - 引入一个中间组件，让原本相互依赖的两个组件都依赖这个中间组件
    - 中间组件可以持有必要的状态或提供必要的服务
 

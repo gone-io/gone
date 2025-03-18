@@ -239,6 +239,22 @@ type NamedProvider interface {
 	Provide(tagConf string, t reflect.Type) (any, error)
 }
 
+// StructFieldInjector is an interface for components that can inject dependencies into struct fields.
+// It extends NamedGoner to support named component registration and provides a method to inject dependencies
+// into struct fields based on tag configuration and field information.
+//
+// The interface requires:
+//   - Embedding the NamedGoner interface to support named component registration
+//   - Implementing Inject() to inject dependencies into struct fields
+//
+// Parameters for Inject:
+//   - tagConf: Configuration string from the struct tag that requested this dependency
+//   - field: The `reflect.StructField` that requires injection
+type StructFieldInjector interface {
+	NamedGoner
+	Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error
+}
+
 // Gone Lifecycle:
 //
 // 1. Load: Components are loaded into the Gone container using the Load() method.
@@ -504,7 +520,6 @@ var (
 	keyCounter uint64
 )
 
-// LoaderKey is a throwaway value you can use as a key to a ContextManager
 type LoaderKey struct{ id uint64 }
 
 type Loader interface {
@@ -518,9 +533,4 @@ type LoadFunc func(Loader) error
 type GonerKeeper interface {
 	GetGonerByName(name string) any
 	GetGonerByType(t reflect.Type) any
-}
-
-type StructFieldInjector interface {
-	NamedGoner
-	Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error
 }
