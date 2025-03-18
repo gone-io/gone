@@ -511,7 +511,41 @@ type FuncInjector interface {
 	InjectWrapFunc(fn any, injectBefore FuncInjectHook, injectAfter FuncInjectHook) (func() []any, error)
 }
 
+// StructInjector defines the interface for components that can inject dependencies into struct fields.
+// It provides a single method to perform dependency injection on struct instances that implement the Goner interface.
+//
+// The interface requires implementing:
+//   - InjectStruct: Injects dependencies into struct fields based on gone tags
+//
+// Example usage:
+// ```go
+//
+//	type MyGoner struct {
+//	    Flag
+//	    Service *MyService `gone:"*"`  // Field to be injected
+//	}
+//
+//	injector := &Core{}
+//	goner := &MyGoner{}
+//	err := injector.InjectStruct(goner)
+//	if err != nil {
+//	    panic(err)
+//	}
+//	// MyGoner.Service is now injected
+//
+// ```
+//
+// The InjectStruct method analyzes the struct's fields, looking for `gone` tags,
+// and injects the appropriate dependencies based on the tag configuration.
 type StructInjector interface {
+	// InjectStruct performs dependency injection on the provided Goner struct.
+	// It scans the struct's fields for `gone` tags and injects the appropriate dependencies.
+	//
+	// Parameters:
+	//   - goner: The struct instance to inject dependencies into. Must implement Goner interface.
+	//
+	// Returns:
+	//   - error: Any error that occurred during injection
 	InjectStruct(goner any) error
 }
 
@@ -520,17 +554,111 @@ var (
 	keyCounter uint64
 )
 
+// LoaderKey is a unique identifier for tracking loaded components in the Gone container.
+// It uses an internal counter to ensure each loaded component gets a unique key.
+//
+// The LoaderKey is used to:
+// - Track which components have been loaded
+// - Prevent duplicate loading of components
+// - Provide a way to check component load status
 type LoaderKey struct{ id uint64 }
 
+// LoadFunc represents a function that can load components into a Gone container.
+// It takes a Loader interface as parameter to allow loading additional dependencies.
+//
+// Example usage:
+// ```go
+//
+//	func loadComponents(l Loader) error {
+//	    if err := l.Load(&ServiceA{}); err != nil {
+//	        return err
+//	    }
+//	    if err := l.Load(&ServiceB{}); err != nil {
+//	        return err
+//	    }
+//	    return nil
+//	}
+//
+// ```
+type LoadFunc func(Loader) error
+
+// Loader defines the interface for loading components into the Gone container.
+// It provides methods to load new components and check if components are already loaded.
+//
+// The interface requires implementing:
+//   - Load: Loads a component into the container with optional configuration
+//   - Loaded: Checks if a component is already loaded
 type Loader interface {
+	// Load adds a component to the Gone container with optional configuration.
+	//
+	// Parameters:
+	//   - goner: The component to load. Must implement Goner interface.
+	//   - options: Optional configuration for how the component should be loaded.
+	//
+	// Returns:
+	//   - error: Any error that occurred during loading
 	Load(goner Goner, options ...Option) error
 
+	// Loaded checks if a component identified by the given LoaderKey has been loaded.
+	//
+	// Parameters:
+	//   - LoaderKey: The unique identifier for the component to check.
+	//
+	// Returns:
+	//   - bool: true if the component is loaded, false otherwise
 	Loaded(LoaderKey) bool
 }
 
-type LoadFunc func(Loader) error
-
+// GonerKeeper interface defines methods for retrieving components from the Gone container.
+// It provides dynamic access to components at runtime, allowing components to be looked up
+// by either name or type.
+//
+// The interface requires implementing:
+//   - GetGonerByName: Retrieves a component by its registered name
+//   - GetGonerByType: Retrieves a component by its type
+//
+// Example usage:
+// ```go
+//
+//	type MyComponent struct {
+//	    gone.Flag
+//	    keeper gone.GonerKeeper `gone:"*"`
+//	}
+//
+//	func (m *MyComponent) Init() error {
+//	    // Get component by name
+//	    if svc := m.keeper.GetGonerByName("service"); svc != nil {
+//	        // Use the service
+//	    }
+//
+//	    // Get component by type
+//	    if logger := m.keeper.GetGonerByType(reflect.TypeOf(&Logger{})); logger != nil {
+//	        // Use the logger
+//	    }
+//	    return nil
+//	}
+//
+// ```
 type GonerKeeper interface {
+	// GetGonerByName retrieves a component by its name.
+	// The name should match either the component's explicit name set via gone.Name() option
+	// or the name returned by its GonerName() method if it implements NamedGoner.
+	//
+	// Parameters:
+	//   - name: The name of the component to retrieve
+	//
+	// Returns:
+	//   - any: The component instance if found, nil otherwise
 	GetGonerByName(name string) any
+
+	// GetGonerByType retrieves a component by its type.
+	// The type should match either the exact type of the component or
+	// an interface type that the component implements.
+	//
+	// Parameters:
+	//   - t: The reflect.Type of the component to retrieve
+	//
+	// Returns:
+	//   - any: The component instance if found, nil otherwise
 	GetGonerByType(t reflect.Type) any
 }
