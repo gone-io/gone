@@ -82,35 +82,3 @@ func TestLogOutput(t *testing.T) {
 		})
 	}
 }
-
-func TestLoggerInitFromEnv(t *testing.T) {
-	// 保存原始环境变量
-	oldLogLevel := os.Getenv("LOG_LEVEL")
-	defer os.Setenv("LOG_LEVEL", oldLogLevel)
-
-	tests := []struct {
-		envValue string
-		want     LoggerLevel
-	}{
-		{"debug", DebugLevel},
-		{"warn", WarnLevel},
-		{"error", ErrorLevel},
-		{"info", InfoLevel},
-		{"invalid", InfoLevel},
-		{"", InfoLevel},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.envValue, func(t *testing.T) {
-			os.Setenv("LOG_LEVEL", tt.envValue)
-			defaultLogInit = false // 重置初始化标志
-			logger := &defaultLogger{}
-			logger.Init()
-
-			if logger.GetLevel() != tt.want {
-				t.Errorf("LOG_LEVEL=%q: got level %v, want %v",
-					tt.envValue, logger.GetLevel(), tt.want)
-			}
-		})
-	}
-}

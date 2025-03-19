@@ -2,7 +2,6 @@ package gone
 
 import (
 	"log"
-	"os"
 )
 
 type LoggerLevel int8
@@ -26,75 +25,77 @@ type Logger interface {
 
 const LoggerName = "gone-logger"
 
-var defaultLog = &defaultLogger{
-	level: InfoLevel,
-}
-var defaultLogInit = false
+var defaultLog = &defaultLogger{}
 
 func GetDefaultLogger() Logger {
-	defaultLog.Init()
 	return defaultLog
 }
 
 type defaultLogger struct {
 	Flag
-	level    LoggerLevel
-	levelStr string `gone:"config,log.level=info"`
+	level *string `gone:"config,log.level=info"`
 }
 
 func (l *defaultLogger) GonerName() string {
 	return LoggerName
 }
 
-func (l *defaultLogger) Init() {
-	if defaultLogInit {
-		return
-	}
-	defaultLogInit = true
-	if l.levelStr == "" {
-		l.levelStr = os.Getenv("LOG_LEVEL")
+func (l *defaultLogger) Level() LoggerLevel {
+	if l.level == nil {
+		return InfoLevel
 	}
 
-	switch l.levelStr {
+	switch *l.level {
 	case "debug":
-		l.level = DebugLevel
+		return DebugLevel
 	case "warn":
-		l.level = WarnLevel
+		return WarnLevel
 	case "error":
-		l.level = ErrorLevel
+		return ErrorLevel
 	default:
-		l.level = InfoLevel
+		return InfoLevel
 	}
 }
 
 func (l *defaultLogger) Infof(msg string, args ...any) {
-	if l.level <= InfoLevel {
+	if l.Level() <= InfoLevel {
 		log.Printf(msg, args...)
 	}
 }
 
 func (l *defaultLogger) Errorf(msg string, args ...any) {
-	if l.level <= ErrorLevel {
+	if l.Level() <= ErrorLevel {
 		log.Printf(msg, args...)
 	}
 }
 
 func (l *defaultLogger) Warnf(msg string, args ...any) {
-	if l.level <= WarnLevel {
+	if l.Level() <= WarnLevel {
 		log.Printf(msg, args...)
 	}
 }
 
 func (l *defaultLogger) Debugf(msg string, args ...any) {
-	if l.level <= DebugLevel {
+	if l.Level() <= DebugLevel {
 		log.Printf(msg, args...)
 	}
 }
 
 func (l *defaultLogger) GetLevel() LoggerLevel {
-	return l.level
+	return l.Level()
 }
 
 func (l *defaultLogger) SetLevel(level LoggerLevel) {
-	l.level = level
+	switch level {
+	case DebugLevel:
+		*l.level = "debug"
+	case InfoLevel:
+		*l.level = "info"
+	case WarnLevel:
+		*l.level = "warn"
+	case ErrorLevel:
+		*l.level = "error"
+	default:
+		*l.level = "info"
+	}
 }
