@@ -2,6 +2,7 @@ package gone
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"reflect"
 	"strconv"
@@ -113,7 +114,24 @@ func (s *EnvConfigure) Get(key string, v any, defaultVal string) error {
 	return SetValue(rv, v, env)
 }
 
+var UnsupportedError = NewInnerError("Unsupported type by EnvConfigure", ConfigError)
+
+// SetValue sets the value of a pointer to a Go type based on the provided value and environment variable.
+// Deprecated use SetPointerValue or SetValueByReflect instead
 func SetValue(rv reflect.Value, v any, value string) error {
+	err := SetPointerValue(v, value)
+	if err != nil {
+		if errors.Is(err, UnsupportedError) {
+			return SetValueByReflect(rv, value)
+		} else {
+			return ToError(err)
+		}
+	}
+	return nil
+}
+
+// SetPointerValue sets the value of a pointer to a Go type based on the provided value and environment variable.
+func SetPointerValue(v any, value string) error {
 	// Type switch to handle different pointer types
 	switch ptr := v.(type) {
 	// String type
@@ -215,16 +233,17 @@ func SetValue(rv reflect.Value, v any, value string) error {
 		*ptr = val
 
 	default:
-		return setValueByReflectValue(rv, v, value)
+		return UnsupportedError
 	}
 	return nil
 }
 
-func setValueByReflectValue(rv reflect.Value, v any, value string) error {
+// SetValueByReflect sets the value of a pointer to a Go type based on the provided value and environment variable.
+func SetValueByReflect(rv reflect.Value, value string) error {
 	k := rv.Elem().Kind()
 	switch k {
 	case reflect.Struct, reflect.Slice, reflect.Map:
-		return ToError(json.Unmarshal([]byte(value), v))
+		return ToError(json.Unmarshal([]byte(value), rv.Interface()))
 	case reflect.String:
 		rv.Elem().SetString(value)
 	case reflect.Int:
@@ -310,8 +329,7 @@ func setValueByReflectValue(rv reflect.Value, v any, value string) error {
 		rv.Elem().SetBool(val)
 
 	default:
-		// Struct and unsupported types
-		return NewInnerError("Unsupported type by EnvConfigure", ConfigError)
+		return UnsupportedError
 	}
 	return nil
 }

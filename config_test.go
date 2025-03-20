@@ -555,7 +555,7 @@ func TestSetValueByReflectValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rv := reflect.ValueOf(tt.value)
-			err := setValueByReflectValue(rv, tt.value, tt.strVal)
+			err := SetValueByReflect(rv, tt.strVal)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("setValueByReflectValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
