@@ -1,6 +1,16 @@
 name: Test and coverage
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+  pull_request:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
 
 jobs:
   build:
@@ -9,18 +19,11 @@ jobs:
       fail-fast: false
       matrix:
         version: ["1.21.x", "1.22.x", "1.23.x", "1.24.x"]
-#    services:
-#      redis:
-#        image: redis
-#        ports:
-#          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
-#      - name: Install SQLite
-#        run: sudo apt-get update && sudo apt-get install -y sqlite3 libsqlite3-dev
       - name: Gather dependencies
         run: go mod download
       - name: Run coverage
