@@ -25,13 +25,10 @@ type Logger interface {
 
 const LoggerName = "gone-logger"
 
-var defaultLog = &defaultLogger{}
-
 func GetDefaultLogger() Logger {
-	if defaultLog == nil {
-		defaultLog = &defaultLogger{}
+	return &defaultLogger{
+		level: new(string),
 	}
-	return defaultLog
 }
 
 type defaultLogger struct {

@@ -53,18 +53,19 @@ func (g *Flag) goneFlag() {}
 // and loads itself as a Goner to enable self-injection.
 // Returns a pointer to the initialized Core.
 func NewCore() *Core {
+	var logger = GetDefaultLogger()
 	loader := Core{
 		nameMap:            make(map[string]*coffin),
 		typeProviderMap:    make(map[reflect.Type]*wrapProvider),
 		typeProviderDepMap: make(map[reflect.Type]*coffin),
 		loaderMap:          make(map[LoaderKey]bool),
-		log:                GetDefaultLogger(),
+		log:                logger,
 	}
 
 	_ = loader.Load(&loader, IsDefault())
 	_ = loader.Load(&ConfigProvider{})
 	_ = loader.Load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)), OnlyForName())
-	_ = loader.Load(defaultLog, IsDefault(new(Logger)))
+	_ = loader.Load(logger.(Goner), IsDefault(new(Logger)))
 	return &loader
 }
 

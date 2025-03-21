@@ -328,7 +328,7 @@ func TestCore_Fill(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core := NewCore()
-			_ = core.Load(defaultLog)
+			_ = core.Load(GetDefaultLogger().(Goner))
 			_ = core.Load(&ConfigProvider{})
 			_ = core.Load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)), OnlyForName())
 			tt.setup(core)
@@ -379,7 +379,7 @@ func TestCore_Check(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core := NewCore()
-			_ = core.Load(defaultLog)
+			_ = core.Load(GetDefaultLogger().(Goner))
 			_ = core.Load(&ConfigProvider{})
 			_ = core.Load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)), OnlyForName())
 			tt.setup(core)
