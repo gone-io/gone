@@ -1,5 +1,15 @@
 # Gone V2 Provider 机制介绍
 
+- [Gone V2 Provider 机制介绍](#gone-v2-provider-机制介绍)
+  - [1. Gone 的依赖注入流程](#1-gone-的依赖注入流程)
+  - [2. 不同的 Provider](#2-不同的-provider)
+    - [2.1 按类型注入](#21-按类型注入)
+    - [2.2 按名字注入](#22-按名字注入)
+    - [2.3 基于名字的多类型 Provider](#23-基于名字的多类型-provider)
+  - [3. “星号” Provider：`*`](#3-星号-provider)
+  - [总结](#总结)
+
+
 Gone V2 版本完全基于 Provider 机制实现依赖注入，其核心思想是通过 Provider 为对象提供依赖，而不必将所有第三方对象都包装为 `Goner`。下面将从 Gone 的依赖注入流程、Provider 的分类及其使用示例等方面进行详细说明。
 
 ---
