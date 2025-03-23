@@ -1,5 +1,26 @@
 # Gone@v2 使用说明
 
+- [Gone@v2 使用说明](#gonev2-使用说明)
+	- [Goner的定义](#goner的定义)
+	- [Goner加载器](#goner加载器)
+		- [加载Goner](#加载goner)
+		- [加载函数](#加载函数)
+		- [加载选项](#加载选项)
+	- [依赖注入](#依赖注入)
+		- [基于字段类型的注入](#基于字段类型的注入)
+		- [基于Goner名称注入](#基于goner名称注入)
+		- [通过Provider给组件注入依赖](#通过provider给组件注入依赖)
+	- [Goner的生命周期](#goner的生命周期)
+	- [四个hook函数](#四个hook函数)
+	- [Application](#application)
+	- [GonerKeeper](#gonerkeeper)
+	- [数组注入](#数组注入)
+	- [使用FuncInjector来实现函数参数的注入](#使用funcinjector来实现函数参数的注入)
+	- [内置的`Config`和`Logger`](#内置的config和logger)
+		- [Config](#config)
+		- [Logger](#logger)
+
+
 ## Goner的定义
 
 Goner是Gone框架定义的组件，是只嵌入了`gone.Flag`的结构体指针，可以用于Gone框架的依赖注入，如下代码就定义了一个简单的Goner：
