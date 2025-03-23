@@ -136,6 +136,7 @@ If you find errors or have feature requests, feel free to [submit an issue](http
 If you have any questions, please contact us through:
 - [Github Discussions](https://github.com/gone-io/gone/discussions)
 - Scan the QR code to add WeChat, with the message: gone
+
   <img src="docs/assert/qr_dapeng.png" width = "250" alt="dapeng wx qr code"/>
 
 ## License
