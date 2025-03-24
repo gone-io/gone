@@ -2,7 +2,7 @@
     <a href="README.md">English</a>&nbsp ｜&nbsp 中文
 </p>
 
-[![license](https://img.shields.io/badge/license-GPL%20V3-blue)](LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![GoDoc](https://pkg.go.dev/badge/github.com/gone-io/gone.jsonvalue?utm_source=godoc)](https://pkg.go.dev/github.com/gone-io/gone/v2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gone-io/gone)](https://goreportcard.com/report/github.com/gone-io/gone)
 [![codecov](https://codecov.io/gh/gone-io/gone/graph/badge.svg?token=H3CROTTDZ1)](https://codecov.io/gh/gone-io/gone)
