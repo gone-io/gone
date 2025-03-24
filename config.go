@@ -243,7 +243,9 @@ func SetValueByReflect(rv reflect.Value, value string) error {
 	k := rv.Elem().Kind()
 	switch k {
 	case reflect.Struct, reflect.Slice, reflect.Map:
-		return ToError(json.Unmarshal([]byte(value), rv.Interface()))
+		if value != "" {
+			return ToError(json.Unmarshal([]byte(value), rv.Interface()))
+		}
 	case reflect.String:
 		rv.Elem().SetString(value)
 	case reflect.Int:
