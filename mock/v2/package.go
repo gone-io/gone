@@ -1,4 +1,4 @@
-package mock
+package v2
 
 //go:generate mockgen -source=../interafce.go -destination=./mock.go -package=mock
 
