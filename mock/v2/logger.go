@@ -7,7 +7,7 @@
 //
 
 // Package mock is a generated GoMock package.
-package mock
+package v2
 
 import (
 	reflect "reflect"
