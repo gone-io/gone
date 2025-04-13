@@ -516,7 +516,13 @@ func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
 
 		if provider, ok := c.goner.(NamedProvider); ok {
 			goner, err := provider.Provide(tagConf, t)
-			if err != nil && goner != nil {
+			if err != nil {
+				s.log.Warnf("provider %T failed to provide value for type %s: %v", provider, GetTypeName(t), err)
+				notSupport = ToErrorWithMsg(err,
+					fmt.Sprintf("provider %T failed to provide value for type %s", provider, GetTypeName(t)))
+				continue
+			}
+			if goner == nil {
 				continue
 			}
 			return goner, nil
