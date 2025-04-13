@@ -2,6 +2,7 @@
 
 test-app
 coverage.txt
+coverage.out
 
 demo
 *.log
