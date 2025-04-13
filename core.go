@@ -467,11 +467,14 @@ func (s *Core) GonerName() string {
 }
 
 func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
+	notSupport := NewInnerError(fmt.Sprintf("no provider or compatible type found for %s", GetTypeName(t)), NotSupport)
+
 	if provider, ok := s.typeProviderMap[t]; ok && provider != nil {
 		provide, err := provider.Provide(tagConf)
 		if err != nil {
-			s.log.Warnf("provider %T failed to provide value for type %s: %v",
-				provider, GetTypeName(t), err)
+			s.log.Warnf("provider %T failed to provide value for type %s: %v", provider, GetTypeName(t), err)
+			notSupport = ToErrorWithMsg(err,
+				fmt.Sprintf("provider %T failed to provide value for type %s", provider, GetTypeName(t)))
 		} else if provide != nil {
 			return provide, nil
 		}
@@ -498,17 +501,34 @@ func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
 			provide, err := provider.Provide(tagConf)
 			if err != nil {
 				return nil, ToErrorWithMsg(err,
-					fmt.Sprintf("provider %T failed to provide slice element of type %s",
-						provider, GetTypeName(elem)))
+					fmt.Sprintf("provider %T failed to provide slice element of type %s", provider, GetTypeName(elem)))
 			}
 			v.Set(reflect.Append(v, reflect.ValueOf(provide)))
 		}
 		return v.Interface(), nil
 	}
 
-	return nil, NewInnerError(
-		fmt.Sprintf("no provider or compatible type found for %s", GetTypeName(t)),
-		NotSupport)
+	// try to get value from all NamedProviders
+	for _, c := range s.coffins {
+		if c.onlyForName || !c.defaultTypeMap[t] {
+			continue
+		}
+
+		if provider, ok := c.goner.(NamedProvider); ok {
+			goner, err := provider.Provide(tagConf, t)
+			if err != nil {
+				s.log.Warnf("provider %T failed to provide value for type %s: %v", provider, GetTypeName(t), err)
+				notSupport = ToErrorWithMsg(err,
+					fmt.Sprintf("provider %T failed to provide value for type %s", provider, GetTypeName(t)))
+				continue
+			}
+			if goner == nil {
+				continue
+			}
+			return goner, nil
+		}
+	}
+	return nil, notSupport
 }
 
 // FuncInjectHook is a function type used for customizing parameter injection in functions.

@@ -45,14 +45,14 @@ func (p *wrapProvider) Provide(conf string) (any, error) {
 		if results[1].IsNil() {
 			return results[0].Interface(), nil
 		}
-		return results[0].Interface(), results[1].Interface().(error)
+		return nil, results[1].Interface().(error)
 	}
 
 	results := reflect.ValueOf(p.value).MethodByName("Provide").Call(nil)
 	if results[1].IsNil() {
 		return results[0].Interface(), nil
 	}
-	return results[0].Interface(), results[1].Interface().(error)
+	return nil, results[1].Interface().(error)
 }
 
 func (p *wrapProvider) Type() reflect.Type {
