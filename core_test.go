@@ -1591,6 +1591,7 @@ type typeProvideByNamedProvider struct{}
 
 type namedProvider struct {
 	Flag
+	*typeProvideByNamedProvider
 }
 
 func (s *namedProvider) GonerName() string {
@@ -1598,17 +1599,17 @@ func (s *namedProvider) GonerName() string {
 }
 
 func (s *namedProvider) Provide(tagConf string, t reflect.Type) (any, error) {
-	return typeProvideByNamedProvider{}, nil
+	return s.typeProvideByNamedProvider, nil
 }
 
 func TestForNamedProviderOptionWithDefaultType(t *testing.T) {
 	t.Run("load with IsDefault", func(t *testing.T) {
 		NewApp().
-			Load(&namedProvider{}, IsDefault(new(typeProvideByNamedProvider))).
+			Load(&namedProvider{typeProvideByNamedProvider: &typeProvideByNamedProvider{}}, IsDefault(new(typeProvideByNamedProvider))).
 			Run(func(in struct {
-				T0 typeProvideByNamedProvider `gone:"*"`
-				T1 typeProvideByNamedProvider `gone:""`
-				T2 typeProvideByNamedProvider `gone:"namedProvider"`
+				T0 *typeProvideByNamedProvider `gone:"*"`
+				T1 *typeProvideByNamedProvider `gone:""`
+				T2 *typeProvideByNamedProvider `gone:"namedProvider"`
 			}) {
 				if in.T0 != in.T1 || in.T0 != in.T2 {
 					t.Errorf("Expected the same value, got: %v, %v, %v", in.T0, in.T1, in.T2)
@@ -1626,11 +1627,11 @@ func TestForNamedProviderOptionWithDefaultType(t *testing.T) {
 		}()
 
 		NewApp().
-			Load(&namedProvider{}, IsDefault(new(typeProvideByNamedProvider)), OnlyForName()).
+			Load(&namedProvider{typeProvideByNamedProvider: &typeProvideByNamedProvider{}}, IsDefault(new(typeProvideByNamedProvider)), OnlyForName()).
 			Run(func(in struct {
-				T2 typeProvideByNamedProvider `gone:"namedProvider"`
-				T0 typeProvideByNamedProvider `gone:"*"`
-				T1 typeProvideByNamedProvider `gone:""`
+				T2 *typeProvideByNamedProvider `gone:"namedProvider"`
+				T0 *typeProvideByNamedProvider `gone:"*"`
+				T1 *typeProvideByNamedProvider `gone:""`
 			}) {
 			})
 	})
@@ -1645,11 +1646,31 @@ func TestForNamedProviderOptionWithDefaultType(t *testing.T) {
 		}()
 
 		Prepare().
+			Load(&namedProvider{typeProvideByNamedProvider: &typeProvideByNamedProvider{}}).
+			Run(func(in struct {
+				T2 *typeProvideByNamedProvider `gone:"namedProvider"`
+				T0 *typeProvideByNamedProvider `gone:"*"`
+				T1 *typeProvideByNamedProvider `gone:""`
+			}) {
+			})
+	})
+
+	t.Run("load without any options", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				e := r.(error)
+				if !strings.Contains(e.Error(), "T0") || !strings.Contains(e.Error(), "no provider or compatible type found") {
+					t.Errorf("Expected error message contains T0 and no provider or compatible type found, got: %v", e)
+				}
+			}
+		}()
+
+		Prepare().
 			Load(&namedProvider{}).
 			Run(func(in struct {
-				T2 typeProvideByNamedProvider `gone:"namedProvider"`
-				T0 typeProvideByNamedProvider `gone:"*"`
-				T1 typeProvideByNamedProvider `gone:""`
+				T2 *typeProvideByNamedProvider `gone:"namedProvider"`
+				T0 *typeProvideByNamedProvider `gone:"*"`
+				T1 *typeProvideByNamedProvider `gone:""`
 			}) {
 			})
 	})
@@ -1676,7 +1697,7 @@ func Test_filedHasOption(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "not empty value",
+			name: "not empty value, has need option",
 			args: args{
 				filed: &reflect.StructField{
 					Tag: `option:"allowNil,otherOption"`,
@@ -1685,6 +1706,17 @@ func Test_filedHasOption(t *testing.T) {
 				optionName: "allowNil",
 			},
 			want: true,
+		},
+		{
+			name: "not empty value, not has need option",
+			args: args{
+				filed: &reflect.StructField{
+					Tag: `option:"otherOption"`,
+				},
+				tagName:    "option",
+				optionName: "allowNil",
+			},
+			want: false,
 		},
 	}
 	for _, tt := range tests {
