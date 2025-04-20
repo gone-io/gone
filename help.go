@@ -101,31 +101,24 @@ func GetTypeName(t reflect.Type) string {
 		}
 		return "struct{}"
 	default:
-		if t.Name() != "" {
-			if t.PkgPath() != "" {
-				return t.PkgPath() + "." + t.Name()
-			}
-			return t.Name()
+		name := t.Name()
+		if name == "" {
+			name = t.String()
 		}
-		return t.String()
+		if t.PkgPath() != "" {
+			return t.PkgPath() + "." + name
+		}
+		return name
 	}
 }
 
 // GetFuncName get function name
 func GetFuncName(f any) string {
-	t := reflect.TypeOf(f)
+	of := reflect.ValueOf(f)
+	t := of.Type()
 	if t.Kind() != reflect.Func {
 		return ""
 	}
-
-	if t.Name() != "" {
-		if t.PkgPath() != "" {
-			return t.PkgPath() + "." + t.Name()
-		}
-		return t.Name()
-	}
-
-	// Fallback to runtime.FuncForPC for anonymous functions
 	return strings.TrimSuffix(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name(), "-fm")
 }
 
@@ -152,9 +145,48 @@ func GenLoaderKey() LoaderKey {
 	return LoaderKey{id: keyCounter}
 }
 
+var loadFuncMap = make(map[string]LoaderKey)
+
+func genLoaderKey(fn any) LoaderKey {
+	key := fmt.Sprintf("%#v", fn)
+	if k, ok := loadFuncMap[key]; ok {
+		return k
+	} else {
+		loadFuncMap[key] = GenLoaderKey()
+		return loadFuncMap[key]
+	}
+}
+
+// OnceLoad wraps a LoadFunc to ensure it only executes once per Loader instance.
+// It generates a unique LoaderKey for the function and uses it to track execution status.
+//
+// Parameters:
+//   - fn: The LoadFunc to be wrapped. This function will only be executed once per Loader.
+//
+// Returns:
+//   - LoadFunc: A wrapped function that checks if it has already been executed before calling the original function.
+//
+// Example usage:
+// ```go
+//
+//	func loadComponents(l Loader) error {
+//	    // Load dependencies...
+//	    return nil
+//	}
+//
+//	// Create a function that will only execute once per Loader
+//	wrappedLoad := OnceLoad(loadComponents)
+//
+//	// First call executes loadComponents
+//	wrappedLoad(loader)
+//
+//	// Second call returns nil without executing loadComponents again
+//	wrappedLoad(loader)
+//
+// ```
 func OnceLoad(fn LoadFunc) LoadFunc {
-	var key = GenLoaderKey()
 	return func(loader Loader) error {
+		var key = genLoaderKey(fn)
 		if loader.Loaded(key) {
 			return nil
 		}
@@ -162,14 +194,101 @@ func OnceLoad(fn LoadFunc) LoadFunc {
 	}
 }
 
-// SafeExecute 执行可能会触发panic的函数并将panic转换为error
+// BuildSingProviderLoadFunc creates a LoadFunc that wraps a FunctionProvider and ensures it's loaded only once per Loader instance.
+// It combines the functionality of OnceLoad and WrapFunctionProvider to create a reusable loader function.
+//
+// Parameters:
+//   - fn: The FunctionProvider to be wrapped. This function will be converted to a provider component.
+//   - options: Optional configuration for how the provider should be loaded.
+//
+// Returns:
+//   - LoadFunc: A wrapped function that loads the provider only once per Loader instance.
+//
+// Example usage:
+// ```go
+//
+//	func createService(config string, param struct {
+//			receiveInjected InjectedRepo `gone:"*"`
+//		}) (Service, error) {
+//		// Create and return a service instance using the config and repository
+//		return &ServiceImpl{repo: param.receiveInjected, config: config}, nil
+//	}
+//
+// // Create a loader function that will only load the service provider once
+// serviceLoader := BuildSingProviderLoadFunc(createService)
+// // Load the service provider into the container
+// NewApp().Loads(serviceLoader)
+//
+// ```
+func BuildSingProviderLoadFunc[P, T any](fn FunctionProvider[P, T], options ...Option) LoadFunc {
+	return OnceLoad(func(loader Loader) error {
+		provider := WrapFunctionProvider(fn)
+		return loader.Load(provider, options...)
+	})
+}
+
+// BuildThirdComponentLoadFunc creates a LoadFunc that registers an existing component into the container.
+// It wraps the component in a simple provider function and ensures it's loaded only once per Loader instance.
+//
+// Parameters:
+//   - component: The existing component instance to be registered in the container.
+//   - options: Optional configuration for how the component should be loaded.
+//
+// Returns:
+//   - LoadFunc: A wrapped function that loads the component only once per Loader instance.
+//
+// Example usage:
+// ```go
+//
+//	type TestComponent struct {
+//		i int
+//	}
+//	// Create an existing component instance
+//	var component TestComponent
+//
+//	// Create a loader function that will register the component in the container
+//	loadFunc := BuildThirdComponentLoadFunc(&component)
+//
+//	// Load the component into the container
+//	NewApp().Loads(loadFunc)
+//
+// ```
+func BuildThirdComponentLoadFunc[T any](component T, options ...Option) LoadFunc {
+	return BuildSingProviderLoadFunc(func(tagConf string, param struct{}) (T, error) {
+		return component, nil
+	}, options...)
+}
+
+// SafeExecute safely executes a function and captures any panics that occur during execution.
+// It converts panics into error returns, allowing for graceful error handling in code that might panic.
+//
+// Parameters:
+//   - fn: The function to execute safely. This function should return an error or nil.
+//
+// Returns:
+//   - error: The error returned by fn, or a new InnerError if a panic occurred during execution.
+//
+// Example usage:
+// ```go
+//
+//	func riskyOperation() error {
+//	    // Code that might panic
+//	    return nil
+//	}
+//
+//	// Execute the risky operation safely
+//	err := SafeExecute(riskyOperation)
+//	if err != nil {
+//	    // Handle the error or panic gracefully
+//	}
+//
+// ```
 func SafeExecute(fn func() error) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = NewInnerErrorSkip(fmt.Sprintf("panic occurred: %v", r), FailInstall, 3)
 		}
 	}()
-	// 执行传入的函数
 	return fn()
 }
 

@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -181,6 +182,10 @@ func TestIsCompatible(t *testing.T) {
 
 func TestGetTypeName(t *testing.T) {
 	type LocalType struct{}
+
+	var ch = make(chan Flag)
+	type Ch chan Flag
+
 	var iface interface{}
 
 	tests := []struct {
@@ -227,6 +232,16 @@ func TestGetTypeName(t *testing.T) {
 			name: "Anonymous struct",
 			t:    reflect.TypeOf(struct{}{}),
 			want: "struct{}",
+		},
+		{
+			name: "chan",
+			t:    reflect.TypeOf(ch),
+			want: "chan gone.Flag",
+		},
+		{
+			name: "Named chan",
+			t:    reflect.TypeOf(Ch(ch)),
+			want: "github.com/gone-io/gone/v2.Ch",
 		},
 	}
 
@@ -480,5 +495,119 @@ func TestGenLoaderKey(t *testing.T) {
 
 	if key1 == key2 {
 		t.Error("Generated keys should be unique")
+	}
+}
+
+func TestLoadFunc(t *testing.T) {
+	type TestGoner struct {
+		Flag
+		i int
+	}
+	var goner TestGoner
+
+	t.Run("case 1: use OnceLoad once outside", func(t *testing.T) {
+		originLoader := func(loader Loader) error {
+			return loader.Load(&goner)
+		}
+
+		loadFunc := OnceLoad(originLoader)
+
+		NewApp(loadFunc, loadFunc).
+			Run(func(goners []*TestGoner) {
+				if len(goners) != 1 {
+					t.Errorf("Expected 1 goner, got %d", len(goners))
+				}
+			})
+	})
+
+	t.Run("case 2: use OnceLoad inside more than once", func(t *testing.T) {
+		loadFunc := func(loader Loader) error {
+			return OnceLoad(func(loader Loader) error {
+				return loader.Load(&goner)
+			})(loader)
+		}
+
+		NewApp(loadFunc, loadFunc).
+			Run(func(goners []*TestGoner) {
+				if len(goners) != 1 {
+					t.Errorf("Expected 1 goner, got %d", len(goners))
+				}
+			})
+	})
+	t.Run("case 3: use OnceLoad inside more wrapped func dep on `Closure`", func(t *testing.T) {
+		loadFunc := func(loader Loader) error {
+			i := 100
+			return OnceLoad(func(loader Loader) error {
+				return loader.Load(&TestGoner{i: i})
+			})(loader)
+		}
+
+		NewApp(loadFunc, loadFunc).
+			Run(func(goners []*TestGoner) {
+				if len(goners) != 1 {
+					t.Errorf("Expected 1 goner, got %d", len(goners))
+				}
+			})
+	})
+}
+
+func TestBuildThirdComponentLoadFunc(t *testing.T) {
+	type TestComponent struct {
+		i int
+	}
+	var goner TestComponent
+
+	loadFunc := func(loader Loader) error {
+		return BuildThirdComponentLoadFunc(&goner)(loader)
+	}
+
+	NewApp(loadFunc, loadFunc).
+		Run(func(goners []*TestComponent) {
+			if len(goners) != 1 {
+				t.Errorf("Expected 1 goner, got %d", len(goners))
+			}
+		})
+}
+
+func TestIsError(t *testing.T) {
+	type args struct {
+		err  error
+		code int
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "is error",
+			args: args{
+				err:  NewError(1, "test", 500),
+				code: 500,
+			},
+		},
+		{
+			name: "is not error",
+			args: args{
+				err:  NewError(2, "test", 500),
+				code: 1,
+			},
+			want: false,
+		},
+		{
+			name: "is not error",
+			args: args{
+				err:  errors.New("test"),
+				code: 1,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsError(tt.args.err, tt.args.code); got != tt.want {
+				t.Errorf("IsError() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
