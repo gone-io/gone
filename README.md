@@ -20,13 +20,6 @@
     - [Lifecycle](#lifecycle)
   - [Quick Start](#quick-start)
   - [Update History](#update-history)
-    - [v2.0.5](#v205)
-    - [v2.0.4](#v204)
-    - [v2.0.3](#v203)
-    - [v2.0.0](#v200)
-    - [v1.2.1](#v121)
-    - [v1.2.0](#v120)
-    - [v1.1.1](#v111)
   - [Contribution](#contribution)
   - [Contact](#contact)
   - [License](#license)
@@ -99,6 +92,10 @@ func main() {
     ```
 
 ## Update History
+
+### [latest update changes](https://github.com/gone-io/gone/releases)
+
+
 ### v2.0.5
 - Added `option:"lazy"` tag to support lazy field injection, see [documentation](docs/lazy_fill_en.md)
 - Note: Fields marked with `option:"lazy"` cannot be used in the `Init`, `Provide`, and `Inject` methods
