@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type Configure interface {
 type ConfigProvider struct {
 	Flag
 	configure Configure `gone:"configure"` // The Configure implementation to use
+	mu        sync.RWMutex
 }
 
 // GonerName returns the provider name "config" used for registration
@@ -60,8 +62,10 @@ func (s *ConfigProvider) Provide(tagConf string, t reflect.Type) (any, error) {
 
 	// Create new value of requested type and configure it
 	value := reflect.New(getType)
-	err := s.configure.Get(key, value.Interface(), defaultValue)
-	if err != nil {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if err := s.configure.Get(key, value.Interface(), defaultValue); err != nil {
 		return nil, ToError(err)
 	}
 	if t.Kind() == reflect.Ptr {
