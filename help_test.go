@@ -2,6 +2,7 @@ package gone
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -475,6 +476,7 @@ func TestGetInterfaceType(t *testing.T) {
 
 // Mock Loader for testing OnceLoad
 type mockLoader struct {
+	Loader
 	loadedKeys map[LoaderKey]bool
 }
 
@@ -510,7 +512,7 @@ func TestLoadFunc(t *testing.T) {
 			return loader.Load(&goner)
 		}
 
-		loadFunc := OnceLoad(originLoader)
+		loadFunc := originLoader
 
 		NewApp(loadFunc, loadFunc).
 			Run(func(goners []*TestGoner) {
@@ -567,6 +569,23 @@ func TestBuildThirdComponentLoadFunc(t *testing.T) {
 				t.Errorf("Expected 1 goner, got %d", len(goners))
 			}
 		})
+}
+
+func TestX(t *testing.T) {
+	type TestComponent struct {
+		i int
+	}
+	type TestComponent2 struct {
+		i int
+	}
+	loadFunc1 := BuildThirdComponentLoadFunc[*TestComponent](&TestComponent{i: 10})
+	loadFunc2 := BuildThirdComponentLoadFunc[*TestComponent2](&TestComponent2{i: 20})
+
+	key1 := fmt.Sprintf("loadFunc1=> %#v\n", loadFunc1)
+	key2 := fmt.Sprintf("loadFunc2=> %#v\n", loadFunc2)
+	if key1 == key2 {
+		t.Errorf("loadFunc1 should not equal to loadFunc2")
+	}
 }
 
 func TestIsError(t *testing.T) {

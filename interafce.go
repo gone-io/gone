@@ -580,7 +580,9 @@ type LoaderKey struct{ id uint64 }
 //	}
 //
 // ```
-type LoadFunc func(Loader) error
+type LoadFunc = func(Loader) error
+
+type MustLoadFunc = func(Loader)
 
 // Loader defines the interface for loading components into the Gone container.
 // It provides methods to load new components and check if components are already loaded.
@@ -598,6 +600,17 @@ type Loader interface {
 	// Returns:
 	//   - error: Any error that occurred during loading
 	Load(goner Goner, options ...Option) error
+
+	// MustLoad adds a component to the Gone container with optional configuration.
+	// If an error occurs during loading, it panics.
+	//
+	// Parameters:
+	//   - goner: The component to load. Must implement Goner interface.
+	//   - options: Optional configuration for how the component should be loaded.
+	//
+	// Returns:
+	//   - Loader: The Loader instance for further loading operations
+	MustLoad(goner Goner, options ...Option) Loader
 
 	// Loaded checks if a component identified by the given LoaderKey has been loaded.
 	//

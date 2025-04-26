@@ -32,13 +32,7 @@ func NewApp(loads ...LoadFunc) *Application {
 	preparer := Application{}
 
 	preparer.init()
-	for _, fn := range loads {
-		err := fn(preparer.loader)
-		if err != nil {
-			panic(err)
-		}
-	}
-	return &preparer
+	return preparer.Loads(loads...)
 }
 
 // Preparer is a type alias for Application, representing the main entry point for application setup and execution.
@@ -90,17 +84,20 @@ func Load(goner Goner, options ...Option) *Application {
 	return Default.Load(goner, options...)
 }
 
-// Loads executes multiple LoadFuncs in sequence to configure the Application
+// Loads executes multiple LoadFuncs in sequence to load goner for Application
 // Parameters:
 //   - loads: Variadic LoadFunc parameters that will be executed in order
 //
-// Each LoadFunc typically loads configurations or components.
+// Each LoadFunc typically loads goner components.
 // If any LoadFunc fails during execution, it will trigger a panic.
 //
 // Returns:
 //   - *Application: Returns the Application instance itself for method chaining
 func (s *Application) Loads(loads ...LoadFunc) *Application {
 	for _, fn := range loads {
+		if s.loader.Loaded(genLoaderKey(fn)) {
+			return s
+		}
 		err := fn(s.loader)
 		if err != nil {
 			panic(err)

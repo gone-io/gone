@@ -221,6 +221,13 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 	return nil
 }
 
+func (s *Core) MustLoad(goner Goner, options ...Option) Loader {
+	if err := s.Load(goner, options...); err != nil {
+		panic(err)
+	}
+	return s
+}
+
 // Check performs dependency validation and determines initialization order:
 // 1. Collects all dependencies between components
 // 2. Validates there are no circular dependencies

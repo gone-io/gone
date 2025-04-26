@@ -184,18 +184,13 @@ func genLoaderKey(fn any) LoaderKey {
 //	wrappedLoad(loader)
 //
 // ```
+// Deprecated: this function is never need any more, because Application.Loads ensure that LoadFunc are only loaded once.
 func OnceLoad(fn LoadFunc) LoadFunc {
-	return func(loader Loader) error {
-		var key = genLoaderKey(fn)
-		if loader.Loaded(key) {
-			return nil
-		}
-		return fn(loader)
-	}
+	return fn
 }
 
 // BuildSingProviderLoadFunc creates a LoadFunc that wraps a FunctionProvider and ensures it's loaded only once per Loader instance.
-// It combines the functionality of OnceLoad and WrapFunctionProvider to create a reusable loader function.
+// It combines the functionality of BuildOnceLoad and WrapFunctionProvider to create a reusable loader function.
 //
 // Parameters:
 //   - fn: The FunctionProvider to be wrapped. This function will be converted to a provider component.
@@ -221,10 +216,10 @@ func OnceLoad(fn LoadFunc) LoadFunc {
 //
 // ```
 func BuildSingProviderLoadFunc[P, T any](fn FunctionProvider[P, T], options ...Option) LoadFunc {
-	return OnceLoad(func(loader Loader) error {
+	return func(loader Loader) error {
 		provider := WrapFunctionProvider(fn)
 		return loader.Load(provider, options...)
-	})
+	}
 }
 
 // BuildThirdComponentLoadFunc creates a LoadFunc that registers an existing component into the container.

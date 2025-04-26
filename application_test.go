@@ -3,6 +3,7 @@ package gone_test
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -482,4 +483,64 @@ func TestPreparer_ServeGlobal(t *testing.T) {
 		}()
 		gone.Serve()
 	}()
+}
+
+func TestApplication_Loads(t *testing.T) {
+	loadFn := func(core gone.Loader) error {
+		return core.Load(&Worker{name: "worker"})
+	}
+
+	gone.
+		NewApp(loadFn).
+		Loads(loadFn, loadFn).
+		Run(func(works []*Worker) {
+			if len(works) != 1 {
+				t.Errorf("Expected 3 workers, got %d", 1)
+			}
+		})
+}
+
+func TestLoadsUsage(t *testing.T) {
+	loadFn := func(loader gone.Loader) error {
+		loader.
+			MustLoad(&Worker{name: "worker"}).
+			MustLoad(&Worker{name: "worker2"}).
+			MustLoad(&Worker{name: "worker3"}, gone.Name("boss"))
+		return nil
+	}
+	gone.
+		NewApp(loadFn).
+		Loads(loadFn, loadFn).
+		Run(func(works []*Worker, i struct {
+			boss *Worker `gone:"boss"`
+		}) {
+			if len(works) != 3 {
+				t.Errorf("Expected 3 workers, got %d", 3)
+			}
+			if i.boss.name != "worker3" {
+				t.Errorf("Expected boss name to be worker3, got %s", i.boss.name)
+			}
+		})
+}
+
+func TestMustLoadPanic(t *testing.T) {
+	loadFn := func(loader gone.Loader) error {
+		loader.
+			MustLoad(&Worker{name: "worker"}).
+			MustLoad(&Worker{name: "worker2"}).
+			MustLoad(&Worker{name: "worker3"}, gone.Name("boss")).
+			MustLoad(&Worker{name: "worker4"}, gone.Name("boss"))
+		return nil
+	}
+	err := gone.SafeExecute(func() error {
+		gone.NewApp(loadFn).Run()
+		return nil
+	})
+	if err == nil {
+		t.Errorf("Expected panic, got nil")
+		return
+	}
+	if !strings.Contains(err.Error(), "goner with name \"boss\" is already loaded") {
+		t.Errorf("Expected duplicate name error, got %s", err.Error())
+	}
 }
