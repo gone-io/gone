@@ -1763,3 +1763,82 @@ func Test_filedHasOption(t *testing.T) {
 		})
 	}
 }
+
+type X struct {
+	Name string
+}
+
+func (x X) Do() {
+
+}
+
+var x = X{Name: "x"}
+
+type nProvider struct {
+	Flag
+}
+
+func (s *nProvider) GonerName() string {
+	return "nProvider"
+}
+func (s *nProvider) Provide(tagConf string, t reflect.Type) (any, error) {
+	return &x, nil
+}
+
+type ix interface {
+	Do()
+}
+
+type u struct {
+	Flag
+	x ix `gone:"*"`
+}
+
+func Test_NamedProviderWithDefaultType(t *testing.T) {
+	NewApp().
+		Load(&nProvider{}, IsDefault(new(ix))).
+		Load(&u{}).
+		Run(func(in struct {
+			x ix `gone:"*"`
+		}) {
+			if in.x == nil {
+				t.Errorf("Expected x is not nil, got: %v", in.x)
+			}
+		})
+}
+
+type n2Provider struct {
+	Flag
+}
+
+func (s *n2Provider) GonerName() string {
+	return "n2Provider"
+}
+func (s *n2Provider) Provide(tagConf string, t reflect.Type) (any, error) {
+	return &x, nil
+}
+
+func Test_NamedProviderWithDefaultTypeError(t *testing.T) {
+	err := SafeExecute(func() error {
+		NewApp().
+			Load(&nProvider{}, IsDefault(new(ix))).
+			Load(&n2Provider{}, IsDefault(new(ix))).
+			Load(&u{}).
+			Run(func(in struct {
+				x ix `gone:"*"`
+			}) {
+				if in.x == nil {
+					t.Errorf("Expected x is not nil, got: %v", in.x)
+				}
+			})
+
+		return nil
+	})
+
+	if err == nil {
+		t.Errorf("Expected error, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "provider for type github.com/gone-io/gone/v2.ix is already registered - cannot use IsDefault option when Loading named provider: *gone.n2Provider(name=n2Provider)") {
+		t.Errorf("Expected error message contains n2Provider, got: %v", err)
+	}
+}
