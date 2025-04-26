@@ -210,6 +210,14 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 			s.typeProviderDepMap[provider.Type()] = co
 		}
 	}
+	if provider, ok := co.goner.(NamedProvider); ok {
+		for t := range co.defaultTypeMap {
+			if _, ok := s.typeProviderDepMap[t]; ok {
+				return NewInnerErrorWithParams(LoadedError, "provider for type %s is already registered - cannot use IsDefault option when Loading named provider: %T(name=%s)", GetTypeName(t), provider, provider.GonerName())
+			}
+			s.typeProviderDepMap[t] = co
+		}
+	}
 	return nil
 }
 
