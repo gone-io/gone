@@ -21,24 +21,25 @@ Gone is a lightweight dependency injection framework based on Golang tags, imple
 
 ```go
 type Dep struct {
-	gone.Flag
-	Name string
+    gone.Flag
+    Name string
 }
 
 type Component struct {
-	gone.Flag
-	dep *Dep        `gone:"*"` //Dependency injection
-	log gone.Logger `gone:"*"` //Inject gone.Logger
+    gone.Flag
+    dep *Dep        `gone:"*"` //Dependency injection
+    log gone.Logger `gone:"*"` //Inject gone.Logger
 
-  // Inject configuration, get value from environment variable GONE_NAME; 
-  // if using components like goner/viper, values can be obtained from config files or config centers.
-  // Reference documentation: https://github.com/gone-io/goner
-  name string     `gone:"config:name"`
+    // Inject configuration, get value from environment variable GONE_NAME; 
+    // if using components like goner/viper, values can be obtained from config 
+    // files or config centers.
+    // Reference documentation: https://github.com/gone-io/goner
+    name string     `gone:"config:name"`
 }
 
 func (c *Component) Init() {
-	c.log.Infof(c.dep.Name) //Use dependency
-  c.log.Infof(c.name) //Use configuration
+    c.log.Infof(c.dep.Name) //Use dependency
+    c.log.Infof(c.name) //Use configuration
 }
 ```
 

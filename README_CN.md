@@ -21,24 +21,24 @@ Gone 是一个基于Golang标签的轻量级依赖注入框架，通过简洁的
 
 ```go
 type Dep struct {
-	gone.Flag
-	Name string
+    gone.Flag
+    Name string
 }
 
 type Component struct {
-	gone.Flag
-	dep *Dep        `gone:"*"` //依赖注入
-	log gone.Logger `gone:"*"` //注入 gone.Logger
+    gone.Flag
+    dep *Dep        `gone:"*"` //依赖注入
+    log gone.Logger `gone:"*"` //注入 gone.Logger
 
-  // 注入配置, 从环境变量 GONE_NAME 中获取值；
-  // 如果使用goner/viper 等组件可以可以从配置文件或者配置中心获取值。
-  // 参考文档：https://github.com/gone-io/goner
-  name string     `gone:"config:name"`
+    // 注入配置, 从环境变量 GONE_NAME 中获取值；
+    // 如果使用goner/viper 等组件可以可以从配置文件或者配置中心获取值。
+    // 参考文档：https://github.com/gone-io/goner
+    name string     `gone:"config:name"`
 }
 
 func (c *Component) Init() {
-	c.log.Infof(c.dep.Name) //使用依赖
-  c.log.Infof(c.name) //使用配置
+    c.log.Infof(c.dep.Name) //使用依赖
+    c.log.Infof(c.name) //使用配置
 }
 ```
 
