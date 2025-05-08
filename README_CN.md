@@ -83,9 +83,9 @@ gonectl run ./cmd/server
 
 ## 更多文档
 
-👉🏻 [./docs](./docs)
-👉🏻 [goner](https://github.com/gone-io/goner)
-👉🏻 [gonectl](https://github.com/gone-io/gonectl)
+- 👉🏻 [docs](./docs)
+- 👉🏻 [goner](https://github.com/gone-io/goner)
+- 👉🏻 [gonectl](https://github.com/gone-io/gonectl)
 
 ## 更新记录
 
