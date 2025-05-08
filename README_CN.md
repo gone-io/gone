@@ -1,4 +1,4 @@
-<p align="left">
+<p>
     <a href="README.md">English</a>&nbsp ｜&nbsp 中文
 </p>
 
@@ -12,29 +12,14 @@
 
 <img src="docs/assert/logo.png" width = "100" alt="logo" />
 
-- [Gone](#gone)
-  - [Gone 是基于Golang标签的依赖注入框架](#gone-是基于golang标签的依赖注入框架)
-  - [特性](#特性)
-    - [架构](#架构)
-    - [生命周期](#生命周期)
-  - [快速开始](#快速开始)
-  - [更新记录](#更新记录)
-  - [贡献](#贡献)
-  - [联系方式](#联系方式)
-  - [许可证](#许可证)
 
+# 🚀 Gone - Go语言轻量级依赖注入框架
 
-# Gone
+## 💡 框架简介
 
-## Gone 是基于Golang标签的依赖注入框架
-
-Gone 是一个轻量级的golang依赖注入框架，下面是一个简单的例子(嵌入了gone.Flag的结构体，我们称之为Goner)：
+Gone 是一个基于Golang标签的轻量级依赖注入框架，通过简洁的注解实现组件依赖管理。下面是一个典型的使用示例（嵌入了gone.Flag的结构体，我们称之为Goner）：
 
 ```go
-package main
-
-import "github.com/gone-io/gone/v2"
-
 type Dep struct {
 	gone.Flag
 	Name string
@@ -43,35 +28,30 @@ type Dep struct {
 type Component struct {
 	gone.Flag
 	dep *Dep        `gone:"*"` //依赖注入
-	log gone.Logger `gone:"*"`
+	log gone.Logger `gone:"*"` //注入 gone.Logger
+
+  // 注入配置, 从环境变量 GONE_NAME 中获取值；如果使用goner/viper 等组件可以可以从配置文件或者配置中心获取值。
+  // 参考文档：https://github.com/gone-io/goner
+  name string     `gone:"config:name"`
 }
 
 func (c *Component) Init() {
 	c.log.Infof(c.dep.Name) //使用依赖
-}
-
-func main() {
-	gone.
-		NewApp().
-		// 组件注册加载
-		Load(&Dep{Name: "Component Dep"}).
-		Load(&Component{}).
-		//运行
-		Run()
+  c.log.Infof(c.name) //使用配置
 }
 ```
 
-## 特性
+## ✨ 核心特性
 
-- 支持结构体属性的注入，支持私有字段注入 [👉🏻依赖注入介绍](docs/inject.md)
-- 支持函数参数的注入，按函数参数类型注入  [👉🏻依赖注入介绍](docs/inject.md)
-- Provider机制，支持将外部组件注入到Goner中: [👉🏻Gone V2 Provider 机制介绍](docs/provider.md)
-- 支持代码生成，自动完成组件注册加载（通过[Gonectr](https://github.com/gone-io/gonectr)完成）
-- 支持基于接口mock的单元测试
-- 支持微服务开发的相关[Goner组件](https://github.com/gone-io/goner)
-- 支持给Goner定义初始化方法`Init()` 和 `BeforeInit()`
-- 支持编写服务类型的Goner：实现 `Start() error` 和 `Stop() error`，框架会自动调用Start()和Stop()方法。
-- 支持`BeforeStart`、`AfterStart`、`BeforeStop`、`AfterStop`等钩子函数，用于在服务启动和停止时执行自定义操作。
+- **全面的依赖注入支持**
+  - 结构体属性注入（支持私有字段）
+  - 函数参数注入（按类型自动匹配）
+  - 配置参数注入（支持环境变量、配置中心和配置文件）
+  - 第三方组件注入（通过Provider机制）
+  👉 [详细文档](docs/inject_CN.md)
+- 支持为 Goner 定义初始化方法、服务启动停止方法及相关生命周期钩子函数，实现自动化的服务管理和自定义操作。
+- 提供[生态goner组件库](https://github.com/gone-io/goner)，支持配置、日志、数据库、大模型、可观察等功能；
+- 提供[脚手架工具gonectl](https://github.com/gone-io/gonectl)，支持项目创建、组件管理、代码生成、测试mock、编译和运行。
 
 ### 架构
 <img src="docs/assert/architecture.png" width = "600" alt="architecture"/>
@@ -79,62 +59,31 @@ func main() {
 ### 生命周期
 <img src="docs/assert/flow.png" width = "600" alt="flow"/>
 
-## 快速开始
+## 🏁 快速开始
 
-1. 安装 [gonectr](https://github.com/gone-io/gonectr) 和 [mockgen](https://github.com/uber-go/mock/tree/main)
-    ```bash
-    go install github.com/gone-io/gonectr@latest
-    go install go.uber.org/mock/mockgen@latest
-    ```
-2. 创建一个项目
-    ```bash
-    gonectr create myproject
-    ```
-3. 运行项目
-    ```bash
-    cd myproject
-    go mod tidy
-    gonectr run ./cmd/server
-    ```
+### 环境准备
+1. 安装必要工具
+```bash
+go install github.com/gone-io/gonectl@latest
+go install go.uber.org/mock/mockgen@latest
+```
+
+### 创建项目
+```bash
+gonectl create myproject
+cd myproject
+```
+
+### 运行项目
+```bash
+go mod tidy
+gonectl run ./cmd/server
+```
 
 ## 更新记录
 
-### [最新更新记录](https://github.com/gone-io/gone/releases)
+👉🏻 https://github.com/gone-io/gone/releases
 
-### v2.0.5
-- 新增 `option:"lazy"`标签，用于支持字段的延时注入，参考[文档](docs/lazy_fill.md)
-- 注意：使用`option:"lazy"`标记的字段在`Init`、`Provide`、`Inject`这几个方法中不能使用；
-
-### v2.0.4
-- 新增 SetValue 函数，用于统一处理各种类型的配置值
-- 重构原有的类型处理逻辑，使用反射提高通用性
-
-### v2.0.3
-- 新增 `option:"allowNil"`标签，支持[优雅处理可选依赖](docs/allow_nil.md)
-- 完善测试和文档
-
-### v2.0.0
-v2版本做了大量更新，去掉不必要的概念，使用前请参考：[Gone@v2 使用说明](./docs/v2-update.md) 和 [Gone 从 v1 到 v2 的更新分析](./docs/gone-v1-to-v2-analysis.md)
-
-### v1.2.1
-
-- 定义 **gone.Provider**，一个工厂函数用于将 不是 **Goner** 的外部组件（结构体、结构体指针、函数、接口）注入到 属性需要注入的Goner；
-- 修复 `gone.NewProviderPriest` 无法为 生成接口类型的**gone.Provider**生成Priest;
-- 为`goner/gorm`编写测试代码，补齐其他测试代码；文档更新。
-
-### v1.2.0
-
-- 提供一种新的 `gone.GonerOption`，可以将按类型注入，将构造注入类型实例的任务代理给一个实现了
-  `Suck(conf string, v reflect.Value, field reflect.StructField) error`的**Goner**；
-- 提供了一个用于实现**Goner Provider**的辅助函数：
-  `func NewProviderPriest[T any, P any](fn func(tagConf string, param P) (T, error)) Priest` ；
-- 给`goner/xorm` 集群模式提供策略配置的方案；
-- 完善`goner/gorm`代码 和 做功能测试，支持多种数据库的接入。
-
-### v1.1.1
-
-- goner/xorm 支持集群 和 多数据库，最新文档：https://goner.fun/zh/references/xorm.html
-- 新增 goner/gorm，封装`gorm.io/gorm`，用于数据库的访问，暂时只支持mysql，完善中...
 
 ## 贡献
 

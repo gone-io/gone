@@ -1,25 +1,29 @@
-# Gone V2 Provider 机制介绍
+<p>
+   English&nbsp ｜&nbsp <a href="provider_CN.md">中文</a>
+</p>
 
-- [Gone V2 Provider 机制介绍](#gone-v2-provider-机制介绍)
-  - [1. Gone 的依赖注入流程](#1-gone-的依赖注入流程)
-  - [2. 不同的 Provider](#2-不同的-provider)
-    - [2.1 按类型注入](#21-按类型注入)
-    - [2.2 按名字注入](#22-按名字注入)
-    - [2.3 基于名字的多类型 Provider](#23-基于名字的多类型-provider)
-  - [3. “星号” Provider：`*`](#3-星号-provider)
-  - [总结](#总结)
+# Gone V2 Provider Mechanism Introduction
+
+- [Gone V2 Provider Mechanism Introduction](#gone-v2-provider-mechanism-introduction)
+  - [1. Gone's Dependency Injection Process](#1-gones-dependency-injection-process)
+  - [2. Different Providers](#2-different-providers)
+    - [2.1 Injection by Type](#21-injection-by-type)
+    - [2.2 Injection by Name](#22-injection-by-name)
+    - [2.3 Multi-type Provider Based on Name](#23-multi-type-provider-based-on-name)
+  - [3. "Asterisk" Provider: `*`](#3-asterisk-provider-)
+  - [Summary](#summary)
 
 
-Gone V2 版本完全基于 Provider 机制实现依赖注入，其核心思想是通过 Provider 为对象提供依赖，而不必将所有第三方对象都包装为 `Goner`。下面将从 Gone 的依赖注入流程、Provider 的分类及其使用示例等方面进行详细说明。
+The Gone V2 version is completely based on the Provider mechanism to implement dependency injection. Its core idea is to provide dependencies for objects through Providers, without having to wrap all third-party objects as `Goner`. The following will explain in detail from aspects such as Gone's dependency injection process, Provider classification, and usage examples.
 
 ---
 
-## 1. Gone 的依赖注入流程
+## 1. Gone's Dependency Injection Process
 
-Gone 框架的依赖注入过程主要分为以下三个步骤：
+The dependency injection process of the Gone framework is mainly divided into the following three steps:
 
-1. **标记需要注入的对象**  
-   对象需嵌入 `gone.Flag`，并对需要注入的字段使用 `gone` 标签。例如：
+1. **Mark objects that need injection**  
+   Objects need to embed `gone.Flag` and use the `gone` tag for fields that need injection. For example:
    ```go
    type UseConf struct {
    	gone.Flag
@@ -28,29 +32,29 @@ Gone 框架的依赖注入过程主要分为以下三个步骤：
    	Dep  *Dep   `gone:"*,extend"`
    }
    ```
-	- `gone` 标签格式：`gone:"${name},${extend}"`
-		- `${name}`：指定 Provider 的名字或目标 `Goner` 的名字（当为 `*` 或省略时，表示按类型注入）。
-		- `${extend}`：扩展参数，将传递给 Provider 的 `Provide` 方法（可选）。
+    - `gone` tag format: `gone:"${name},${extend}"`
+        - `${name}`: Specifies the name of the Provider or the name of the target `Goner` (when it's `*` or omitted, it indicates injection by type).
+        - `${extend}`: Extension parameter, which will be passed to the Provider's `Provide` method (optional).
 
-2. **注册对象**  
-   通过 `Load(goner Goner, options ...Option)` 将需要注入的对象注册到 Gone 框架中。
+2. **Register objects**  
+   Register objects that need to be injected into the Gone framework through `Load(goner Goner, options ...Option)`.
 
-3. **自动注入和生命周期管理**  
-   在框架启动过程中，自动对所有注册对象进行依赖注入，同时调用如 `BeforeInit`、`Init`、`Start`、`Stop` 等生命周期方法（如果对象实现了对应接口）。
+3. **Automatic injection and lifecycle management**  
+   During the framework startup process, automatic dependency injection is performed for all registered objects, while lifecycle methods such as `BeforeInit`, `Init`, `Start`, `Stop` are called (if the object implements the corresponding interface).
 
-> **注意：** Gone 框架只允许注册实现了 `Goner` 接口的对象，而通常通过嵌入 `gone.Flag` 来实现 `Goner` 接口。这样可以区分哪些对象需要注入、哪些不需要。但这也带来了一个问题：如何将第三方对象注入到框架中？为此，Provider 机制被引入。
+> **Note:** The Gone framework only allows registration of objects that implement the `Goner` interface, and typically implements the `Goner` interface by embedding `gone.Flag`. This distinguishes which objects need injection and which don't. But this also brings up a question: how to inject third-party objects into the framework? For this purpose, the Provider mechanism was introduced.
 
 ---
 
-## 2. 不同的 Provider
+## 2. Different Providers
 
-Gone 中主要支持两种注入方式：**按类型注入**和**按名字注入**。
+Gone mainly supports two injection methods: **injection by type** and **injection by name**.
 
-### 2.1 按类型注入
+### 2.1 Injection by Type
 
-当字段未指定特定名称时（标签中使用 `*` 或省略名称），框架会根据字段的类型查找合适的 Provider。这里定义了两种 Provider 接口：
+When no specific name is specified for a field (using `*` or omitting the name in the tag), the framework will look for a suitable Provider based on the field's type. Two Provider interfaces are defined here:
 
-- **支持传入参数的 Provider**
+- **Provider with parameter support**
   ```go
   type Provider[T any] interface {
       Goner
@@ -58,7 +62,7 @@ Gone 中主要支持两种注入方式：**按类型注入**和**按名字注入
   }
   ```
 
-- **无参数的 Provider**
+- **Provider without parameters**
   ```go
   type NoneParamProvider[T any] interface {
       Goner
@@ -66,7 +70,7 @@ Gone 中主要支持两种注入方式：**按类型注入**和**按名字注入
   }
   ```
 
-**示例代码：**
+**Example code:**
 ```go
 package main
 
@@ -80,7 +84,7 @@ type ThirdBusiness2 struct {
     Name string
 }
 
-// Provider 实现，带参数
+// Provider implementation with parameters
 type ThirdBusiness1Provider struct {
     gone.Flag
     gone.Logger `gone:"*"`
@@ -91,7 +95,7 @@ func (p *ThirdBusiness1Provider) Provide(tagConf string) (*ThirdBusiness1, error
     return &ThirdBusiness1{Name: "ThirdBusiness1"}, nil
 }
 
-// 无参数 Provider 实现
+// Provider implementation without parameters
 type ThirdBusiness2Provider struct {
     gone.Flag
 }
@@ -118,18 +122,18 @@ func main() {
 }
 ```
 
-运行结果：
+Execution result:
 ```log
 2025/03/11 10:03:22 tagConf->AGI
 2025/03/11 10:03:22 user.thirdBusiness1.name->ThirdBusiness1
 2025/03/11 10:03:22 user.thirdBusiness2.name->ThirdBusiness2
 ```
 
-### 2.2 按名字注入
+### 2.2 Injection by Name
 
-当存在相同类型的多个 Provider 时，可以通过名字进行区分。字段上的 `gone` 标签中指定 Provider 名称，要求 Provider 返回的对象类型与字段类型兼容。
+When there are multiple Providers of the same type, they can be distinguished by name. The `gone` tag on the field specifies the Provider name, requiring that the object type returned by the Provider is compatible with the field type.
 
-**示例代码：**
+**Example code:**
 ```go
 package main
 
@@ -181,46 +185,46 @@ func main() {
 }
 ```
 
-在注册 Provider 时有两种指定名字的方法：
-1. **实现 `GonerName()` 方法** —— 返回 Provider 的名称。
-2. **在 `Load` 时使用 `gone.Name("...")` 选项** —— 显式指定 Provider 名称。
+There are two ways to specify a name when registering a Provider:
+1. **Implement the `GonerName()` method** — Returns the name of the Provider.
+2. **Use the `gone.Name("...")` option when `Load`ing** — Explicitly specify the Provider name.
 
-> **提示：** 当使用相同类型提供多个 Provider 时，需要使用 `gone.OnlyForName()` 选项，否则框架会报错；而相同名字的 Provider 只能存在一个，否则也会报错。
+> **Tip:** When providing multiple Providers of the same type, you need to use the `gone.OnlyForName()` option, otherwise the framework will report an error; and only one Provider with the same name can exist, otherwise an error will also be reported.
 
-### 2.3 基于名字的多类型 Provider
+### 2.3 Multi-type Provider Based on Name
 
-在某些场景下（如配置注入），希望通过一个 Provider 提供多种类型的对象，此时可以定义 `NamedProvider` 接口：
+In some scenarios (such as configuration injection), you may want to provide objects of multiple types through one Provider. In this case, you can define the `NamedProvider` interface:
 ```go
 type NamedProvider interface {
     NamedGoner
     Provide(tagConf string, t reflect.Type) (any, error)
 }
 ```
-其中：
-- `tagConf` 参数为 `gone` 标签中第一个逗号后面的扩展配置部分。
-- `t` 参数表示需要注入字段的类型。
+Where:
+- The `tagConf` parameter is the extension configuration part after the first comma in the `gone` tag.
+- The `t` parameter represents the type of field that needs to be injected.
 
-这种设计允许一个 Provider 根据字段类型返回对应的实例，实现多类型注入。
-
----
-
-## 3. “星号” Provider：`*`
-
-当 `gone` 标签中的名称为 `*` 或省略时，表示按类型注入。这实际上是框架中预定义的一个 `NamedProvider`，其名称就是 `*`。  
-其工作逻辑为：
-- 根据需要注入字段的类型，自动查找并调用合适的 Provider 来提供值。
+This design allows a Provider to return corresponding instances based on the field type, implementing multi-type injection.
 
 ---
 
-## 总结
+## 3. "Asterisk" Provider: `*`
 
-Gone V2 通过 Provider 机制实现了灵活的依赖注入，支持：
+When the name in the `gone` tag is `*` or omitted, it means injection by type. This is actually a predefined `NamedProvider` in the framework, whose name is `*`.  
+Its working logic is:
+- Automatically find and call the appropriate Provider to provide values based on the type of field that needs to be injected.
 
-- **按类型注入**：直接根据字段类型寻找合适的 Provider。
-- **按名字注入**：在存在多个相同类型 Provider 时，通过名称进行区分。
-- **多类型 Provider**：一个 Provider 可根据字段类型返回不同的对象，适用于配置注入等场景。
-- **“星号” Provider**：简化按类型注入的处理流程。
+---
 
-这种设计不仅降低了第三方对象与框架耦合度，也大大提高了依赖注入的灵活性和扩展性。
+## Summary
+
+Gone V2 implements flexible dependency injection through the Provider mechanism, supporting:
+
+- **Injection by type**: Directly look for the appropriate Provider based on the field type.
+- **Injection by name**: Distinguish by name when there are multiple Providers of the same type.
+- **Multi-type Provider**: One Provider can return different objects according to the field type, suitable for scenarios such as configuration injection.
+- **"Asterisk" Provider**: Simplifies the processing flow of injection by type.
+
+This design not only reduces the coupling between third-party objects and the framework but also greatly improves the flexibility and scalability of dependency injection.
 
 ---

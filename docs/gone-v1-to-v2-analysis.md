@@ -1,88 +1,92 @@
-# Gone 从 v1 到 v2 的更新分析
+<p>
+   English&nbsp ｜&nbsp <a href="gone-v1-to-v2-analysis_CN.md">中文</a>
+</p>
 
-- [Gone 从 v1 到 v2 的更新分析](#gone-从-v1-到-v2-的更新分析)
-  - [1. 概念简化与术语变更](#1-概念简化与术语变更)
-  - [2. 接口重新设计](#2-接口重新设计)
-    - [2.1 组件定义的简化](#21-组件定义的简化)
-    - [2.2 组件加载方式的统一](#22-组件加载方式的统一)
-    - [2.3 生命周期方法的优化](#23-生命周期方法的优化)
-  - [3. 依赖注入逻辑重写](#3-依赖注入逻辑重写)
-    - [3.1 注入标签的简化](#31-注入标签的简化)
-    - [3.2 依赖注入查找流程优化](#32-依赖注入查找流程优化)
-  - [4. Provider 机制的引入](#4-provider-机制的引入)
-    - [4.1 泛型 Provider 接口](#41-泛型-provider-接口)
-    - [4.2 NamedProvider 接口](#42-namedprovider-接口)
-    - [4.3 NoneParamProvider 接口](#43-noneparamprovider-接口)
-  - [5. 多实例支持](#5-多实例支持)
-  - [6. 动态组件获取](#6-动态组件获取)
-  - [7. 函数参数注入](#7-函数参数注入)
-  - [8. 仓库结构优化](#8-仓库结构优化)
-  - [9. 迁移指南](#9-迁移指南)
-  - [10. 总结](#10-总结)
+# Gone Framework Update Analysis from v1 to v2
+
+- [Gone Framework Update Analysis from v1 to v2](#gone-framework-update-analysis-from-v1-to-v2)
+  - [1. Concept Simplification and Terminology Changes](#1-concept-simplification-and-terminology-changes)
+  - [2. Interface Redesign](#2-interface-redesign)
+    - [2.1 Component Definition Simplification](#21-component-definition-simplification)
+    - [2.2 Unified Component Loading](#22-unified-component-loading)
+    - [2.3 Lifecycle Method Optimization](#23-lifecycle-method-optimization)
+  - [3. Dependency Injection Logic Rewrite](#3-dependency-injection-logic-rewrite)
+    - [3.1 Injection Tag Simplification](#31-injection-tag-simplification)
+    - [3.2 Dependency Injection Lookup Process Optimization](#32-dependency-injection-lookup-process-optimization)
+  - [4. Introduction of Provider Mechanism](#4-introduction-of-provider-mechanism)
+    - [4.1 Generic Provider Interface](#41-generic-provider-interface)
+    - [4.2 NamedProvider Interface](#42-namedprovider-interface)
+    - [4.3 NoneParamProvider Interface](#43-noneparamprovider-interface)
+  - [5. Multiple Instance Support](#5-multiple-instance-support)
+  - [6. Dynamic Component Retrieval](#6-dynamic-component-retrieval)
+  - [7. Function Parameter Injection](#7-function-parameter-injection)
+  - [8. Repository Structure Optimization](#8-repository-structure-optimization)
+  - [9. Migration Guide](#9-migration-guide)
+  - [10. Summary](#10-summary)
 
 
-Gone 框架在 v2 版本中进行了全面的更新和改进，主要目标是简化框架概念，提高易用性和性能。本文档将详细分析 v1 到 v2 的主要变化。
+The Gone framework has undergone a comprehensive update and improvement in v2, with the main goals of simplifying framework concepts, enhancing usability, and improving performance. This document will analyze in detail the major changes from v1 to v2.
 
-## 1. 概念简化与术语变更
+## 1. Concept Simplification and Terminology Changes
 
-v1 版本中，Gone 框架使用了大量宗教性的概念和术语来描述框架的各个部分，这些术语在 v2 版本中被替换为更加直观和技术性的术语：
+In v1, the Gone framework used many religious concepts and terms to describe different parts of the framework. These terms have been replaced in v2 with more intuitive and technical terminology:
 
-| v1 版本术语 | v2 版本术语 | 描述 |
+| v1 Term | v2 Term | Description |
 |------------|------------|------|
-| Heaven | Application | 应用程序实例，负责管理组件的生命周期 |
-| Cemetery | Core | 框架核心，负责组件的注册和管理 |
-| Priest | Loader | 组件加载器，负责将组件加载到框架中 |
-| Goner | Goner | 保留，但定义更加明确，指嵌入了 `gone.Flag` 的结构体指针 |
-| Prophet | 移除 | v2 版本使用更清晰的生命周期方法替代 |
-| Angel | 移除 | v2 版本使用更清晰的生命周期方法替代 |
-| Vampire | Provider | 转变为更直观的 Provider 机制 |
-| Tomb | 移除 | 简化了相关概念 |
+| Heaven | Application | Application instance, responsible for managing component lifecycle |
+| Cemetery | Core | Framework core, responsible for component registration and management |
+| Priest | Loader | Component loader, responsible for loading components into the framework |
+| Goner | Goner | Retained, but with a more precise definition - refers to a structure pointer embedded with `gone.Flag` |
+| Prophet | Removed | v2 uses clearer lifecycle methods as replacements |
+| Angel | Removed | v2 uses clearer lifecycle methods as replacements |
+| Vampire | Provider | Transformed into a more intuitive Provider mechanism |
+| Tomb | Removed | Related concepts have been simplified |
 
-这种术语变更使框架更加专业和易于理解，降低了学习曲线，使开发者能够更快地上手使用框架。
+These terminology changes make the framework more professional and easier to understand, lowering the learning curve and enabling developers to start using the framework more quickly.
 
-## 2. 接口重新设计
+## 2. Interface Redesign
 
-v2 版本重新设计了框架的接口，减少了内部方法的暴露，使接口更加清晰和易于使用：
+v2 has redesigned the framework interfaces, reducing exposure of internal methods and making interfaces clearer and easier to use:
 
-### 2.1 组件定义的简化
+### 2.1 Component Definition Simplification
 
-v1 版本中，组件需要嵌入 `gone.GonerFlag`，而在 v2 版本中，组件只需要嵌入 `gone.Flag`：
+In v1, components needed to embed `gone.GonerFlag`, while in v2, components only need to embed `gone.Flag`:
 
 ```go
-// v1 版本
+// v1 version
 type Component struct {
     gone.GonerFlag
 }
 
-// v2 版本
+// v2 version
 type Component struct {
     gone.Flag
 }
 ```
 
-### 2.2 组件加载方式的统一
+### 2.2 Unified Component Loading
 
-v2 版本提供了更加一致和灵活的组件加载方式：
+v2 provides a more consistent and flexible approach to component loading:
 
 ```go
-// v1 版本
+// v1 version
 func Priest(cemetery gone.Cemetery) error {
     cemetery.Bury(&Component{}, "component-id")
     return nil
 }
 
-// v2 版本
-gone.Load(&Component{})                        // 直接加载
-gone.Load(&Component{}, gone.Name("component")) // 命名加载
-gone.Load(&Component{}).Load(&Component2{})    // 链式加载
+// v2 version
+gone.Load(&Component{})                        // Direct loading
+gone.Load(&Component{}, gone.Name("component")) // Named loading
+gone.Load(&Component{}).Load(&Component2{})    // Chain loading
 ```
 
-### 2.3 生命周期方法的优化
+### 2.3 Lifecycle Method Optimization
 
-v2 版本优化了组件的生命周期管理，使其更加清晰和可预测：
+v2 has optimized component lifecycle management, making it clearer and more predictable:
 
 ```go
-// v1 版本中的 Prophet 和 Angel
+// v1 version Prophet and Angel
 type Prophet interface {
     AfterRevive(gone.Cemetery, gone.Tomb) gone.ReviveAfterError
 }
@@ -92,7 +96,7 @@ type Angel interface {
     Stop(gone.Cemetery) error
 }
 
-// v2 版本中的生命周期方法
+// v2 version lifecycle methods
 type Initer interface {
     Init() error
 }
@@ -106,40 +110,40 @@ type Stopper interface {
 }
 ```
 
-## 3. 依赖注入逻辑重写
+## 3. Dependency Injection Logic Rewrite
 
-v2 版本重写了依赖注入的实现逻辑，使其更加灵活和强大：
+v2 has rewritten the dependency injection implementation logic, making it more flexible and powerful:
 
-### 3.1 注入标签的简化
+### 3.1 Injection Tag Simplification
 
 ```go
-// v1 版本
+// v1 version
 type Service struct {
     gone.GonerFlag
     Dep *Dependency `gone:"dependency-id"`
 }
 
-// v2 版本
+// v2 version
 type Service struct {
     gone.Flag
-    Dep *Dependency `gone:"dependency"` // 基于名称注入
-    Dep2 *Dependency `gone:"*"`         // 基于类型注入
+    Dep *Dependency `gone:"dependency"` // Name-based injection
+    Dep2 *Dependency `gone:"*"`         // Type-based injection
 }
 ```
 
-### 3.2 依赖注入查找流程优化
+### 3.2 Dependency Injection Lookup Process Optimization
 
-v2 版本明确了依赖注入时查找组件的优先级和流程，使注入过程更加可预测：
+v2 clarifies the priority and process for finding components during dependency injection, making the injection process more predictable:
 
-1. 首先根据标签中指定的名称查找
-2. 如果未找到，则根据字段类型查找
-3. 如果存在多个相同类型的组件，优先选择默认实现（通过 `IsDefault()` 选项设置）
+1. First search based on the name specified in the tag
+2. If not found, search based on field type
+3. If multiple components of the same type exist, prioritize the default implementation (set via the `IsDefault()` option)
 
-## 4. Provider 机制的引入
+## 4. Introduction of Provider Mechanism
 
-v2 版本引入了全新的 Provider 机制，替代了 v1 版本中的 Vampire 概念：
+v2 introduces a brand new Provider mechanism, replacing the Vampire concept from v1:
 
-### 4.1 泛型 Provider 接口
+### 4.1 Generic Provider Interface
 
 ```go
 type Provider[T any] interface {
@@ -148,7 +152,7 @@ type Provider[T any] interface {
 }
 ```
 
-### 4.2 NamedProvider 接口
+### 4.2 NamedProvider Interface
 
 ```go
 type NamedProvider interface {
@@ -157,7 +161,7 @@ type NamedProvider interface {
 }
 ```
 
-### 4.3 NoneParamProvider 接口
+### 4.3 NoneParamProvider Interface
 
 ```go
 type NoneParamProvider[T any] interface {
@@ -166,18 +170,18 @@ type NoneParamProvider[T any] interface {
 }
 ```
 
-Provider 机制使组件能够动态创建和提供其他组件，大大增强了框架的灵活性和扩展性。
+The Provider mechanism allows components to dynamically create and provide other components, greatly enhancing the framework's flexibility and extensibility.
 
-## 5. 多实例支持
+## 5. Multiple Instance Support
 
-v2 版本增强了对多实例的支持，允许在同一个应用程序中创建多个 Gone 框架实例：
+v2 enhances support for multiple instances, allowing creation of multiple Gone framework instances within the same application:
 
 ```go
-// 创建多个 Gone 框架实例
+// Create multiple Gone framework instances
 app1 := gone.NewApp()
 app2 := gone.NewApp()
 
-// 每个实例可以独立加载组件和运行
+// Each instance can independently load components and run
 app1.Load(&Component1{})
 app2.Load(&Component2{})
 
@@ -185,9 +189,9 @@ app1.Run()
 app2.Run()
 ```
 
-## 6. 动态组件获取
+## 6. Dynamic Component Retrieval
 
-v2 版本提供了更灵活的动态组件获取方式：
+v2 provides more flexible ways to dynamically retrieve components:
 
 ```go
 type GonerKeeper interface {
@@ -196,9 +200,9 @@ type GonerKeeper interface {
 }
 ```
 
-## 7. 函数参数注入
+## 7. Function Parameter Injection
 
-v2 版本增强了函数参数注入功能：
+v2 enhances function parameter injection functionality:
 
 ```go
 type FuncInjector interface {
@@ -206,60 +210,60 @@ type FuncInjector interface {
 }
 ```
 
-## 8. 仓库结构优化
+## 8. Repository Structure Optimization
 
-v2 版本进行了重要的仓库结构调整，将 `github.com/gone-io/gone/goner` 独立成了单独的仓库进行管理，而 `github.com/gone-io/gone` 仓库则专注于管理 Gone 依赖注入的核心代码：
+v2 has made important repository structure adjustments, separating `github.com/gone-io/gone/goner` into an independent repository, while the `github.com/gone-io/gone` repository focuses on managing Gone's core dependency injection code:
 
 ```
-// v1 版本
-github.com/gone-io/gone        // 包含所有 Gone 框架代码
-github.com/gone-io/gone/goner  // 作为主仓库的子目录
+// v1 version
+github.com/gone-io/gone        // Contains all Gone framework code
+github.com/gone-io/gone/goner  // As a subdirectory of the main repository
 
-// v2 版本
-github.com/gone-io/gone       // 只包含依赖注入核心代码
-github.com/gone-io/goner      // 独立仓库，管理 Goner 相关代码
+// v2 version
+github.com/gone-io/gone       // Contains only dependency injection core code
+github.com/gone-io/goner      // Independent repository, manages Goner-related code
 ```
 
-这种仓库结构的优化带来了以下好处：
+This repository structure optimization brings the following benefits:
 
-1. **更清晰的模块边界**：通过将 Goner 相关代码独立出来，使框架的模块边界更加清晰，每个仓库都有明确的职责和功能范围。
+1. **Clearer module boundaries**: By making Goner-related code independent, the framework's module boundaries become clearer, with each repository having specific responsibilities and functional scope.
 
-2. **更灵活的版本管理**：独立的仓库可以有独立的版本发布周期，使 Goner 模块可以根据自身需求进行迭代和更新，而不必与主框架同步。
+2. **More flexible version management**: Independent repositories can have independent release cycles, allowing the Goner module to iterate and update according to its own needs, without synchronizing with the main framework.
 
-3. **更好的代码复用性**：独立的 Goner 仓库可以被其他项目更方便地引用和复用，不必引入整个 Gone 框架。
+3. **Better code reusability**: The independent Goner repository can be more conveniently referenced and reused by other projects without importing the entire Gone framework.
 
-4. **更专注的维护职责**：团队可以根据专长分工维护不同的仓库，提高开发效率和代码质量。
+4. **More focused maintenance responsibilities**: Teams can divide maintenance of different repositories according to expertise, improving development efficiency and code quality.
 
-5. **降低依赖复杂度**：使用者可以根据实际需求选择性地引入所需模块，减少不必要的依赖。
+5. **Reduced dependency complexity**: Users can selectively import the modules they need based on actual requirements, reducing unnecessary dependencies.
 
-这种仓库结构的调整反映了 Gone 框架在架构设计上的持续优化，使框架更加模块化和可维护。
+This repository structure adjustment reflects Gone framework's continuous optimization of architectural design, making the framework more modular and maintainable.
 
-## 9. 迁移指南
+## 9. Migration Guide
 
-从 v1 迁移到 v2 版本需要注意以下几点：
+When migrating from v1 to v2, pay attention to the following points:
 
-1. **更新导入路径**：使用 `github.com/gone-io/gone/v2` 替代 `github.com/gone-io/gone`
+1. **Update import paths**: Use `github.com/gone-io/gone/v2` instead of `github.com/gone-io/gone`
 
-2. **调整组件定义**：确保所有组件都嵌入了 `gone.Flag`
+2. **Adjust component definitions**: Ensure all components embed `gone.Flag`
 
-3. **使用新的加载方式**：采用 v2 版本提供的组件加载方式
+3. **Use new loading methods**: Adopt the component loading approaches provided in v2
 
-4. **适应新的 Provider 机制**：如果使用了自定义 Provider，需要调整为 v2 版本的 Provider 接口
+4. **Adapt to the new Provider mechanism**: If using custom Providers, adjust to the v2 Provider interfaces
 
-5. **检查生命周期方法**：确保生命周期方法符合 v2 版本的规范
+5. **Check lifecycle methods**: Ensure lifecycle methods conform to v2 specifications
 
-## 10. 总结
+## 10. Summary
 
-Gone v2 版本通过以下几个方面的改进，使框架更加易用、灵活和强大：
+Gone v2 makes the framework more usable, flexible, and powerful through improvements in several areas:
 
-1. **概念简化**：移除宗教性术语，使用更直观的技术术语
-2. **接口重新设计**：减少内部方法的暴露，使接口更加清晰
-3. **组件加载机制改进**：提供更加一致和灵活的组件加载方式
-4. **Provider 机制引入**：替代 Vampire 概念，提供更强大的组件创建和提供能力
-5. **生命周期管理优化**：使组件的生命周期更加清晰和可预测
-6. **多实例支持**：允许在同一个应用程序中创建多个 Gone 框架实例
-7. **动态组件获取**：提供更灵活的动态组件获取方式
-8. **函数参数注入**：增强函数参数注入功能
-9. **仓库结构优化**：将 Goner 独立成单独仓库，使框架更加模块化和可维护
+1. **Concept simplification**: Removing religious terminology, using more intuitive technical terms
+2. **Interface redesign**: Reducing exposure of internal methods, making interfaces clearer
+3. **Component loading mechanism improvement**: Providing more consistent and flexible component loading approaches
+4. **Provider mechanism introduction**: Replacing the Vampire concept, offering more powerful component creation and provision capabilities
+5. **Lifecycle management optimization**: Making component lifecycles clearer and more predictable
+6. **Multiple instance support**: Allowing creation of multiple Gone framework instances within the same application
+7. **Dynamic component retrieval**: Providing more flexible ways to dynamically retrieve components
+8. **Function parameter injection**: Enhancing function parameter injection functionality
+9. **Repository structure optimization**: Making Goner an independent repository, making the framework more modular and maintainable
 
-这些改进使 Gone 框架更适合构建复杂的应用程序，特别是微服务架构的应用。
+These improvements make the Gone framework more suitable for building complex applications, especially microservice architecture applications.

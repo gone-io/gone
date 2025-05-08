@@ -1,22 +1,26 @@
-# Goner的循环依赖问题
+<p>
+   English&nbsp ｜&nbsp <a href="circular_dependency_CN.md">中文</a>
+</p>
 
-- [Goner的循环依赖问题](#goner的循环依赖问题)
-  - [引例](#引例)
-  - [循环依赖分析](#循环依赖分析)
-    - [Gone框架的初始化流程](#gone框架的初始化流程)
-    - [组件类型与依赖收集](#组件类型与依赖收集)
-    - [依赖收集与循环依赖检测](#依赖收集与循环依赖检测)
-  - [什么情况下会导致循环依赖的panic？](#什么情况下会导致循环依赖的panic)
-    - [三个用例的区别分析](#三个用例的区别分析)
-  - [为什么会有循环依赖的panic？](#为什么会有循环依赖的panic)
-  - [如何解决循环依赖问题？](#如何解决循环依赖问题)
-    - [示例：解决用例2的循环依赖](#示例解决用例2的循环依赖)
+# Circular Dependency Issues in Goner
+
+- [Circular Dependency Issues in Goner](#circular-dependency-issues-in-goner)
+  - [Examples](#examples)
+  - [Circular Dependency Analysis](#circular-dependency-analysis)
+    - [Initialization Flow in the Gone Framework](#initialization-flow-in-the-gone-framework)
+    - [Component Types and Dependency Collection](#component-types-and-dependency-collection)
+    - [Dependency Collection and Circular Dependency Detection](#dependency-collection-and-circular-dependency-detection)
+  - [When Does a Circular Dependency Panic Occur?](#when-does-a-circular-dependency-panic-occur)
+    - [Analysis of the Differences Between the Test Cases](#analysis-of-the-differences-between-the-test-cases)
+  - [Why Have Circular Dependency Panic?](#why-have-circular-dependency-panic)
+  - [How to Solve Circular Dependency Problems?](#how-to-solve-circular-dependency-problems)
+    - [Example: Solving the Circular Dependency in Case 2](#example-solving-the-circular-dependency-in-case-2)
 
 
-## 引例
-先来看两个测试用例：
+## Examples
+Let's look at several test cases:
 
-- 用例1：
+- Case 1:
 ```go
 type depA1 struct {
 	gone.Flag
@@ -37,9 +41,8 @@ func TestCircularDependency1(t *testing.T) {
 }
 ```
 
-- 用例2：
+- Case 2:
 ```go
-
 type dep1 struct {
 	gone.Flag
 	dep *dep2 `gone:"*"`
@@ -63,7 +66,7 @@ func TestCircularDependency2(t *testing.T) {
 }
 ```
 
-- 用例3：
+- Case 3:
 ```go
 type depA3 struct {
 	gone.Flag
@@ -85,7 +88,7 @@ func TestCircularDependency3(t *testing.T) {
 }
 ```
 
-- 用例4：
+- Case 4:
 ```go
 type depA4 struct {
 	gone.Flag
@@ -117,9 +120,9 @@ func TestCircularDependency4(t *testing.T) {
 }
 ```
 
-测试结果：
-- 用例1，正常；
-- 用例2，panic，输出：
+Test results:
+- Case 1: Normal execution
+- Case 2: Panic, output:
 ```log
 === RUN   TestCircularDependency2
 --- FAIL: TestCircularDependency2 (0.00s)
@@ -136,22 +139,21 @@ panic: GoneError(code=1003); circular dependency:
 		/Users/jim/works/gone-io/gone/core.go:204 +0x70
 	...
 ```
-- 用例3，正常；
-- 用例4，正常；
+- Case 3: Normal execution
+- Case 4: Normal execution
 
+In all four cases, two structs depend on each other, but only "Case 2" throws a circular dependency error. Why?
 
-在4个用例中，都是两个struct相互依赖，但是却只有"用例2"抛出了循环依赖的错误， 为什么呢？
+## Circular Dependency Analysis
 
-## 循环依赖分析
+### Initialization Flow in the Gone Framework
 
-### Gone框架的初始化流程
+The initialization flow in the Gone framework is mainly divided into two phases:
 
-Gone框架的初始化流程主要分为两个阶段：
+1. **fillAction (Field Filling)**: The framework injects dependencies into component fields
+2. **initAction (Component Initialization)**: The framework calls the component's `Init()` method for initialization
 
-1. **fillAction（字段填充）**：框架将依赖注入到组件的字段中
-2. **initAction（组件初始化）**：框架调用组件的`Init()`方法进行初始化
-
-这两个阶段在框架内部被表示为不同的`actionType`常量：
+These two phases are represented internally in the framework as different `actionType` constants:
 ```go
 const (
 	fillAction actionType = 1
@@ -159,19 +161,19 @@ const (
 )
 ```
 
-### 组件类型与依赖收集
+### Component Types and Dependency Collection
 
-Gone框架中的组件可以分为几种类型，其中与我们的例子相关的有：
+Components in the Gone framework can be categorized into several types, including:
 
-1. **普通Goner**：只嵌入了`gone.Flag`的结构体，没有实现特殊接口
-   - 只需要进行字段填充（fillAction）
-   - 不会被标记为`needInitBeforeUse`
+1. **Regular Goner**: Structures that only embed `gone.Flag` without implementing special interfaces
+   - Only require field filling (fillAction)
+   - Not marked as `needInitBeforeUse`
 
-2. **Init Goner**：实现了`Initiator`或`InitiatorNoError`接口的组件（有`Init()`方法）
-   - 需要进行字段填充和初始化（fillAction和initAction）
-   - 会被标记为`needInitBeforeUse`
+2. **Init Goner**: Components that implement the `Initiator` or `InitiatorNoError` interface (have an `Init()` method)
+   - Require both field filling and initialization (fillAction and initAction)
+   - Marked as `needInitBeforeUse`
 
-框架在创建组件时，会检查组件是否实现了特定接口来决定是否需要在使用前初始化：
+When creating a component, the framework checks if the component implements specific interfaces to determine if it needs to be initialized before use:
 
 ```go
 func newCoffin(goner any) *coffin {
@@ -188,14 +190,14 @@ func newCoffin(goner any) *coffin {
 }
 ```
 
-### 依赖收集与循环依赖检测
+### Dependency Collection and Circular Dependency Detection
 
-框架在依赖收集过程中，会为每个组件收集两种依赖：
+During the dependency collection process, the framework collects two types of dependencies for each component:
 
-1. **fillDependency**：组件字段填充所需的依赖
-2. **initDependency**：组件初始化所需的依赖（通常是fillAction依赖）
+1. **fillDependency**: Dependencies required for field filling of the component
+2. **initDependency**: Dependencies required for component initialization (usually fillAction dependencies)
 
-关键在于，当一个字段依赖的组件被标记为`needInitBeforeUse`时，框架会添加一个额外的initAction依赖：
+The key is that when a field depends on a component marked as `needInitBeforeUse`, the framework adds an additional initAction dependency:
 
 ```go
 if depCo.needInitBeforeUse {
@@ -206,105 +208,105 @@ if depCo.needInitBeforeUse {
 }
 ```
 
-这意味着，如果组件A依赖组件B，且B需要初始化，那么A的字段填充不仅依赖B的存在，还依赖B的初始化完成。
+This means that if component A depends on component B, and B needs initialization, then A's field filling depends not only on B's existence but also on B's initialization completion.
 
-## 什么情况下会导致循环依赖的panic？
+## When Does a Circular Dependency Panic Occur?
 
-根据上述分析，当满足以下条件时，Gone框架会检测到循环依赖并抛出panic：
+Based on the above analysis, the Gone framework will detect a circular dependency and throw a panic when the following conditions are met:
 
-1. **两个或多个组件之间存在相互依赖关系**（A依赖B，B依赖A）
-2. **这些组件都实现了`Init()`方法**，被标记为`needInitBeforeUse`
+1. **Two or more components have mutual dependency relationships** (A depends on B, B depends on A)
+2. **These components all implement the `Init()` method**, marked as `needInitBeforeUse`
 
-这种情况下，依赖关系会形成一个无法解决的循环：
-- A的字段填充依赖B的初始化
-- B的初始化依赖B的字段填充
-- B的字段填充依赖A的初始化
-- A的初始化依赖A的字段填充
+In this case, the dependency relationship forms an unresolvable cycle:
+- A's field filling depends on B's initialization
+- B's initialization depends on B's field filling
+- B's field filling depends on A's initialization
+- A's initialization depends on A's field filling
 
-这就形成了一个无法打破的循环依赖链，框架无法确定初始化顺序，因此会抛出panic。
+This forms an unbreakable circular dependency chain, and the framework cannot determine the initialization order, so it throws a panic.
 
-### 三个用例的区别分析
+### Analysis of the Differences Between the Test Cases
 
-现在我们可以解释三个用例的不同表现：
+Now we can explain the different behaviors of the test cases:
 
-1. **用例1**：depA1和depB1都是普通Goner
-   - 两个组件都没有实现`Init()`方法
-   - 都不会被标记为`needInitBeforeUse`
-   - 只有fillAction依赖，没有initAction依赖
-   - 虽然有循环引用，但框架允许这种循环，因为它只涉及字段填充，不涉及初始化顺序
+1. **Case 1**: depA1 and depB1 are both Regular Goners
+   - Neither component implements the `Init()` method
+   - Neither is marked as `needInitBeforeUse`
+   - Only have fillAction dependencies, no initAction dependencies
+   - Although there is circular referencing, the framework allows this type of cycle because it only involves field filling, not initialization order
 
-2. **用例2**：dep1和dep2都是Init Goner
-   - 两个组件都实现了`Init()`方法
-   - 都被标记为`needInitBeforeUse`
-   - 既有fillAction依赖，也有initAction依赖
-   - 依赖关系形成了真正的循环：
+2. **Case 2**: dep1 and dep2 are both Init Goners
+   - Both components implement the `Init()` method
+   - Both are marked as `needInitBeforeUse`
+   - Have both fillAction and initAction dependencies
+   - The dependency relationship forms a true cycle:
      - dep1.fill → dep2.init → dep2.fill → dep1.init → dep1.fill
-   - 框架无法确定初始化顺序，因此报错
+   - The framework cannot determine the initialization order, so it reports an error
 
-3. **用例3**：depA3是普通Goner，depB3是Init Goner
-   - depA3没有实现`Init()`方法，不会被标记为`needInitBeforeUse`
-   - depB3实现了`Init()`方法，被标记为`needInitBeforeUse`
-   - 依赖关系不会形成完整的循环：
+3. **Case 3**: depA3 is a Regular Goner, depB3 is an Init Goner
+   - depA3 does not implement the `Init()` method, not marked as `needInitBeforeUse`
+   - depB3 implements the `Init()` method, marked as `needInitBeforeUse`
+   - The dependency relationship does not form a complete cycle:
      - depA3.fill → depB3.init → depB3.fill
-   - 由于depA3只有fillAction，没有initAction，所以不会形成完整的循环依赖
+   - Since depA3 only has fillAction, no initAction, a complete circular dependency is not formed
 
-## 为什么会有循环依赖的panic？
+## Why Have Circular Dependency Panic?
 
-Gone框架设计了循环依赖检测机制，主要是为了解决以下问题：
+The Gone framework designed the circular dependency detection mechanism mainly to solve the following problems:
 
-1. **确保初始化顺序的确定性**：如果存在循环依赖，框架无法确定组件的初始化顺序，可能导致某些组件在依赖未完全初始化的情况下被使用
+1. **Ensure deterministic initialization order**: If circular dependencies exist, the framework cannot determine the initialization order of components, which may cause some components to be used before their dependencies are fully initialized
 
-2. **防止初始化死锁**：循环依赖可能导致初始化过程陷入死锁，特别是当所有组件都需要初始化时
+2. **Prevent initialization deadlock**: Circular dependencies can cause the initialization process to deadlock, especially when all components need initialization
 
-3. **提前发现设计问题**：循环依赖通常表明应用程序的设计存在问题，提前检测并报错可以帮助开发者改进设计
+3. **Early detection of design problems**: Circular dependencies usually indicate problems in application design; early detection and reporting can help developers improve the design
 
-框架通过拓扑排序算法检测依赖图中的循环，如果发现循环，就会抛出panic，提示开发者解决这个问题。
+The framework uses a topological sorting algorithm to detect cycles in the dependency graph, and if a cycle is found, it throws a panic to prompt developers to solve this problem.
 
-## 如何解决循环依赖问题？
+## How to Solve Circular Dependency Problems?
 
-当遇到循环依赖问题时，可以采用以下几种方法解决：
+When encountering circular dependency problems, the following methods can be used to solve them:
 
-1. **重构组件设计**：
-   - 重新审视组件之间的依赖关系，考虑是否可以重新设计以消除循环依赖
-   - 可能需要引入新的抽象层或中间组件来打破循环
+1. **Refactor component design**:
+   - Re-examine the dependency relationships between components, consider whether the design can be restructured to eliminate circular dependencies
+   - May need to introduce new abstraction layers or intermediate components to break the cycle
 
-2. **使用接口解耦**：
-   - 将直接依赖改为依赖接口，然后让两个组件都实现相同的接口
-   - 这样可以降低组件之间的直接耦合
+2. **Use interfaces for decoupling**:
+   - Change direct dependencies to interface dependencies, then have both components implement the same interface
+   - This can reduce direct coupling between components
 
-3. **使用普通Goner**：
-   - 如果可能，将其中一个组件改为普通Goner（不实现`Init()`方法）
-   - 如用例3所示，这样可以避免形成完整的循环依赖
+3. **Use Regular Goner**:
+   - If possible, change one of the components to a Regular Goner (not implementing the `Init()` method)
+   - As shown in Case 3, this can avoid forming a complete circular dependency
 
-4. **使用延迟初始化**：
-   - 使用`LazyFill()`选项加载Goner， 延迟Goner的装配(`fillAction`)
-   - **请注意**：使用`LazyFill()`选项加载Goner的副作用：
-      a. 被延迟的Goner，在名为`Init`、`Provide`、`Inject`这些方法中，无法使用依赖注入的字段
+4. **Use delayed initialization**:
+   - Use the `LazyFill()` option to load Goner, delaying Goner's assembly (`fillAction`)
+   - **Please note**: Side effects of using the `LazyFill()` option to load Goner:
+      a. For the delayed Goner, dependency-injected fields cannot be used in methods named `Init`, `Provide`, `Inject`
 
-5. **使用`option:"lazy"`延迟字段注入**
-   - 使用`option:"lazy"`选项，延迟字段注入
-   - **请注意**：使用`option:"lazy"`标记的字段，不能在名为`Init`、`Provide`、`Inject`的这些方法中使用；
+5. **Use `option:"lazy"` to delay field injection**
+   - Use the `option:"lazy"` option to delay field injection
+   - **Please note**: Fields marked with `option:"lazy"` cannot be used in methods named `Init`, `Provide`, `Inject`
 
-6. **使用事件机制**：
-   - 通过事件或消息机制实现组件间的间接通信
-   - 这样可以避免直接的循环引用
+6. **Use event mechanism**:
+   - Implement indirect communication between components through event or message mechanisms
+   - This can avoid direct circular references
 
-7. **使用第三方组件**：
-   - 引入一个中间组件，让原本相互依赖的两个组件都依赖这个中间组件
-   - 中间组件可以持有必要的状态或提供必要的服务
+7. **Use third-party components**:
+   - Introduce an intermediate component, making the two originally mutually dependent components both depend on this intermediate component
+   - The intermediate component can hold necessary state or provide necessary services
 
-### 示例：解决用例2的循环依赖
+### Example: Solving the Circular Dependency in Case 2
 
-以下是几种解决用例2循环依赖的方法：
+Here are several methods to solve the circular dependency in Case 2:
 
-1. **方法一：使用普通Goner**
+1. **Method 1: Use Regular Goner**
 ```go
 type dep1 struct {
     gone.Flag
     dep *dep2 `gone:"*"`
 }
 
-// 移除Init方法
+// Remove Init method
 
 type dep2 struct {
     gone.Flag
@@ -314,30 +316,30 @@ type dep2 struct {
 func (d *dep2) Init() {}
 ```
 
-2. **方法二：使用接口解耦**
+2. **Method 2: Use interfaces for decoupling**
 ```go
 type Dep2Interface interface {
-    // 定义必要的方法
+    // Define necessary methods
     SomeMethod() error
 }
 
 type dep1 struct {
     gone.Flag
-    dep Dep2Interface `gone:"*"` // 依赖接口而非具体实现
+    dep Dep2Interface `gone:"*"` // Depend on interface rather than concrete implementation
 }
 
 func (d *dep1) Init() {}
 
 type dep2 struct {
     gone.Flag
-    // 不再直接依赖dep1
+    // No longer directly depends on dep1
 }
 
 func (d *dep2) Init() {}
-func (d *dep2) SomeMethod() error { return nil } // 实现接口
+func (d *dep2) SomeMethod() error { return nil } // Implement interface
 ```
 
-3. **方法三：使用中间组件**
+3. **Method 3: Use intermediate component**
 ```go
 type mediator struct {
     gone.Flag
@@ -346,19 +348,19 @@ type mediator struct {
 }
 
 func (m *mediator) Init() {
-    // 在这里协调dep1和dep2的交互
+    // Coordinate interaction between dep1 and dep2 here
 }
 
 type dep1 struct {
     gone.Flag
-    // 不再直接依赖dep2
+    // No longer directly depends on dep2
 }
 
 func (d *dep1) Init() {}
 
 type dep2 struct {
     gone.Flag
-    // 不再直接依赖dep1
+    // No longer directly depends on dep1
 }
 
 func (d *dep2) Init() {}

@@ -1,66 +1,70 @@
-# Gone框架依赖注入核心路径详解
+<p>
+   English&nbsp ｜&nbsp <a href="gone-dependency-injection_CN.md">中文</a>
+</p>
 
-- [Gone框架依赖注入核心路径详解](#gone框架依赖注入核心路径详解)
-	- [1. 组件定义与Goner接口](#1-组件定义与goner接口)
-	- [2. 组件加载过程](#2-组件加载过程)
-		- [2.1 Core结构体](#21-core结构体)
-		- [2.2 组件加载流程](#22-组件加载流程)
-	- [3. 依赖检查与循环依赖检测](#3-依赖检查与循环依赖检测)
-		- [3.1 依赖收集](#31-依赖收集)
-		- [3.2 组件安装](#32-组件安装)
-	- [4. 字段注入实现与Provider机制](#4-字段注入实现与provider机制)
-		- [4.1 字段注入](#41-字段注入)
-		- [4.2 Provider机制](#42-provider机制)
-	- [5. 生命周期管理](#5-生命周期管理)
-		- [5.1 组件初始化](#51-组件初始化)
-		- [5.2 应用程序生命周期](#52-应用程序生命周期)
-		- [5.3 生命周期钩子](#53-生命周期钩子)
-	- [6. 函数参数注入](#6-函数参数注入)
-	- [7. 依赖注入流程总结](#7-依赖注入流程总结)
+# Gone Framework Dependency Injection Core Path Explanation
+
+- [Gone Framework Dependency Injection Core Path Explanation](#gone-framework-dependency-injection-core-path-explanation)
+	- [1. Component Definition and Goner Interface](#1-component-definition-and-goner-interface)
+	- [2. Component Loading Process](#2-component-loading-process)
+		- [2.1 Core Structure](#21-core-structure)
+		- [2.2 Component Loading Flow](#22-component-loading-flow)
+	- [3. Dependency Checking and Circular Dependency Detection](#3-dependency-checking-and-circular-dependency-detection)
+		- [3.1 Dependency Collection](#31-dependency-collection)
+		- [3.2 Component Installation](#32-component-installation)
+	- [4. Field Injection Implementation and Provider Mechanism](#4-field-injection-implementation-and-provider-mechanism)
+		- [4.1 Field Injection](#41-field-injection)
+		- [4.2 Provider Mechanism](#42-provider-mechanism)
+	- [5. Lifecycle Management](#5-lifecycle-management)
+		- [5.1 Component Initialization](#51-component-initialization)
+		- [5.2 Application Lifecycle](#52-application-lifecycle)
+		- [5.3 Lifecycle Hooks](#53-lifecycle-hooks)
+	- [6. Function Parameter Injection](#6-function-parameter-injection)
+	- [7. Dependency Injection Process Summary](#7-dependency-injection-process-summary)
 
 
-Gone是一个轻量级的Go语言依赖注入框架，它通过简洁的API和灵活的组件管理机制，帮助开发者构建模块化、可测试的应用程序。本文将详细介绍Gone框架的依赖注入核心路径，从组件定义到依赖注入的完整流程。
+Gone is a lightweight Go language dependency injection framework that helps developers build modular, testable applications through a concise API and flexible component management mechanism. This article will provide a detailed explanation of the core path of dependency injection in the Gone framework, covering the complete process from component definition to dependency injection.
 
-## 1. 组件定义与Goner接口
+## 1. Component Definition and Goner Interface
 
-Gone框架中的所有组件都必须实现`Goner`接口，这是一个标记接口，用于标识可以被Gone框架管理的组件。
+All components in the Gone framework must implement the `Goner` interface, which is a marker interface used to identify components that can be managed by the Gone framework.
 
 ```go
-// Goner是所有由Gone管理的组件必须实现的基础接口
-// 它作为一个标记接口，用于标识可以被加载到Gone容器中的类型
+// Goner is the basic interface that all components managed by Gone must implement
+// It serves as a marker interface to identify types that can be loaded into the Gone container
 type Goner interface {
 	goneFlag()
 }
 ```
 
-为了简化组件的定义，Gone提供了一个`Flag`结构体，任何嵌入了这个结构体的类型都自动实现了`Goner`接口：
+To simplify component definition, Gone provides a `Flag` structure. Any type that embeds this structure automatically implements the `Goner` interface:
 
 ```go
-// Flag是一个标记结构体，用于标识可以被gone框架管理的组件
-// 在其他结构体中嵌入这个结构体表示它可以用于gone的依赖注入
+// Flag is a marker structure used to identify components that can be managed by the gone framework
+// Embedding this structure in other structures indicates that it can be used for gone's dependency injection
 type Flag struct{}
 
 func (g *Flag) goneFlag() {}
 ```
 
-组件定义示例：
+Component definition example:
 
 ```go
-// 定义一个简单的组件
+// Define a simple component
 type MyComponent struct {
-    gone.Flag  // 嵌入Flag以实现Goner接口
-    // 组件的字段
-    Dependency *AnotherComponent `gone:"*"` // 使用gone标签声明依赖
+    gone.Flag  // Embed Flag to implement the Goner interface
+    // Component fields
+    Dependency *AnotherComponent `gone:"*"` // Declare dependencies using gone tags
 }
 ```
 
-## 2. 组件加载过程
+## 2. Component Loading Process
 
-Gone框架通过`Core.Load`方法加载组件到容器中。这个过程包括组件注册、Provider检测和依赖关系建立。
+The Gone framework loads components into the container through the `Core.Load` method. This process includes component registration, Provider detection, and dependency relationship establishment.
 
-### 2.1 Core结构体
+### 2.1 Core Structure
 
-`Core`是Gone框架的核心，负责组件的加载、依赖注入和生命周期管理：
+`Core` is the heart of the Gone framework, responsible for component loading, dependency injection, and lifecycle management:
 
 ```go
 type Core struct {
@@ -75,14 +79,14 @@ type Core struct {
 }
 ```
 
-### 2.2 组件加载流程
+### 2.2 Component Loading Flow
 
-`Core.Load`方法是组件加载的入口，它完成以下工作：
+The `Core.Load` method is the entry point for component loading and accomplishes the following tasks:
 
-1. 创建组件的coffin包装器
-2. 处理命名组件的注册
-3. 检测并注册Provider
-4. 应用加载选项（如默认实现、加载顺序等）
+1. Create a coffin wrapper for the component
+2. Handle named component registration
+3. Detect and register Providers
+4. Apply loading options (such as default implementations, loading order, etc.)
 
 ```go
 func (s *Core) Load(goner Goner, options ...Option) error {
@@ -95,58 +99,58 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 		co.name = namedGoner.GonerName()
 	}
 
-	// 应用加载选项
+	// Apply loading options
 	for _, option := range options {
 		if err := option.Apply(co); err != nil {
 			return ToError(err)
 		}
 	}
 
-	// 处理命名组件的注册
+	// Handle named component registration
 	if co.name != "" {
-		// 检查名称冲突并处理
+		// Check for name conflicts and handle them
 		// ...
 	}
 
-	// 添加到组件列表
+	// Add to component list
 	s.coffins = append(s.coffins, co)
 
-	// 检测并注册Provider
+	// Detect and register Provider
 	provider := tryWrapGonerToProvider(goner)
 	if provider != nil {
 		co.needInitBeforeUse = true
 		co.provider = provider
 
-		// 注册Provider
+		// Register Provider
 		// ...
 	}
 	return nil
 }
 ```
 
-## 3. 依赖检查与循环依赖检测
+## 3. Dependency Checking and Circular Dependency Detection
 
-Gone框架在初始化组件前，会先检查依赖关系，确保没有循环依赖，并确定最佳的初始化顺序。
+Before initializing components, the Gone framework first checks dependency relationships to ensure there are no circular dependencies and to determine the optimal initialization order.
 
-### 3.1 依赖收集
+### 3.1 Dependency Collection
 
-`Core.Check`方法负责收集所有组件之间的依赖关系，并检测循环依赖：
+The `Core.Check` method is responsible for collecting all dependencies between components and detecting circular dependencies:
 
 ```go
 func (s *Core) Check() ([]dependency, error) {
-	// 收集依赖关系
+	// Collect dependency relationships
 	depsMap, err := s.collectDeps()
 	if err != nil {
 		return nil, ToError(err)
 	}
 
-	// 检查循环依赖并获取最佳初始化顺序
+	// Check for circular dependencies and get the best initialization order
 	deps, orders := checkCircularDepsAndGetBestInitOrder(depsMap)
 	if len(deps) > 0 {
 		return nil, circularDepsError(deps)
 	}
 
-	// 添加字段填充操作
+	// Add field filling operations
 	for _, co := range s.coffins {
 		orders = append(orders, dependency{co, fillAction})
 	}
@@ -154,19 +158,19 @@ func (s *Core) Check() ([]dependency, error) {
 }
 ```
 
-### 3.2 组件安装
+### 3.2 Component Installation
 
-`Core.Install`方法按照确定的顺序执行组件的初始化：
+The `Core.Install` method executes component initialization in the determined order:
 
 ```go
 func (s *Core) Install() error {
-	// 获取初始化顺序
+	// Get initialization order
 	orders, err := s.Check()
 	if err != nil {
 		return ToError(err)
 	}
 
-	// 按顺序执行字段填充和初始化
+	// Execute field filling and initialization in order
 	for i, dep := range orders {
 		if dep.action == fillAction {
 			if err := s.safeFillOne(dep.coffin); err != nil {
@@ -185,52 +189,52 @@ func (s *Core) Install() error {
 }
 ```
 
-## 4. 字段注入实现与Provider机制
+## 4. Field Injection Implementation and Provider Mechanism
 
-Gone框架通过反射机制实现字段注入，并支持多种Provider机制来创建和提供依赖实例。
+The Gone framework implements field injection through reflection mechanisms and supports various Provider mechanisms to create and provide dependency instances.
 
-### 4.1 字段注入
+### 4.1 Field Injection
 
-`Core.fillOne`方法负责为组件注入依赖：
+The `Core.fillOne` method is responsible for injecting dependencies into components:
 
 ```go
 func (s *Core) fillOne(coffin *coffin) error {
 	goner := coffin.goner
 
-	// 调用BeforeInit钩子
+	// Call BeforeInit hook
 	if initiator, ok := goner.(BeforeInitiatorNoError); ok {
 		initiator.BeforeInit()
 	}
 
-	// 使用反射获取结构体字段
+	// Use reflection to get struct fields
 	elem := reflect.TypeOf(goner).Elem()
 	elemV := reflect.ValueOf(goner).Elem()
 
-	// 遍历所有字段
+	// Iterate through all fields
 	for i := 0; i < elem.NumField(); i++ {
 		field := elem.Field(i)
 		v := elemV.Field(i)
 
-		// 查找gone标签
+		// Look for gone tag
 		if tag, ok := field.Tag.Lookup(goneTag); ok {
 			goneName, extend := ParseGoneTag(tag)
 			if goneName == "" {
 				goneName = defaultProviderName
 			}
 
-			// 获取依赖
+			// Get dependency
 			co, err := s.getDepByName(goneName)
 			if err != nil {
 				return ToErrorWithMsg(err, fmt.Sprintf("failed to find dependency %q for field %q in type %q", goneName, field.Name, GetTypeName(elem)))
 			}
 
-			// 尝试直接注入兼容类型
+			// Try to directly inject compatible type
 			if IsCompatible(field.Type, co.goner) {
 				v.Set(reflect.ValueOf(co.goner))
 				continue
 			}
 
-			// 尝试使用Provider提供依赖
+			// Try using Provider to provide dependency
 			if co.provider != nil && field.Type == co.provider.Type() {
 				provide, err := co.provider.Provide(extend)
 				if err != nil {
@@ -241,12 +245,12 @@ func (s *Core) fillOne(coffin *coffin) error {
 				}
 			}
 
-			// 尝试使用NamedProvider
+			// Try using NamedProvider
 			if provider, ok := co.goner.(NamedProvider); ok {
 				// ...
 			}
 
-			// 尝试使用StructFieldInjector
+			// Try using StructFieldInjector
 			if injector, ok := co.goner.(StructFieldInjector); ok {
 				// ...
 			}
@@ -258,35 +262,35 @@ func (s *Core) fillOne(coffin *coffin) error {
 }
 ```
 
-### 4.2 Provider机制
+### 4.2 Provider Mechanism
 
-Gone框架支持多种Provider接口，用于创建和提供依赖实例：
+The Gone framework supports various Provider interfaces for creating and providing dependency instances:
 
 ```go
-// Provider是一个泛型接口，用于提供T类型的依赖
+// Provider is a generic interface for providing dependencies of type T
 type Provider[T any] interface {
 	Goner
 	Provide(tagConf string) (T, error)
 }
 
-// NamedProvider接口用于基于名称和类型创建依赖
+// NamedProvider interface for creating dependencies based on name and type
 type NamedProvider interface {
 	NamedGoner
 	Provide(tagConf string, t reflect.Type) (any, error)
 }
 
-// NoneParamProvider是一个简化的Provider接口
+// NoneParamProvider is a simplified Provider interface
 type NoneParamProvider[T any] interface {
 	Goner
 	Provide() (T, error)
 }
 ```
 
-`Core.Provide`方法实现了依赖查找和创建的逻辑：
+The `Core.Provide` method implements the logic for finding and creating dependencies:
 
 ```go
 func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
-	// 尝试使用类型Provider
+	// Try using type Provider
 	if provider, ok := s.typeProviderMap[t]; ok && provider != nil {
 		provide, err := provider.Provide(tagConf)
 		if err != nil {
@@ -297,13 +301,13 @@ func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
 		}
 	}
 
-	// 尝试查找默认实现
+	// Try to find default implementation
 	c := s.getDefaultCoffinByType(t)
 	if c != nil {
 		return c.goner, nil
 	}
 
-	// 处理切片类型的特殊情况
+	// Handle special case for slice types
 	if t.Kind() == reflect.Slice {
 		// ...
 	}
@@ -314,13 +318,13 @@ func (s *Core) Provide(tagConf string, t reflect.Type) (any, error) {
 }
 ```
 
-## 5. 生命周期管理
+## 5. Lifecycle Management
 
-Gone框架提供了完整的组件生命周期管理，包括初始化、启动和停止阶段。
+The Gone framework provides complete component lifecycle management, including initialization, startup, and shutdown phases.
 
-### 5.1 组件初始化
+### 5.1 Component Initialization
 
-`Core.initOne`方法负责初始化单个组件：
+The `Core.initOne` method is responsible for initializing a single component:
 
 ```go
 func (s *Core) initOne(c *coffin) error {
@@ -338,9 +342,9 @@ func (s *Core) initOne(c *coffin) error {
 }
 ```
 
-### 5.2 应用程序生命周期
+### 5.2 Application Lifecycle
 
-`Application`结构体负责管理整个应用的生命周期，包括启动和停止：
+The `Application` structure is responsible for managing the entire application lifecycle, including startup and shutdown:
 
 ```go
 type Application struct {
@@ -358,17 +362,17 @@ type Application struct {
 }
 ```
 
-`Application`提供了一系列方法来管理应用程序的生命周期：
+`Application` provides a series of methods to manage the application lifecycle:
 
 ```go
-// 启动应用程序
+// Start the application
 func (s *Application) start() {
-	// 执行启动前钩子
+	// Execute pre-start hooks
 	for _, fn := range s.beforeStartHooks {
 		fn()
 	}
 
-	// 启动所有守护进程
+	// Start all daemons
 	for _, daemon := range s.daemons {
 		err := daemon.Start()
 		if err != nil {
@@ -376,20 +380,20 @@ func (s *Application) start() {
 		}
 	}
 
-	// 执行启动后钩子
+	// Execute post-start hooks
 	for _, fn := range s.afterStartHooks {
 		fn()
 	}
 }
 
-// 停止应用程序
+// Stop the application
 func (s *Application) stop() {
-	// 执行停止前钩子
+	// Execute pre-stop hooks
 	for _, fn := range s.beforeStopHooks {
 		fn()
 	}
 
-	// 按照相反的顺序停止所有守护进程
+	// Stop all daemons in reverse order
 	for i := len(s.daemons) - 1; i >= 0; i-- {
 		err := s.daemons[i].Stop()
 		if err != nil {
@@ -397,56 +401,56 @@ func (s *Application) stop() {
 		}
 	}
 
-	// 执行停止后钩子
+	// Execute post-stop hooks
 	for _, fn := range s.afterStopHooks {
 		fn()
 	}
 }
 ```
 
-### 5.3 生命周期钩子
+### 5.3 Lifecycle Hooks
 
-Gone框架提供了多种生命周期钩子，允许组件在应用程序的不同阶段执行自定义逻辑：
+The Gone framework provides various lifecycle hooks that allow components to execute custom logic at different stages of the application:
 
 ```go
-// 定义钩子函数类型
+// Define hook function type
 type Process func()
 
-// 启动前钩子
+// Pre-start hook
 type BeforeStart func(Process)
 
-// 启动后钩子
+// Post-start hook
 type AfterStart func(Process)
 
-// 停止前钩子
+// Pre-stop hook
 type BeforeStop func(Process)
 
-// 停止后钩子
+// Post-stop hook
 type AfterStop func(Process)
 ```
 
-钩子的注册和执行顺序：
+Hook registration and execution order:
 
 ```go
-// 注册启动前钩子
+// Register pre-start hook
 func (s *Application) beforeStart(fn Process) {
-	// 注意：启动前钩子是按照后进先出的顺序执行的
+	// Note: Pre-start hooks are executed in last-in-first-out order
 	s.beforeStartHooks = append([]Process{fn}, s.beforeStartHooks...)
 }
 
-// 注册启动后钩子
+// Register post-start hook
 func (s *Application) afterStart(fn Process) {
-	// 注意：启动后钩子是按照先进先出的顺序执行的
+	// Note: Post-start hooks are executed in first-in-first-out order
 	s.afterStartHooks = append(s.afterStartHooks, fn)
 }
 ```
 
-## 6. 函数参数注入
+## 6. Function Parameter Injection
 
-Gone框架不仅支持结构体字段注入，还支持函数参数注入，这使得可以直接在函数中使用依赖：
+The Gone framework not only supports struct field injection but also function parameter injection, which allows direct use of dependencies in functions:
 
 ```go
-// 函数参数注入
+// Function parameter injection
 func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectAfter FuncInjectHook) (args []reflect.Value, err error) {
 	ft := reflect.TypeOf(fn)
 
@@ -462,7 +466,7 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 
 		injected := false
 
-		// 尝试使用自定义注入钩子
+		// Try using custom injection hook
 		if injectBefore != nil {
 			v := injectBefore(pt, i, false)
 			if v != nil {
@@ -471,7 +475,7 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 			}
 		}
 
-		// 尝试使用标准依赖注入
+		// Try using standard dependency injection
 		if !injected {
 			if v, err := s.Provide("", pt); err != nil && !IsError(err, NotSupport) {
 				return nil, ToErrorWithMsg(err, fmt.Sprintf("failed to inject %s in %s", paramName, GetFuncName(fn)))
@@ -481,12 +485,12 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 			}
 		}
 
-		// 尝试创建并填充结构体参数
+		// Try to create and fill struct parameters
 		if !injected {
 			// ...
 		}
 
-		// 尝试使用后置注入钩子
+		// Try using post-injection hook
 		if injectAfter != nil {
 			// ...
 		}
@@ -499,7 +503,7 @@ func (s *Core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 }
 ```
 
-函数包装器，用于执行带有注入参数的函数：
+Function wrapper for executing functions with injected parameters:
 
 ```go
 func (s *Core) InjectWrapFunc(fn any, injectBefore FuncInjectHook, injectAfter FuncInjectHook) (func() []any, error) {
@@ -511,7 +515,7 @@ func (s *Core) InjectWrapFunc(fn any, injectBefore FuncInjectHook, injectAfter F
 	return func() (results []any) {
 		values := reflect.ValueOf(fn).Call(args)
 		for _, arg := range values {
-			// 处理返回值
+			// Process return values
 			// ...
 			results = append(results, arg.Interface())
 		}
@@ -520,28 +524,28 @@ func (s *Core) InjectWrapFunc(fn any, injectBefore FuncInjectHook, injectAfter F
 }
 ```
 
-## 7. 依赖注入流程总结
+## 7. Dependency Injection Process Summary
 
-Gone框架的依赖注入核心路径可以总结为以下几个步骤：
+The core path of dependency injection in the Gone framework can be summarized in the following steps:
 
-1. **组件定义**：通过嵌入`gone.Flag`结构体实现`Goner`接口，使组件可被Gone框架管理。
+1. **Component Definition**: Implement the `Goner` interface by embedding the `gone.Flag` structure to make components manageable by the Gone framework.
 
-2. **组件加载**：使用`Core.Load`或`Application.Load`方法将组件加载到容器中，可以指定名称、默认实现等选项。
+2. **Component Loading**: Use the `Core.Load` or `Application.Load` method to load components into the container, with options to specify name, default implementation, etc.
 
-3. **依赖检查**：框架检查组件之间的依赖关系，确保没有循环依赖，并确定最佳的初始化顺序。
+3. **Dependency Checking**: The framework checks dependencies between components, ensures there are no circular dependencies, and determines the best initialization order.
 
-4. **依赖注入**：框架通过反射机制，为每个组件注入其依赖项，支持多种注入方式：
-   - 直接注入兼容类型
-   - 使用Provider创建依赖实例
-   - 使用NamedProvider基于名称和类型创建依赖
-   - 使用StructFieldInjector自定义注入逻辑
+4. **Dependency Injection**: The framework uses reflection to inject dependencies into each component, supporting various injection methods:
+    - Direct injection of compatible types
+    - Using Provider to create dependency instances
+    - Using NamedProvider to create dependencies based on name and type
+    - Using StructFieldInjector for custom injection logic
 
-5. **组件初始化**：按照确定的顺序初始化组件，调用`BeforeInit`和`Init`方法。
+5. **Component Initialization**: Initialize components in the determined order, calling `BeforeInit` and `Init` methods.
 
-6. **应用程序启动**：执行启动前钩子，启动所有守护进程，执行启动后钩子。
+6. **Application Startup**: Execute pre-start hooks, start all daemons, execute post-start hooks.
 
-7. **应用程序运行**：应用程序正常运行，处理业务逻辑。
+7. **Application Running**: The application runs normally, handling business logic.
 
-8. **应用程序停止**：执行停止前钩子，按照相反的顺序停止所有守护进程，执行停止后钩子。
+8. **Application Shutdown**: Execute pre-stop hooks, stop all daemons in reverse order, execute post-stop hooks.
 
-通过这一系列步骤，Gone框架实现了灵活、强大的依赖注入机制，帮助开发者构建模块化、可测试的应用程序。
+Through this series of steps, the Gone framework implements a flexible and powerful dependency injection mechanism, helping developers build modular and testable applications.

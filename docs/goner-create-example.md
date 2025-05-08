@@ -1,59 +1,62 @@
-# 如何给Gone框架编写Goner组件（上）——编写一个Goner对接Apollo配置中心
+<p>
+   English&nbsp ｜&nbsp <a href="goner-create-example_CN.md">中文</a>
+</p>
 
-- [如何给Gone框架编写Goner组件\[上\]——编写一个Goner对接Apollo配置中心](#如何给gone框架编写goner组件上编写一个goner对接apollo配置中心)
-	- [引言](#引言)
-	- [Gone框架与Goner组件简介](#gone框架与goner组件简介)
-	- [Apollo配置中心简介](#apollo配置中心简介)
-	- [编写Apollo Goner组件的核心思路](#编写apollo-goner组件的核心思路)
-	- [核心代码实现与讲解](#核心代码实现与讲解)
-		- [1. Apollo客户端组件实现](#1-apollo客户端组件实现)
-		- [2. 初始化Apollo客户端](#2-初始化apollo客户端)
-		- [3. 配置获取实现](#3-配置获取实现)
-		- [4. 配置值设置工具函数](#4-配置值设置工具函数)
-		- [5. 配置监听和自动更新依赖注入的值](#5-配置监听和自动更新依赖注入的值)
-		- [提供`gone.LoadFunc`函数，方便使用](#提供goneloadfunc函数方便使用)
-	- [使用Apollo Goner组件的示例](#使用apollo-goner组件的示例)
-		- [1. 编写本地配置文件，支持多种配置格式：JSON、YAML、TOML、Properties 等](#1-编写本地配置文件支持多种配置格式jsonyamltomlproperties-等)
-		- [2. 在服务中使用Apollo配置](#2-在服务中使用apollo配置)
-		- [3. 引入Apollo组件](#3-引入apollo组件)
-	- [高级用法](#高级用法)
-		- [1. 监听配置变更](#1-监听配置变更)
-		- [2. 支持多命名空间](#2-支持多命名空间)
-	- [最佳实践](#最佳实践)
-	- [结论](#结论)
-	- [参考资源](#参考资源)
+# How to Create a Goner Component for Gone Framework [Part 1] - Integrating with Apollo Configuration Center
 
+- [How to Create a Goner Component for Gone Framework \[Part 1\] - Integrating with Apollo Configuration Center](#how-to-create-a-goner-component-for-gone-framework-part-1---integrating-with-apollo-configuration-center)
+	- [Introduction](#introduction)
+	- [Gone Framework and Goner Component Overview](#gone-framework-and-goner-component-overview)
+	- [Apollo Configuration Center Overview](#apollo-configuration-center-overview)
+	- [Core Approach to Developing Apollo Goner Component](#core-approach-to-developing-apollo-goner-component)
+	- [Core Implementation and Explanation](#core-implementation-and-explanation)
+		- [1. Apollo Client Component Implementation](#1-apollo-client-component-implementation)
+		- [2. Initializing Apollo Client](#2-initializing-apollo-client)
+		- [3. Configuration Retrieval Implementation](#3-configuration-retrieval-implementation)
+		- [4. Configuration Value Setting Utility Function](#4-configuration-value-setting-utility-function)
+		- [5. Configuration Monitoring and Automatic Value Updates](#5-configuration-monitoring-and-automatic-value-updates)
+		- [Providing `gone.LoadFunc` for Easy Use](#providing-goneloadfunc-for-easy-use)
+	- [Example Usage of Apollo Goner Component](#example-usage-of-apollo-goner-component)
+		- [1. Writing Local Configuration Files (Supporting Multiple Formats: JSON, YAML, TOML, Properties, etc.)](#1-writing-local-configuration-files-supporting-multiple-formats-json-yaml-toml-properties-etc)
+		- [2. Using Apollo Configuration in Services](#2-using-apollo-configuration-in-services)
+		- [3. Importing Apollo Component](#3-importing-apollo-component)
+	- [Advanced Usage](#advanced-usage)
+		- [1. Monitoring Configuration Changes](#1-monitoring-configuration-changes)
+		- [2. Supporting Multiple Namespaces](#2-supporting-multiple-namespaces)
+	- [Best Practices](#best-practices)
+	- [Conclusion](#conclusion)
+	- [References](#references)
 
-## 引言
+## Introduction
 
-在微服务架构中，配置中心是一个非常重要的基础设施，它能够集中管理各个服务的配置信息，实现配置的动态更新。Apollo是携程开源的一款优秀的分布式配置中心，本文将详细讲解如何基于Gone框架编写一个Goner组件对接Apollo配置中心，实现配置的统一管理。
+In microservice architecture, a configuration center is a crucial infrastructure component that centrally manages configuration information for various services and enables dynamic configuration updates. Apollo is an excellent distributed configuration center open-sourced by Ctrip. This article will explain in detail how to create a Goner component based on the Gone framework to integrate with Apollo configuration center, achieving unified configuration management.
 
-## Gone框架与Goner组件简介
+## Gone Framework and Goner Component Overview
 
-Gone是一个基于Go语言的依赖注入框架，而Goner则是基于Gone框架开发的可复用组件。通过编写Goner组件，我们可以将特定功能模块化，便于在不同项目中复用。
+Gone is a dependency injection framework based on Go language, while Goner is a reusable component developed based on the Gone framework. By creating Goner components, we can modularize specific functionalities for reuse across different projects.
 
-## Apollo配置中心简介
+## Apollo Configuration Center Overview
 
-Apollo配置中心主要由以下部分组成：
-- 配置管理界面（Portal）：供用户管理配置
-- 配置服务（ConfigService）：提供配置获取接口
-- 客户端SDK：与服务端交互，获取/监听配置变化
+Apollo configuration center consists of the following main parts:
+- Configuration Management Interface (Portal): For user configuration management
+- Configuration Service: Provides configuration retrieval interfaces
+- Client SDK: Interacts with the server to retrieve/monitor configuration changes
 
-## 编写Apollo Goner组件的核心思路
+## Core Approach to Developing Apollo Goner Component
 
-1. 先通过**goner viper**获取本地关于Apollo连接的配置信息
-2. 封装Apollo客户端，提供**配置获取**和**监听能力**
-3. 实现`gone.Configure`接口，将Apollo配置中心的值直接注入到需要的组件中
-4. 实现配置自动更新机制，监控配置变更，并更新对应的变量值
-5. 支持不同类型配置的解析和转换
+1. First use **goner viper** to get local Apollo connection configuration information
+2. Encapsulate Apollo client to provide **configuration retrieval** and **monitoring capabilities**
+3. Implement `gone.Configure` interface to directly inject Apollo configuration center values into required components
+4. Implement automatic configuration update mechanism to monitor configuration changes and update corresponding variable values
+5. Support parsing and conversion of different configuration types
 
-## 核心代码实现与讲解
+## Core Implementation and Explanation
 
-### 1. Apollo客户端组件实现
+### 1. Apollo Client Component Implementation
 
-源代码：[apollo/client.go](https://github.com/gone-io/goner/blob/goner-example/apollo/client.go)
+Source code: [apollo/client.go](https://github.com/gone-io/goner/blob/goner-example/apollo/client.go)
 
-```go:https://github.com/gone-io/goner/blob/goner-example/apollo/client.go
+```go
 type apolloClient struct {
 	gone.Flag
 	localConfigure gone.Configure
@@ -74,14 +77,14 @@ type apolloClient struct {
 }
 ```
 
-`apolloClient`结构体定义了Apollo客户端组件的各个字段：
-- 依赖注入的组件：`changeListener`、`testFlag`、`logger`
-- Apollo配置项：`appId`、`cluster`、`ip`等
-- 控制选项：`watch`（是否监听配置变更）、`useLocalConfIfKeyNotExist`（当配置不存在时是否使用本地配置）
+The `apolloClient` struct defines various fields for the Apollo client component:
+- Dependency-injected components: `changeListener`, `testFlag`, `logger`
+- Apollo configuration items: `appId`, `cluster`, `ip`, etc.
+- Control options: `watch` (whether to monitor configuration changes), `useLocalConfIfKeyNotExist` (whether to use local configuration when configuration doesn't exist)
 
-### 2. 初始化Apollo客户端
+### 2. Initializing Apollo Client
 
-```go:https://github.com/gone-io/goner/blob/goner-example/apollo/client.go
+```go
 func (s *apolloClient) Init() {
 	s.localConfigure = viper.New(s.testFlag)
 
@@ -123,16 +126,16 @@ func (s *apolloClient) Init() {
 }
 ```
 
-`Init`方法完成了Apollo客户端的初始化工作：
-1. 创建本地配置源（使用viper组件）
-2. 从本地配置中读取Apollo相关配置项
-3. 创建Apollo客户端配置
-4. 启动Apollo客户端
-5. 如果启用了配置监听，则添加变更监听器
+The `Init` method completes Apollo client initialization:
+1. Creates local configuration source (using viper component)
+2. Reads Apollo-related configuration items from local configuration
+3. Creates Apollo client configuration
+4. Starts Apollo client
+5. Adds change listener if configuration monitoring is enabled
 
-### 3. 配置获取实现
+### 3. Configuration Retrieval Implementation
 
-```go:https://github.com/gone-io/goner/blob/goner-example/apollo/client.go
+```go
 func (s *apolloClient) Get(key string, v any, defaultVal string) error {
 	if s.watch {
 		s.changeListener.Put(key, v)
@@ -165,16 +168,16 @@ func (s *apolloClient) Get(key string, v any, defaultVal string) error {
 }
 ```
 
-`Get`方法是获取配置的核心实现：
-1. 如果启用了配置监听，则将配置键与变量引用关联起来
-2. 如果Apollo客户端未初始化，则从本地配置获取
-3. 遍历所有命名空间，尝试从Apollo获取配置
-4. 如果获取成功，则将配置值设置到变量中
-5. 如果从Apollo获取失败且允许使用本地配置，则从本地配置获取
+The `Get` method is the core implementation for configuration retrieval:
+1. If configuration monitoring is enabled, associates the configuration key with the variable reference
+2. If Apollo client is not initialized, retrieves from local configuration
+3. Iterates through all namespaces, attempting to retrieve configuration from Apollo
+4. If retrieval is successful, sets the configuration value to the variable
+5. If retrieval from Apollo fails and local configuration use is allowed, retrieves from local configuration
 
-### 4. 配置值设置工具函数
+### 4. Configuration Value Setting Utility Function
 
-```go:https://github.com/gone-io/goner/blob/goner-example/apollo/client.go
+```go
 func setValue(v any, value any) error {
 	if str, ok := value.(string); ok {
 		return gone.ToError(gone.SetValue(reflect.ValueOf(v), v, str))
@@ -188,13 +191,13 @@ func setValue(v any, value any) error {
 }
 ```
 
-`setValue`函数用于将配置值设置到变量中：
-1. 如果配置值是字符串，则直接设置
-2. 如果配置值是其他类型，则先转换为JSON字符串，再设置
+The `setValue` function is used to set configuration values to variables:
+1. If the configuration value is a string, sets it directly
+2. If the configuration value is another type, first converts it to a JSON string, then sets it
 
-### 5. 配置监听和自动更新依赖注入的值
+### 5. Configuration Monitoring and Automatic Value Updates
 
-```go:https://github.com/gone-io/goner/blob/goner-example/apollo/client.go
+```go
 type changeListener struct {
     gone.Flag
     keyMap map[string]any
@@ -223,14 +226,14 @@ func (c *changeListener) OnChange(event *storage.ChangeEvent) {
 func (c *changeListener) OnNewestChange(*storage.FullChangeEvent) {}
 ```
 
-`changeListener`实现了Apollo客户端的配置变更监听接口：
-- `Init`方法初始化一个map用于存储配置键与对应的变量引用
-- `Put`方法将配置键与变量引用关联起来
-- `OnChange`方法在配置变更时被调用，它会遍历所有变更的配置，找到对应的变量引用，并更新其值
-- `OnNewestChange`方法是接口要求实现的，但在本例中没有具体逻辑
+`changeListener` implements Apollo client's configuration change listening interface:
+- `Init` method initializes a map to store configuration keys and corresponding variable references
+- `Put` method associates configuration keys with variable references
+- `OnChange` method is called when configuration changes, it iterates through all changed configurations, finds corresponding variable references, and updates their values
+- `OnNewestChange` method is required by the interface but has no specific logic in this example
 
-### 提供`gone.LoadFunc`函数，方便使用
-```go:https://github.com/gone-io/goner/blob/goner-example/apollo/client.go
+### Providing `gone.LoadFunc` for Easy Use
+```go
 var load = gone.OnceLoad(func(loader gone.Loader) error {
     err := loader.
         Load(
@@ -250,14 +253,13 @@ func Load(loader gone.Loader) error {
 }
 ```
 
-这段代码使用`gone.OnceLoad`确保组件只被加载一次，并通过`loader.Load`方法注册了两个组件：
-- `apolloClient`：实现了`gone.Configure`接口，用于获取配置
-- `changeListener`：用于监听配置变更
+This code uses `gone.OnceLoad` to ensure components are loaded only once, and registers two components through the `loader.Load` method:
+- `apolloClient`: implements the `gone.Configure` interface for configuration retrieval
+- `changeListener`: for monitoring configuration changes
 
+## Example Usage of Apollo Goner Component
 
-## 使用Apollo Goner组件的示例
-
-### 1. 编写本地配置文件，支持多种配置格式：JSON、YAML、TOML、Properties 等
+### 1. Writing Local Configuration Files (Supporting Multiple Formats: JSON, YAML, TOML, Properties, etc.)
 ```yml
 # config/default.yml
 apollo:
@@ -271,26 +273,24 @@ apollo:
   useLocalConfIfKeyNotExist: true
 ```
 
-
-
-### 2. 在服务中使用Apollo配置
+### 2. Using Apollo Configuration in Services
 
 ```go
 type MyService struct {
 	gone.Flag
 	
-	// 服务配置
+	// Service configuration
 	serverPort int `gone:"config,server.port"`
 	timeout    int `gone:"config,service.timeout"`
 }
 
 func (s *MyService) Init() {
-	// 使用配置
-	fmt.Printf("服务启动，端口：%d，超时：%d毫秒\n", s.serverPort, s.timeout)
+	// Using configuration
+	fmt.Printf("Service started, port: %d, timeout: %d milliseconds\n", s.serverPort, s.timeout)
 }
 ```
 
-### 3. 引入Apollo组件
+### 3. Importing Apollo Component
 
 ```go
 import (
@@ -302,7 +302,7 @@ func main() {
 	gone.
 		Loads(
 			apollo.Load,
-			// 其他组件...
+			// Other components...
 		).
 		Load(&MyService{}).
 		Run(func() {
@@ -311,19 +311,19 @@ func main() {
 }
 ```
 
-## 高级用法
+## Advanced Usage
 
-### 1. 监听配置变更
+### 1. Monitoring Configuration Changes
 
-通过启用`apollo.watch`配置，可以实现配置的自动更新：
+By enabling `apollo.watch` configuration, automatic configuration updates can be achieved:
 
-**注意**： 需要动态更新的字段，**必须使用指针类型**才有效。
+**Note**: Fields that need dynamic updates **must use pointer types** to be effective.
 
 ```go
 type MyService struct {
     gone.Flag
     
-    // 服务配置
+    // Service configuration
     serverPort *int `gone:"config,server.port"`
     timeout    *int `gone:"config,service.timeout"`
 }
@@ -332,46 +332,46 @@ func (s *MyService) Init() {
 	
 	go func() {
 		for {
-            fmt.Printf("服务启动，端口：%d，超时：%d毫秒\n", *s.serverPort, *s.timeout)
+            fmt.Printf("Service running, port: %d, timeout: %d milliseconds\n", *s.serverPort, *s.timeout)
 			time.Sleep(2 * time.Second)
         }
     }
 }
 ```
 
-### 2. 支持多命名空间
+### 2. Supporting Multiple Namespaces
 
-Apollo支持多个命名空间，可以通过逗号分隔的方式在`apollo.namespace`中指定：
+Apollo supports multiple namespaces, which can be specified in `apollo.namespace` using comma separation:
 ```yml
 # config/default.yml
 
-# 在配置文件中设置
+# In configuration file
 apollo.namespace: application,test.yml,database
 ```
 
-**注意**：不是properties类型的namespace需要带后缀名才能正常的从Apollo上获取到值。
+**Note**: Non-properties type namespaces need to include the file extension to properly retrieve values from Apollo.
 
-这样，在获取配置时会依次从这些命名空间中查找。
+This way, configuration will be searched sequentially in these namespaces.
 
-## 最佳实践
+## Best Practices
 
-1. **配置分层管理**：将配置按照应用、环境、集群等维度进行分层管理
+1. **Layered Configuration Management**: Manage configurations by dimensions such as application, environment, and cluster
 
-2. **默认值处理**：获取配置时始终提供合理的默认值，避免因配置缺失导致应用崩溃
+2. **Default Value Handling**: Always provide reasonable default values when retrieving configurations to avoid application crashes due to missing configurations
 
-3. **优雅降级**：当Apollo服务不可用时，应用应能够使用本地缓存的配置继续运行
+3. **Graceful Degradation**: Applications should be able to continue running using locally cached configurations when Apollo service is unavailable
 
-4. **配置变更验证**：对于关键配置的变更，应进行合理性验证，避免错误配置导致系统问题
+4. **Configuration Change Validation**: Validate the rationality of critical configuration changes to avoid system issues caused by incorrect configurations
 
-5. **监控与告警**：对配置获取失败、配置变更等关键事件进行监控和告警
+5. **Monitoring and Alerting**: Monitor and alert on key events such as configuration retrieval failures and configuration changes
 
-## 结论
+## Conclusion
 
-通过本文的讲解，我们了解了如何基于Gone框架编写一个Goner组件对接Apollo配置中心，实现配置的统一管理。这种方式不仅简化了配置管理的复杂度，还提供了配置动态更新的能力，使应用更加灵活和可维护。
+Through this article, we've learned how to create a Goner component based on the Gone framework to integrate with Apollo configuration center, achieving unified configuration management. This approach not only simplifies configuration management complexity but also provides dynamic configuration update capabilities, making applications more flexible and maintainable.
 
-在实际项目中，我们可以根据需求对Apollo Goner组件进行扩展，例如添加更多的配置类型支持、增强配置变更的处理逻辑等，以满足不同场景的需求。
+In actual projects, we can extend the Apollo Goner component based on requirements, such as adding support for more configuration types, enhancing configuration change handling logic, etc., to meet the needs of different scenarios.
 
-## 参考资源
-1. Apollo官方文档：https://www.apolloconfig.com/
-2. Gone框架文档：https://github.com/gone-io/gone
-3. Apollo Go客户端：https://github.com/apolloconfig/agollo
+## References
+1. Apollo Official Documentation: https://www.apolloconfig.com/
+2. Gone Framework Documentation: https://github.com/gone-io/gone
+3. Apollo Go Client: https://github.com/apolloconfig/agollo

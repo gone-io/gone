@@ -1,48 +1,52 @@
-# Gone框架中的延迟依赖注入：LazyFill()与option:"lazy"标签
+<p>
+   English&nbsp ｜&nbsp <a href="lazy_fill_CN.md">中文</a>
+</p>
 
-- [Gone框架中的延迟依赖注入：LazyFill()与option:"lazy"标签](#gone框架中的延迟依赖注入lazyfill与optionlazy标签)
-  - [循环依赖问题回顾](#循环依赖问题回顾)
-  - [LazyFill()选项](#lazyfill选项)
-    - [工作原理](#工作原理)
-    - [使用示例](#使用示例)
-    - [注意事项](#注意事项)
-  - [option:"lazy"标签](#optionlazy标签)
-    - [工作原理](#工作原理-1)
-    - [使用示例](#使用示例-1)
-    - [注意事项](#注意事项-1)
-  - [LazyFill()与option:"lazy"的异同点](#lazyfill与optionlazy的异同点)
-    - [相同点](#相同点)
-    - [不同点](#不同点)
-  - [选择指南](#选择指南)
-  - [最佳实践](#最佳实践)
-  - [总结](#总结)
+# Lazy Dependency Injection in Gone Framework: LazyFill() and option:"lazy" Tag
+
+- [Lazy Dependency Injection in Gone Framework: LazyFill() and option:"lazy" Tag](#lazy-dependency-injection-in-gone-framework-lazyfill-and-optionlazy-tag)
+  - [Revisiting the Circular Dependency Problem](#revisiting-the-circular-dependency-problem)
+  - [The LazyFill() Option](#the-lazyfill-option)
+    - [Working Principle](#working-principle)
+    - [Usage Example](#usage-example)
+    - [Considerations](#considerations)
+  - [The option:"lazy" Tag](#the-optionlazy-tag)
+    - [Working Principle](#working-principle-1)
+    - [Usage Example](#usage-example-1)
+    - [Considerations](#considerations-1)
+  - [Similarities and Differences Between LazyFill() and option:"lazy"](#similarities-and-differences-between-lazyfill-and-optionlazy)
+    - [Similarities](#similarities)
+    - [Differences](#differences)
+  - [Selection Guide](#selection-guide)
+  - [Best Practices](#best-practices)
+  - [Summary](#summary)
 
 
-在Gone框架中，循环依赖并不是一个常见问题，但在某些场景下，当多个组件之间存在相互依赖关系时可能会出现。为了解决这个问题，Gone框架提供了两种延迟依赖注入的机制：`LazyFill()`选项和`option:"lazy"`标签。本文将详细介绍这两种机制的工作原理、使用场景以及它们之间的异同点。
+In the Gone framework, circular dependencies are not a common problem, but they may occur in certain scenarios when multiple components have interdependent relationships. To solve this problem, the Gone framework provides two mechanisms for lazy dependency injection: the `LazyFill()` option and the `option:"lazy"` tag. This article will detail the working principles, use cases, and differences between these two mechanisms.
 
-## 循环依赖问题回顾
+## Revisiting the Circular Dependency Problem
 
-在深入了解延迟依赖注入机制之前，让我们先回顾一下Gone框架中的循环依赖问题。
+Before diving into lazy dependency injection mechanisms, let's review the circular dependency problem in the Gone framework.
 
-Gone框架的初始化流程主要分为两个阶段：
-1. **fillAction（字段填充）**：框架将依赖注入到组件的字段中
-2. **initAction（组件初始化）**：框架调用组件的`Init()`方法进行初始化
+The initialization process of the Gone framework is mainly divided into two phases:
+1. **fillAction (field filling)**: The framework injects dependencies into component fields
+2. **initAction (component initialization)**: The framework calls the component's `Init()` method for initialization
 
-当两个或多个组件之间存在相互依赖，并且它们都实现了`Init()`方法时，就会形成一个无法解决的循环：
-- A的字段填充依赖B的初始化
-- B的初始化依赖B的字段填充
-- B的字段填充依赖A的初始化
-- A的初始化依赖A的字段填充
+When two or more components have mutual dependencies and they all implement the `Init()` method, an unsolvable cycle is formed:
+- A's field filling depends on B's initialization
+- B's initialization depends on B's field filling
+- B's field filling depends on A's initialization
+- A's initialization depends on A's field filling
 
-这种情况下，框架无法确定初始化顺序，因此会抛出循环依赖的错误。
+In this situation, the framework cannot determine the initialization order and will throw a circular dependency error.
 
-## LazyFill()选项
+## The LazyFill() Option
 
-### 工作原理
+### Working Principle
 
-`LazyFill()`是一个加载选项，用于标记一个Goner为延迟填充。当使用这个选项时，被标记的Goner的装配过程（fillAction）会被延迟到其他组件装配后进行。
+`LazyFill()` is a loading option used to mark a Goner for lazy filling. When this option is used, the assembly process (fillAction) of the marked Goner will be delayed until after other components are assembled.
 
-在Gone框架的内部实现中，`LazyFill()`选项会设置coffin（Goner的包装器）的`lazyFill`属性为true：
+In the internal implementation of the Gone framework, the `LazyFill()` option sets the `lazyFill` property of the coffin (Goner's wrapper) to true:
 
 ```go
 func LazyFill() Option {
@@ -55,7 +59,7 @@ func LazyFill() Option {
 }
 ```
 
-当框架收集依赖关系时，如果一个Goner被标记为`lazyFill`，它的fillAction不会被添加到其他组件的依赖列表中：
+When the framework collects dependency relationships, if a Goner is marked as `lazyFill`, its fillAction will not be added to the dependency list of other components:
 
 ```go
 func (s *Core) getGonerDeps(co *coffin) (fillDependencies, initDependencies []dependency, err error) {
@@ -70,9 +74,9 @@ func (s *Core) getGonerDeps(co *coffin) (fillDependencies, initDependencies []de
 }
 ```
 
-### 使用示例
+### Usage Example
 
-以下是使用`LazyFill()`选项解决循环依赖的示例：
+Here is an example of using the `LazyFill()` option to solve circular dependencies:
 
 ```go
 type depA5 struct {
@@ -101,7 +105,7 @@ func TestCircularDependency5(t *testing.T) {
     gone.
         NewApp().
         Load(&depB5{}).
-        Load(&depA5{}, gone.LazyFill()). // 使用LazyFill()选项
+        Load(&depA5{}, gone.LazyFill()). // Using LazyFill() option
         Run(func(a4 *depA5, b4 *depB5) {
             if a4.dep == nil {
                 t.Error("a4.dep should be not nil")
@@ -113,22 +117,22 @@ func TestCircularDependency5(t *testing.T) {
 }
 ```
 
-在这个例子中，`depA5`被标记为延迟填充，这意味着它的装配过程会被延迟，从而打破了循环依赖。
+In this example, `depA5` is marked for lazy filling, which means its assembly process will be delayed, thus breaking the circular dependency.
 
-### 注意事项
+### Considerations
 
-使用`LazyFill()`选项时，需要注意以下几点：
+When using the `LazyFill()` option, note the following:
 
-1. 被延迟的Goner在`Init()`、`Provide()`、`Inject()`等方法[1]中，无法使用依赖注入的字段，因为这些方法可能在字段填充之前被调用。
-2. `LazyFill()`是一个全局选项，会影响整个Goner的装配过程。
+1. The delayed Goner cannot use dependency-injected fields in methods like `Init()`, `Provide()`, `Inject()`[1], as these methods might be called before field filling.
+2. `LazyFill()` is a global option that affects the entire assembly process of the Goner.
 
-## option:"lazy"标签
+## The option:"lazy" Tag
 
-### 工作原理
+### Working Principle
 
-`option:"lazy"`是一个字段标签，用于标记特定字段为延迟注入。当一个字段被标记为lazy时，该字段不会在依赖收集阶段被考虑，从而避免形成循环依赖。
+`option:"lazy"` is a field tag used to mark specific fields for lazy injection. When a field is marked as lazy, it won't be considered during the dependency collection phase, thus avoiding the formation of circular dependencies.
 
-在Gone框架的内部实现中，`isLazyField()`函数用于检查一个字段是否被标记为lazy：
+In the internal implementation of the Gone framework, the `isLazyField()` function is used to check if a field is marked as lazy:
 
 ```go
 func isLazyField(filed *reflect.StructField) bool {
@@ -136,7 +140,7 @@ func isLazyField(filed *reflect.StructField) bool {
 }
 ```
 
-当框架收集依赖关系时，会跳过被标记为lazy的字段：
+When the framework collects dependency relationships, it skips fields marked as lazy:
 
 ```go
 func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err error) {
@@ -145,17 +149,17 @@ func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err 
         field := elem.Field(i)
 
         if isLazyField(&field) {
-            continue // 跳过lazy字段
+            continue // Skip lazy fields
         }
-        // 处理其他字段...
+        // Process other fields...
     }
     // ...
 }
 ```
 
-### 使用示例
+### Usage Example
 
-以下是使用`option:"lazy"`标签解决循环依赖的示例：
+Here is an example of using the `option:"lazy"` tag to solve circular dependencies:
 
 ```go
 type depA4 struct {
@@ -171,7 +175,7 @@ func (d *depA4) Init() {
 
 type depB4 struct {
     gone.Flag
-    dep *depA4 `gone:"*" option:"lazy"` // 使用option:"lazy"标签
+    dep *depA4 `gone:"*" option:"lazy"` // Using option:"lazy" tag
 }
 
 func (d *depB4) Init() {
@@ -196,63 +200,63 @@ func TestCircularDependency4(t *testing.T) {
 }
 ```
 
-在这个例子中，`depB4`的`dep`字段被标记为lazy，这意味着在依赖收集阶段，这个字段不会被考虑，从而打破了循环依赖。
+In this example, the `dep` field of `depB4` is marked as lazy, which means it won't be considered during the dependency collection phase, thus breaking the circular dependency.
 
-### 注意事项
+### Considerations
 
-使用`option:"lazy"`标签时，需要注意以下几点：
+When using the `option:"lazy"` tag, note the following:
 
-1. 被标记为lazy的字段不能在`Init()`、`Provide()`、`Inject()`等方法[1]中使用，因为这些方法可能在字段填充之前被调用。
-2. `option:"lazy"`是一个字段级别的选项，只影响特定字段的装配过程。
+1. Fields marked as lazy cannot be used in methods like `Init()`, `Provide()`, `Inject()`[1], as these methods might be called before field filling.
+2. `option:"lazy"` is a field-level option that only affects the assembly process of specific fields.
 
-## LazyFill()与option:"lazy"的异同点
+## Similarities and Differences Between LazyFill() and option:"lazy"
 
-### 相同点
+### Similarities
 
-1. **目的相同**：两者都是为了解决循环依赖问题。
-2. **原理相似**：都是通过延迟依赖注入来打破循环依赖。
-3. **使用限制**：被延迟的依赖都不能在`Init()`、`Provide()`、`Inject()`等方法[1]中使用。
+1. **Same Purpose**: Both are designed to solve circular dependency problems.
+2. **Similar Principle**: Both break circular dependencies by delaying dependency injection.
+3. **Usage Restrictions**: Delayed dependencies cannot be used in methods like `Init()`, `Provide()`, `Inject()`[1].
 
-### 不同点
+### Differences
 
-1. **作用范围**：
-   - `LazyFill()`是一个全局选项，影响整个Goner的装配过程。
-   - `option:"lazy"`是一个字段级别的选项，只影响特定字段的装配过程。
+1. **Scope**:
+    - `LazyFill()` is a global option that affects the entire assembly process of a Goner.
+    - `option:"lazy"` is a field-level option that only affects the assembly process of specific fields.
 
-2. **使用方式**：
-   - `LazyFill()`在加载Goner时使用：`Load(&myGoner{}, gone.LazyFill())`
-   - `option:"lazy"`在定义字段时使用：`dep *AnotherGoner `gone:"*" option:"lazy"`
+2. **Usage Method**:
+    - `LazyFill()` is used when loading a Goner: `Load(&myGoner{}, gone.LazyFill())`
+    - `option:"lazy"` is used when defining a field: `dep *AnotherGoner `gone:"*" option:"lazy"`
 
-3. **灵活性**：
-   - `option:"lazy"`更加灵活，可以精确控制哪些字段需要延迟注入。
-   - `LazyFill()`更加简单，一次性解决整个Goner的循环依赖问题。
+3. **Flexibility**:
+    - `option:"lazy"` is more flexible, allowing precise control over which fields need lazy injection.
+    - `LazyFill()` is simpler, solving the circular dependency problem for an entire Goner at once.
 
-## 选择指南
+## Selection Guide
 
-在实际应用中，如何选择使用`LazyFill()`还是`option:"lazy"`？以下是一些建议：
+In practical applications, how to choose between `LazyFill()` and `option:"lazy"`? Here are some suggestions:
 
-1. **当整个组件都需要延迟装配时**，使用`LazyFill()`更加简单直接。
-2. **当只有特定字段需要延迟注入时**，使用`option:"lazy"`更加精确。
-3. **当需要精细控制依赖关系时**，可以组合使用两种机制。
+1. **When an entire component needs delayed assembly**, using `LazyFill()` is simpler and more direct.
+2. **When only specific fields need lazy injection**, using `option:"lazy"` is more precise.
+3. **When fine-grained control of dependencies is needed**, both mechanisms can be combined.
 
-## 最佳实践
+## Best Practices
 
-1. **优先考虑重构组件设计**：在使用延迟依赖注入之前，应该先考虑是否可以通过重构组件设计来消除循环依赖。
-2. **明确依赖关系**：在使用延迟依赖注入时，应该明确了解组件之间的依赖关系，避免引入新的问题。
-3. **谨慎使用Init方法**：如果可能，尽量减少使用`Init()`方法，或者确保`Init()`方法不依赖于被延迟注入的字段。
-4. **文档化延迟依赖**：在代码中明确标注哪些依赖是延迟注入的，以便其他开发者理解代码。
+1. **Prioritize Refactoring Component Design**: Before using lazy dependency injection, consider whether the circular dependency can be eliminated by refactoring the component design.
+2. **Clarify Dependency Relationships**: When using lazy dependency injection, clearly understand the dependencies between components to avoid introducing new problems.
+3. **Use the Init Method Cautiously**: If possible, minimize the use of the `Init()` method, or ensure that the `Init()` method does not depend on fields that are lazily injected.
+4. **Document Lazy Dependencies**: Clearly annotate which dependencies are lazily injected in the code for other developers to understand.
 
-## 总结
+## Summary
 
-Gone框架提供了两种延迟依赖注入的机制：`LazyFill()`选项和`option:"lazy"`标签，它们都可以有效解决循环依赖问题。在实际应用中，应该根据具体需求选择合适的机制，并遵循最佳实践，以确保代码的可维护性和可靠性。
+The Gone framework provides two mechanisms for lazy dependency injection: the `LazyFill()` option and the `option:"lazy"` tag, both of which can effectively solve circular dependency problems. In practical applications, choose the appropriate mechanism based on specific needs and follow best practices to ensure code maintainability and reliability.
 
-通过合理使用这两种机制，可以在保持组件间依赖关系的同时，避免循环依赖带来的问题，从而构建更加健壮的应用程序。
+By using these two mechanisms properly, circular dependency problems can be avoided while maintaining component relationships, resulting in more robust applications.
 
-备注：
-   1. `Init()`、`Provide()`、`Inject()`等方法 包括：
-      - `Init()` 没有返回值的Init方法
-      - `Init() error` 有返回值的Init方法
-      - `Provide(tagConf string) (T, error)` 参数为 tagConf 的Provide方法
-      - `Provide() (T, error)` 没有参数的Provide方法
-      - `Provide(tagConf string, t reflect.Type) (any, error)` 按类型提供值的Provide方法
-      - `Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error` 可以用于给字段注入值的Inject方法
+Note:
+1. Methods like `Init()`, `Provide()`, `Inject()` include:
+    - `Init()` Init method without return value
+    - `Init() error` Init method with return value
+    - `Provide(tagConf string) (T, error)` Provide method with tagConf parameter
+    - `Provide() (T, error)` Provide method without parameters
+    - `Provide(tagConf string, t reflect.Type) (any, error)` Provide method that provides values by type
+    - `Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error` Inject method that can inject values into fields

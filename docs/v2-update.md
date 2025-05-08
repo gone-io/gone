@@ -1,29 +1,33 @@
-# Gone@v2 使用说明
+<p>
+   English&nbsp ｜&nbsp <a href="v2-update_CN.md">中文</a>
+</p>
 
-- [Gone@v2 使用说明](#gonev2-使用说明)
-	- [Goner的定义](#goner的定义)
-	- [Goner加载器](#goner加载器)
-		- [加载Goner](#加载goner)
-		- [加载函数](#加载函数)
-		- [加载选项](#加载选项)
-	- [依赖注入](#依赖注入)
-		- [基于字段类型的注入](#基于字段类型的注入)
-		- [基于Goner名称注入](#基于goner名称注入)
-		- [通过Provider给组件注入依赖](#通过provider给组件注入依赖)
-	- [Goner的生命周期](#goner的生命周期)
-	- [四个hook函数](#四个hook函数)
+# Gone v2 User Guide
+
+- [Gone v2 User Guide](#gone-v2-user-guide)
+	- [Definition of Goner](#definition-of-goner)
+	- [Goner Loader](#goner-loader)
+		- [Loading Goners](#loading-goners)
+		- [Loading Functions](#loading-functions)
+		- [Loading Options](#loading-options)
+	- [Dependency Injection](#dependency-injection)
+		- [Type-Based Field Injection](#type-based-field-injection)
+		- [Name-Based Goner Injection](#name-based-goner-injection)
+		- [Injecting Dependencies into Components via Provider](#injecting-dependencies-into-components-via-provider)
+	- [Goner Lifecycle](#goner-lifecycle)
+	- [Four Hook Functions](#four-hook-functions)
 	- [Application](#application)
 	- [GonerKeeper](#gonerkeeper)
-	- [数组注入](#数组注入)
-	- [使用FuncInjector来实现函数参数的注入](#使用funcinjector来实现函数参数的注入)
-	- [内置的`Config`和`Logger`](#内置的config和logger)
+	- [Array Injection](#array-injection)
+	- [Using FuncInjector to Implement Function Parameter Injection](#using-funcinjector-to-implement-function-parameter-injection)
+	- [Built-in `Config` and `Logger`](#built-in-config-and-logger)
 		- [Config](#config)
 		- [Logger](#logger)
 
 
-## Goner的定义
+## Definition of Goner
 
-Goner是Gone框架定义的组件，是只嵌入了`gone.Flag`的结构体指针，可以用于Gone框架的依赖注入，如下代码就定义了一个简单的Goner：
+A Goner is a component defined by the Gone framework, which is a struct pointer embedded with `gone.Flag`. It can be used for dependency injection in the Gone framework. The following code defines a simple Goner:
 
 ```go
 package demo
@@ -35,14 +39,13 @@ type Component struct {
 }
 
 var aGoner = &Component{}
-
 ```
 
-## Goner加载器
+## Goner Loader
 
-Gone框架核心是一个Goner仓库，加载器的作用就是将用户定义的组件（Goner）注册（或者加载，在本文后续我们都称为加载）到仓库中，以便后续的依赖注入。
+The core of the Gone framework is a Goner repository. The loader's purpose is to register (or load, which we'll refer to as "loading" throughout this document) user-defined components (Goners) into the repository for subsequent dependency injection.
 
-### 加载Goner
+### Loading Goners
 
 ```go
 package main
@@ -55,18 +58,18 @@ func main() {
 		Name string
 	}
 
-	// 加载一个Dep
+	// Load a Dep
 	gone.Load(&Dep{})
 
-	//加载 一个名为dep1的Dep
+	// Load a Dep named "dep1"
 	gone.Load(&Dep{}, gone.Name("dep1"))
 
-	//支持链式调用
+	// Support for chained calls
 	gone.
 		Load(&Dep{}, gone.Name("dep3")).
 		Load(&Dep{}, gone.Name("dep2"))
 
-	//通过加载函数批量加载
+	// Batch loading through a loading function
 	gone.Loads(func(loader gone.Loader) error {
 		err := loader.Load(&Dep{}, gone.Name("dep4"))
 		if err != nil {
@@ -79,21 +82,21 @@ func main() {
 }
 ```
 
-上面的代码展示了Gone框架中加载Goner的几种方式：
+The code above demonstrates several ways to load Goners in the Gone framework:
 
-1. 直接加载：使用`gone.Load()`方法可以直接加载一个Goner。例如`gone.Load(&Dep{})`将加载一个默认的Dep组件。
+1. Direct loading: The `gone.Load()` method can directly load a Goner. For example, `gone.Load(&Dep{})` loads a default Dep component.
 
-2. 命名加载：通过`gone.Name()`选项可以为加载的Goner指定一个名称。例如`gone.Load(&Dep{}, gone.Name("dep1"))`将加载一个名为"dep1"的Dep组件。
+2. Named loading: Using the `gone.Name()` option, you can specify a name for the loaded Goner. For example, `gone.Load(&Dep{}, gone.Name("dep1"))` loads a Dep component named "dep1".
 
-3. 链式加载：Gone框架支持链式调用方式加载多个Goner。可以通过`.Load()`方法连续加载多个组件，使代码更加简洁。
+3. Chained loading: The Gone framework supports chained calls to load multiple Goners. You can use the `.Load()` method to continuously load multiple components, making the code more concise.
 
-4. 批量加载：使用`gone.Loads()`方法可以在一个函数中批量加载多个Goner。这种方式特别适合需要进行错误处理的场景，可以统一处理加载过程中的错误。
+4. Batch loading: The `gone.Loads()` method allows you to load multiple Goners within a function. This approach is particularly suitable for scenarios requiring error handling, where you can uniformly handle errors that occur during the loading process.
 
-这些加载方式提供了灵活的组件注册机制，开发者可以根据具体需求选择合适的方式来加载Goner。
+These loading methods provide flexible component registration mechanisms, allowing developers to choose the appropriate method based on specific requirements.
 
-### 加载函数
+### Loading Functions
 
-查看源代码，可以看到`gone.Loads()`方法的定义:
+Looking at the source code, we can see the definition of the `gone.Loads()` method:
 
 ```go
 func (s *Application) Loads(loads ...LoadFunc) *Application {
@@ -101,18 +104,17 @@ func (s *Application) Loads(loads ...LoadFunc) *Application {
 }
 ```
 
-`LoadFunc`是一个函数类型，定义如下：
+`LoadFunc` is a function type, defined as follows:
 
 ```go
 type LoadFunc func (Loader) error
 ```
 
-如果编写一个功能模块，需要加载多个Goner到Gone框架中，可以提供一个`LoadFunc`函数，业务代码只需要通过`gone.Loads()`
-方法调用这个函数即可。
+If you're developing a functional module that needs to load multiple Goners into the Gone framework, you can provide a `LoadFunc` function, and the business code only needs to call this function through the `gone.Loads()` method.
 
-### 加载选项
+### Loading Options
 
-查到源代码，可以看到`gone.Load()`方法的定义:
+Looking at the source code, we can see the definition of the `gone.Load()` method:
 
 ```go
 func Load(goner Goner, options ...Option) *Application {
@@ -120,55 +122,55 @@ func Load(goner Goner, options ...Option) *Application {
 }
 ```
 
-`Option`就是加载选项，它的作用是在加载Goner时，可以设置一些选项，比如`gone.Name("dep1")`就是设置Goner的名称为"dep1"。
+`Option` is a loading option that allows you to set various options when loading a Goner, such as `gone.Name("dep1")` which sets the Goner's name to "dep1".
 
-**支持的选项**：
+**Supported options**:
 
-- `gone.IsDefault(objPointers ...any)`: 将组件标记为其类型的默认实现。当存在多个相同类型的组件时，如果没有指定具体名称，将使用默认实现进行注入。
+- `gone.IsDefault(objPointers ...any)`: Marks the component as the default implementation of its type. When multiple components of the same type exist, if no specific name is specified, the default implementation will be used for injection.
   ```go
-  // 将EnvConfigure标记为默认实现
+  // Mark EnvConfigure as the default implementation
   gone.Load(&EnvConfigure{}, gone.IsDefault())
   ```
 
-- `gone.Order(order int)`: 设置组件的启动顺序。order值越小，组件启动越早。框架提供了三个预设的顺序选项：
-    - `gone.HighStartPriority()`: 相当于`Order(-100)`，最早启动
-    - `gone.MediumStartPriority()`: 相当于`Order(0)`，默认启动顺序
-    - `gone.LowStartPriority()`: 相当于`Order(100)`，最后启动
+- `gone.Order(order int)`: Sets the startup order of the component. The smaller the order value, the earlier the component starts. The framework provides three preset order options:
+    - `gone.HighStartPriority()`: Equivalent to `Order(-100)`, starts earliest
+    - `gone.MediumStartPriority()`: Equivalent to `Order(0)`, default startup order
+    - `gone.LowStartPriority()`: Equivalent to `Order(100)`, starts last
   ```go
-  // Database会在Service之前启动
-  gone.Load(&Database{}, gone.Order(1))  // 先启动
-  gone.Load(&Service{}, gone.Order(2))   // 后启动
+  // Database will start before Service
+  gone.Load(&Database{}, gone.Order(1))  // Starts first
+  gone.Load(&Service{}, gone.Order(2))   // Starts later
   ```
 
-- `gone.Name(name string)`: 为组件设置一个自定义名称。组件可以通过这个名称被注入。
+- `gone.Name(name string)`: Sets a custom name for the component. Components can be injected using this name.
   ```go
-  // 加载一个名为"configure"的组件
+  // Load a component named "configure"
   gone.Load(&EnvConfigure{}, gone.Name("configure"))
   ```
 
-- `gone.OnlyForName()`: 标记组件仅支持基于名称的注入。使用此选项时，组件不会被注册为类型提供者，只能通过显式引用其名称进行注入。
+- `gone.OnlyForName()`: Marks the component as only supporting name-based injection. With this option, the component will not be registered as a type provider and can only be injected by explicitly referencing its name.
   ```go
-  // EnvConfigure只能通过`gone:"configure"`标签注入
+  // EnvConfigure can only be injected using the `gone:"configure"` tag
   gone.Load(&EnvConfigure{}, gone.Name("configure"), gone.OnlyForName())
   ```
 
-- `gone.ForceReplace()`: 允许替换具有相同名称或类型的现有组件。加载带有此选项的组件时：
-    - 如果存在同名组件，将被替换
-    - 如果存在相同类型的提供者，将被替换
+- `gone.ForceReplace()`: Allows replacing existing components with the same name or type. When loading a component with this option:
+    - If a component with the same name exists, it will be replaced
+    - If a provider of the same type exists, it will be replaced
   ```go
-  // 这将替换任何名为"service"的现有组件
+  // This will replace any existing component named "service"
   gone.Load(&MyService{}, gone.Name("service"), gone.ForceReplace())
   ```
 
-- `gone.LazyFill()`: 将组件标记为延迟填充。使用此选项时，组件只有在实际被注入时才会被加载。这对于加载成本高或有外部依赖的组件很有用。
+- `gone.LazyFill()`: Marks the component for lazy filling. With this option, the component will only be loaded when it is actually injected. This is useful for components with high loading costs or external dependencies.
   ```go
-  // 只有在实际注入时才会加载组件
+  // The component will only be loaded when actually injected
   gone.Load(&MyService{}, gone.Name("service"), gone.LazyFill())
   ```
 
-## 依赖注入
+## Dependency Injection
 
-### 基于字段类型的注入
+### Type-Based Field Injection
 
 ```go
 package main
@@ -181,19 +183,17 @@ type Dep struct {
 }
 type Service struct {
 	gone.Flag
-	dep1 *Dep `gone:""` // 默认注入
+	dep1 *Dep `gone:""` // Default injection
 	dep2 *Dep `gone:"*"`
 }
 ```
 
-在上面的代码中展示了基于类型的注入方式：
-按类型注入，需要在被注入的的字段上添加`gone:""`(或者 `gone:"*"`，在v2中两者是等效的)
-标签，框架会自动根据类型进行注入。如果在注入前，加载了多个相同类型的组件，那么框架会优先选择默认实现（通过`IsDefault()`
-选项设置），否则会选择第一个加载的组件并提示警告。
+The code above demonstrates type-based injection:
+For type-based injection, you need to add the `gone:""` (or `gone:"*"`, which is equivalent in v2) tag to the field being injected. The framework will automatically inject based on type. If multiple components of the same type have been loaded before injection, the framework will prioritize the default implementation (set through the `IsDefault()` option); otherwise, it will select the first loaded component and display a warning.
 
-### 基于Goner名称注入
+### Name-Based Goner Injection
 
-gone标签中可以指定组件名称，框架会根据名称进行注入。
+You can specify a component name in the gone tag, and the framework will inject based on that name.
 
 ```go
 package main
@@ -206,15 +206,15 @@ type Dep struct {
 }
 type Service struct {
 	gone.Flag
-	dep1 *Dep `gone:"dep1"` // 指定名称注入
-	dep2 *Dep `gone:"dep2"` // 指定名称注入
+	dep1 *Dep `gone:"dep1"` // Inject by specified name
+	dep2 *Dep `gone:"dep2"` // Inject by specified name
 }
 ```
 
-Goner支持两种方式设置名称：
+Goners support two ways to set names:
 
-1. 在加载时，使用`gone.Name()`选项设置名称。
-2. Goner实现了`NamedGoner`接口，通过`GonerName`方法设置名称，NamedGoner接口定义如下：
+1. When loading, use the `gone.Name()` option to set a name.
+2. The Goner implements the `NamedGoner` interface, setting the name through the `GonerName` method. The NamedGoner interface is defined as follows:
 
 ```go
 type NamedGoner interface {
@@ -223,19 +223,19 @@ type NamedGoner interface {
 }
 ```
 
-### 通过Provider给组件注入依赖
+### Injecting Dependencies into Components via Provider
 
-在v1中，给组件注入配置参数是这样写的：
+In v1, injecting configuration parameters into components was written like this:
 
 ```go
 type Service struct {
 gone.Flag
-confStr string `gone:"config,configKeyName"` // 通过标签注入配置参数
+confStr string `gone:"config,configKeyName"` // Inject configuration parameters via tag
 }
 ```
 
-在v2中，依然支持这样方式，底层实现改为由Provider提供值。
-让我们来看看Provider的接口定义：
+In v2, this approach is still supported, but the underlying implementation has been changed to use Providers to supply values.
+Let's look at the Provider interface definition:
 
 ```go
 type Provider[T any] interface {
@@ -244,8 +244,7 @@ type Provider[T any] interface {
 }
 ```
 
-它是一个泛型接口，在实际使用中，我们需要定义一个Provider，并实现`Provide`方法，在`Provide`
-方法中，我们可以通过tagConf获取到配置参数，然后返回值即可。必然为了支持上面的`confStr`的配置，我们需要定义一个Provider，如下：
+It's a generic interface. In practice, we need to define a Provider and implement the `Provide` method. In the `Provide` method, we can obtain configuration parameters through tagConf and return values. To support the `confStr` configuration above, we need to define a Provider like this:
 
 ```go
 type ConfigProvider struct {
@@ -257,9 +256,9 @@ return config.Get(tagConf)
 }
 ```
 
-在`Provide`方法中，我们通过`tagConf`获取到配置参数，然后返回值即可。这样，我们就可以通过Provider给组件注入配置参数了。
+In the `Provide` method, we get the configuration parameter through `tagConf` and return the value. This way, we can inject configuration parameters into components via the Provider.
 
-如果需要被配置的字段是一个int类型，那么我们需要定义一个Provider，如下：
+If the field to be configured is an int type, we need to define a Provider like this:
 
 ```go
 type ConfigProvider struct {
@@ -271,7 +270,7 @@ func (c *ConfigProvider) Provide(tagConf string) (int, error) {
 }
 ```
 
-会很快发现一个问题，为了实现一个Config模块，我们需要定义无数个Provider，这显然是不合理的，因此，我们需要一个通用的Provider，如下：
+We'll quickly notice a problem: to implement a Config module, we need to define countless Providers, which is obviously unreasonable. Therefore, we need a generic Provider, like this:
 
 ```go
 type NamedProvider interface {
@@ -280,71 +279,63 @@ type NamedProvider interface {
 }
 ```
 
-NamedProvider 接口定义了一个`Provide`
-方法，该方法接收两个参数，第一个参数是tagConf，第二个参数是t，t是reflect.Type类型，用于获取字段的类型，然后根据字段的类型返回对应的值。这样，我们就可以通过NamedProvider给组件注入配置参数了。
+The NamedProvider interface defines a `Provide` method that takes two parameters: tagConf and t. t is of reflect.Type type, used to get the field's type, and then return the corresponding value based on the field's type. This way, we can inject configuration parameters into components through NamedProvider.
 
-现在对比一下 Provider 和 NamedProvider 的区别：
+Now let's compare the differences between Provider and NamedProvider:
 
-1. Provider 是一个泛型，它可以根据字段的类型返回对应的值，我们每次实现的Provider都只能固定一个类型，所以只能返回一个值，不能返回多个类型。它的应用场景是，是按类型注入第三方的值。
-2. NamedProvider 是一个接口，它可以根据字段的类型返回对应的值。它的应用场景是，需要通过一个Provider给组件注入多个类型的值。
+1. Provider is a generic that can return values corresponding to the field's type. Each Provider we implement can only fix one type, so it can only return one value, not multiple types. Its application scenario is to inject third-party values by type.
+2. NamedProvider is an interface that can return values corresponding to the field's type. Its application scenario is when you need to inject multiple types of values into components through a single Provider.
 
-下面讲讲依赖注入查找的流程：
+Let's discuss the dependency injection lookup process:
 
-1. 如果gone标签中没有指定名称或者指定的名称为`*`，那么框架会使用内核中提供Provider来给组件注入值（对，内核其实就是一个Provider，v2的整个注入机制都是基于Provider的）。
+1. If no name is specified in the gone tag or the specified name is `*`, the framework will use the kernel's Provider to inject values into the component (yes, the kernel is actually a Provider; the entire injection mechanism in v2 is based on Provider).
 
-- 内核Provider会按类型查找Provider，如果找到了，那么就会调用Provider的`Provide`方法，将值注入到组件中。
-- 如果没有找到，内核Provider会按类型查找加载到Goner仓库的值，如果能找到兼容的值，那么就会将值注入到组件中。
-- 如果还是没有找到，那么就会报错。
+- The kernel Provider will search for a Provider by type. If found, it will call the Provider's `Provide` method to inject the value into the component.
+- If not found, the kernel Provider will search for values loaded into the Goner repository by type. If it finds compatible values, it will inject them into the component.
+- If still not found, an error will be reported.
 
-2. 如果gone标签中指定了名称，那么框架会使用指定的Provider来给组件注入值。
+2. If a name is specified in the gone tag, the framework will use the specified Provider to inject values into the component.
 
-- 优先按名字查找`Provider[T any]` 和 `NoneParamProvider[T any]`，如果找到了，那么就会调用Provider的`Provide`
-  方法，如果他们提供的值是兼容的，那么就会将值注入到组件中。
-- 如果还没有注入成功，则继续按名字查找`NamedProvider`，如果找到了，那么就会调用它的
-  `Provide(tagConf string, t reflect.Type) (any, error)`方法，它如果能返回一个兼容的值，那么就会将值注入到组件中。
-- 如果还是没能注入成功，还用回调`StructFieldInjector`来注入值。
-- 如果还是没有找到，那么就会报错。
+- It will first search for `Provider[T any]` and `NoneParamProvider[T any]` by name. If found, it will call the Provider's `Provide` method. If they provide compatible values, it will inject them into the component.
+- If injection is still unsuccessful, it will continue to search for `NamedProvider` by name. If found, it will call its `Provide(tagConf string, t reflect.Type) (any, error)` method. If it can return a compatible value, it will inject it into the component.
+- If injection is still unsuccessful, it will use the `StructFieldInjector` to inject values.
+- If still not found, an error will be reported.
 
-> 补充说明：
-> NoneParamProvider的定义：
+> Additional notes:
+> Definition of NoneParamProvider:
 > ```go
 > type NoneParamProvider[T any] interface {
 >   Goner
 > 	Provide() T
 > }
 > ```
-> 它是一个泛型接口，它只有一个方法`Provide`，这个方法没有参数，返回一个值。它的应用场景是，需要通过一个Provider给组件注入一个值，这个值不需要通过参数传递，只需要通过方法返回即可。
+> It's a generic interface with only one method, `Provide`, which takes no parameters and returns a value. Its use case is when you need to inject a value into a component via a Provider, and this value doesn't need to be passed through parameters, just returned by the method.
 
-> StructFieldInjector的定义：
+> Definition of StructFieldInjector:
 > ```go
 > type StructFieldInjector interface {
 >   NamedGoner
 > 	Inject(tagConf string, field reflect.StructField, fieldValue reflect.Value) error
 > }
 > ```
-> 它是一个接口，它只有一个方法`InjectStructField`，这个方法接收三个参数，第一个参数是v，第二个参数是tagConf，第三个参数是t，t是reflect.Type类型，用于获取字段的类型，然后根据字段的类型返回对应的值。它的应用场景是，需要通过一个Provider给组件注入多个类型的值。
+> It's an interface with only one method, `InjectStructField`, which takes three parameters: v, tagConf, and t. t is of reflect.Type type, used to get the field's type, and then return the corresponding value based on the field's type. Its use case is when you need to inject multiple types of values into components through a Provider.
 
-从接口的定义上可以看到，Provider、NoneParamProvider、NamedProvider和StructFieldInjector都是Goner的子接口，要实现他们都必须嵌入
-`gone.Flag`。他们的用途都是将第三方的值提给Gone框架，让框架来进行依赖注入。
+From the interface definitions, we can see that Provider, NoneParamProvider, NamedProvider, and StructFieldInjector are all sub-interfaces of Goner. To implement them, you must embed `gone.Flag`. Their purpose is to provide third-party values to the Gone framework for dependency injection.
 
-## Goner的生命周期
+## Goner Lifecycle
 
 ![flow.png](assert/flow.png)
 
-1. 初始化阶段
-   依赖注入前，如果组件上存在 `BeforeInit() error` 或者 `BeforeInit() `，那么就会调用这个方法，这个方法会在依赖注入之前被调用，
-   **在这个方法中不能够使用依赖注入的值**。
-   依赖注入后，如果组件上存在 `Init() error` 或者 `Init() `，那么就会调用这个方法，这个方法会在依赖注入之后被调用，*
-   *在这个方法中可以使用依赖注入的值**。
-   组件被注入到其他组件前，必须先完成自己的初始化。
-2. 运行阶段
-   这个阶段，如果组件实现了`Daemon`接口，该阶段会运行`Daemon`接口的`Start() error`方法来启动自己。可以在加载组件时，通过
-   `gone.Order()`方法设置组件的启动顺序。
-3. 停机阶段
-   这个阶段，如果组件实现了`Daemon`接口，该阶段会运行`Daemon`接口的`Stop() error`方法来停止自己。`Stop`的顺序和`Start`
-   的顺序相反。
+1. Initialization Phase
+   Before dependency injection, if the component has a `BeforeInit() error` or `BeforeInit()` method, it will be called. This method is called before dependency injection, and **you cannot use injected values in this method**.
+   After dependency injection, if the component has an `Init() error` or `Init()` method, it will be called. This method is called after dependency injection, and **you can use injected values in this method**.
+   Components must complete their own initialization before being injected into other components.
+2. Running Phase
+   In this phase, if the component implements the `Daemon` interface, the `Start() error` method of the `Daemon` interface will be run to start itself. You can set the startup order of components using the `gone.Order()` method when loading components.
+3. Shutdown Phase
+   In this phase, if the component implements the `Daemon` interface, the `Stop() error` method of the `Daemon` interface will be run to stop itself. The `Stop` order is the reverse of the `Start` order.
 
-注意：如果需要Daemon持续提供服务，需要调用`Serve()`方法，而不是`Run()`，Serve函数会阻塞，直到`End`被调用或者进程收到终止的信号。
+Note: If you need a Daemon to provide continuous service, you should call the `Serve()` method, not `Run()`. The Serve function will block until `End` is called or the process receives a termination signal.
 
 ```go
 package use_case
@@ -376,7 +367,7 @@ func (t *testDaemon) Stop() error {
 func TestServe(t *testing.T) {
 	daemon := &testDaemon{}
 	var t1, t2 time.Time
-	ins := gone.NewApp() //这里创建了一个实例，在后面的##Application章节有说明。 
+	ins := gone.NewApp() //Creates an instance, explained in the ##Application section below.
 
 	ins.
 		Load(daemon).
@@ -384,7 +375,7 @@ func TestServe(t *testing.T) {
 			go func() {
 				time.Sleep(5 * time.Millisecond)
 				t1 = time.Now()
-				ins.End() //如果调用gone.End()方法，将终止框架默认的实例`gone.Default`
+				ins.End() //If you call gone.End(), it will terminate the framework's default instance `gone.Default`
 			}()
 		}).
 		AfterStop(func() {
@@ -404,10 +395,9 @@ func TestServe(t *testing.T) {
 }
 ```
 
-## 四个hook函数
+## Four Hook Functions
 
-框架提供4个hook函数，分别为作用于beforeStart、afterStart、beforeStop、afterStop。其中两个before Hook 先注册的后执行；两个after
-Hook 先注册的先执行。下面代码是通过依赖注入的方式来演示的，只能在组件完成初始化之后才能使用。
+The framework provides 4 hook functions for beforeStart, afterStart, beforeStop, and afterStop. The two before Hooks are executed in reverse registration order (last registered, first executed); the two after Hooks are executed in registration order (first registered, first executed). The code below demonstrates this through dependency injection, which can only be used after the component has completed initialization.
 
 ```go
 package use_case
@@ -428,13 +418,13 @@ type hookTest struct {
 var orders []int
 
 func (h *hookTest) Init() {
-	//通过注入的BeforeStart方法，可以注册一个函数，在服务启动前执行
+	//Register a function to execute before service starts through the injected BeforeStart method
 	h.beforeStart(func() {
 		println("before start 1")
 		orders = append(orders, 1)
 	})
 
-	//before 类型的hook 可以注册多个，先注册的后执行，后注册的先执行
+	//before-type hooks can register multiple functions; first registered executes last, last registered executes first
 	h.beforeStart(func() {
 		println("before start 2")
 		orders = append(orders, 2)
@@ -482,7 +472,7 @@ func TestUseHook(t *testing.T) {
 }
 ```
 
-hook函数也可以直接在加载Goner组件后注册，像这样：
+Hook functions can also be registered directly after loading Goner components, like this:
 
 ```go
 func TestUseHookDirectly(t *testing.T) {
@@ -491,7 +481,7 @@ func TestUseHookDirectly(t *testing.T) {
     }
     gone.
         Load(&testGoner{}).
-        // 直接注册Hook函数
+        // Directly register Hook functions
         BeforeStart(func () {
             println(" BeforeStart")
         }).
@@ -504,8 +494,7 @@ func TestUseHookDirectly(t *testing.T) {
 
 ## Application
 
-查看源代码，可以发现：`gone.Load`、`gone.Loads`、`gone.Run`、`gone.Serve`等函数实际是调用的`Application`的一个实例`Default`
-上的对应方法。
+Looking at the source code, we can see that `gone.Load`, `gone.Loads`, `gone.Run`, `gone.Serve`, and other functions actually call the corresponding methods on an instance of `Application` called `Default`.
 
 ```go
 var Default = NewApp()
@@ -520,8 +509,8 @@ func Loads(loads ...LoadFunc) *Application {
 //...
 ```
 
-所以，如果希望在同一个进程中使用多个Gone框架实例，可以使用 `gone.NewApp` 函数来创建多个 `Application` 实例，然后分别调用 `Run` 或`Serve` 方法启动框架。
-下面是`NewApp`的定义：
+So, if you want to use multiple Gone framework instances in the same process, you can use the `gone.NewApp` function to create multiple `Application` instances, then call the `Run` or `Serve` method on each to start the framework.
+Here's the definition of `NewApp`:
 ```go
 func NewApp(loads ...LoadFunc) *Application {
     application := Application{}
@@ -532,7 +521,7 @@ func NewApp(loads ...LoadFunc) *Application {
 
 ## GonerKeeper
 
-如果希望在组件中，使用代码动态地获取其他组件，可以注入`gone.GonerKeeper`接口（当然也可以直接注入 *gone.Core），这个接口定义如下：
+If you want to dynamically get other components in your component using code, you can inject the `gone.GonerKeeper` interface (or you can directly inject *gone.Core). This interface is defined as follows:
 
 ```go
 type GonerKeeper interface {
@@ -540,7 +529,7 @@ type GonerKeeper interface {
     GetGonerByType(t reflect.Type) any
 }
 ```
-示例代码：
+Example code:
 ```go
 package use_case
 
@@ -572,9 +561,9 @@ func TestGonerKeeper(t *testing.T) {
 }
 ```
 
-## 数组注入
-在v2版本中，依然可以使用 接口slice 来接收 多个实例。
-测试代码如下：
+## Array Injection
+In v2, you can still use interface slices to receive multiple instances.
+Test code as follows:
 ```go
 package use_case
 
@@ -624,10 +613,10 @@ func TestUseSlice(t *testing.T) {
 
 }
 ```
-## 使用FuncInjector来实现函数参数的注入
-函数参数注入是Gone框架的一个特性，它允许框架在调用函数时，自动从Goner仓库中查找并注入与函数参数类型匹配的组件实例。
-在前面例子中，Run方法接收的函数，其参数就是被自动注入的。
-例子：
+## Using FuncInjector to Implement Function Parameter Injection
+Function parameter injection is a feature of the Gone framework that allows the framework to automatically look up and inject component instances that match the function parameter types when calling functions.
+In the previous examples, the parameters of the function received by the Run method are automatically injected.
+Example:
 ```go
 package use_case
 
@@ -642,21 +631,21 @@ type funcTest struct {
 }
 
 func (f *funcTest) Test(t *testing.T) {
-	// 定义一个需要注入参数的函数
+	// Define a function that needs parameter injection
 	fn := func(factory *factory) {
 		if factory == nil {
 			t.Fatal("factory is nil")
 		}
 	}
 
-	// 使用 InjectWrapFunc 来执行函数，框架会自动注入参数
+	// Use InjectWrapFunc to execute the function; the framework will automatically inject parameters
 	wrapped, err := f.injector.InjectWrapFunc(fn, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	_ = wrapped()
 
-	// 也可以注入多个参数
+	// Can also inject multiple parameters
 	fn2 := func(factory *factory, worker worker) {
 		if factory == nil {
 			t.Fatal("factory is nil")
@@ -684,13 +673,13 @@ func TestFuncInjector(t *testing.T) {
 		})
 }
 ```
-## 内置的`Config`和`Logger`
+## Built-in `Config` and `Logger`
 
-在v2版本中，内核代码内置了`Config`和`Logger`组件，分别用于配置管理和日志记录。
+In v2, the kernel code includes built-in `Config` and `Logger` components for configuration management and logging.
 
 ### Config
-内置的`Config`组件，是从环境变量中读取配置，可以通过实现`gone.Configure`来实现自定义读取配置的方式。
-下面结束如何读取配置的示例代码，注意环境变量的名需要加上`GONE_`前缀，并且需要全部大写，如果被注入的不是简单类型，默认的Configure会尝试使用json解析环境变量的值。
+The built-in `Config` component reads configuration from environment variables. You can implement `gone.Configure` to customize how configurations are read.
+Below is an example of how to read configurations. Note that environment variable names need to be prefixed with `GONE_` and must be all uppercase. If the injected field is not a simple type, the default Configure will try to parse the environment variable value using JSON.
 ```go
 package use_case
 
@@ -702,7 +691,7 @@ import (
 
 type useConfig struct {
 	gone.Flag
-	goneVersion string `gone:"config,gone-version"` //框架在启动时，会自动加载配置，并注入到goRoot字段中。
+	goneVersion string `gone:"config,gone-version"` //The framework automatically loads the configuration at startup and injects it into the goneVersion field.
 }
 
 func TestUseConfig(t *testing.T) {
@@ -713,7 +702,7 @@ func TestUseConfig(t *testing.T) {
 		Run(func(c *useConfig) {
 			println("goRoot:", c.goneVersion)
 			if c.goneVersion != "v2.0.0" {
-				t.Fatal("配置注入失败")
+				t.Fatal("Configuration injection failed")
 			}
 		})
 }
@@ -721,7 +710,7 @@ func TestUseConfig(t *testing.T) {
 
 
 ### Logger
-v2内核内置的Logger，只是简单在控制台打印日志，可以通过实现`gone.Logger`来实现自定义日志记录的方式。
+The Logger built into the v2 kernel simply prints logs to the console. You can implement `gone.Logger` to customize how logs are recorded.
 ```go
 package use_case
 
@@ -746,5 +735,3 @@ func TestUseLogger(t *testing.T) {
 		})
 }
 ```
-
-

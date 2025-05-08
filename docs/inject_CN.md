@@ -1,6 +1,15 @@
+<p>
+    <a href="inject.md">English</a>&nbsp ｜&nbsp 中文
+</p>
+
 # 依赖注入介绍
 
 - [依赖注入介绍](#依赖注入介绍)
+  - [依赖注入分类](#依赖注入分类)
+    - [按被注入的对象分类](#按被注入的对象分类)
+    - [按被注入对象的来源分类](#按被注入对象的来源分类)
+    - [按被注入对象的类型分类](#按被注入对象的类型分类)
+    - [按注入的方式分类](#按注入的方式分类)
   - [什么是 Goner？](#什么是-goner)
     - [`gone` 标签的格式](#gone-标签的格式)
     - [代码示例](#代码示例)
@@ -14,7 +23,89 @@
   - [总结](#总结)
 
 
+
 在使用 Gone 框架时，你可能会好奇它是如何进行依赖注入的。本文将带你深入了解 Gone 的注入机制，并通过示例让你轻松掌握它的用法。
+
+---
+
+## 依赖注入分类
+
+### 按被注入的对象分类
+1. 被注入的对象是结构体字段
+
+如下面代码，我们希望框架自动注入 `Info` 接口的实现类。
+```go
+type Info interface {
+    GetInfo() string
+}
+
+type Dep struct {
+    gone.Flag
+    Name Info `gone:"*"` //需要注入的字段
+}
+```
+2. 被注入的对象是函数参数
+
+如下面代码，我们希望调用某个函数时，框架自动给我们填上需要的参数。
+```go
+func hello(
+    info Info, //被注入的对象
+) {
+    println(info.GetInfo())
+}
+
+func main() {
+    gone.Run(hello)
+}
+```
+### 按被注入对象的来源分类
+1. 来源于注册到框架的对象，如下面代码：
+```go
+type Dep struct {
+    gone.Flag
+}
+
+type UseDep struct {
+    gone.Flag
+    dep *Dep `gone:"*"` //需要注入的字段，来源于注册到框架的对象
+}
+```
+2. 来源于系统配置参数，比如环境变量、配置文件、配置中心等。
+```go
+type UseDep struct {
+    gone.Flag
+    name string `gone:"config:name"` //需要注入的字段，来源于配置参数
+}
+```
+3. 来源于第三方组件
+```go
+type UseDep struct {
+    gone.Flag
+    redis *redis.Client `gone:"*"` //需要注入的字段，来源于第三方组件
+}
+```
+
+### 按被注入对象的类型分类
+1. 被注入对象是指针类型
+2. 被注入对象是接口类型
+3. 被注入对象是结构体类型
+4. 被注入对象是基本类型
+
+### 按注入的方式分类
+1. 匿名注入
+```go
+type UseDep struct {
+    gone.Flag
+    dep *Dep `gone:"*"` //需要注入的字段，需要按类型匹配一个值
+}
+```
+2. 具名注入
+```go
+type UseDep struct {
+    gone.Flag
+    dep *Dep `gone:"dep-name"` //需要注入的字段，需要是特定名称
+}
+```
 
 ---
 
@@ -52,9 +143,9 @@ type UseDep struct {
 }
 ```
 
-:::tip
-**字段可以是私有的！** 这样符合**开放封闭原则**，更安全，也更符合封装设计。
-:::
+
+> **字段可以是私有的！** 这样符合**开放封闭原则**，更安全，也更符合封装设计。
+
 
 ---
 
@@ -121,7 +212,7 @@ func (b *Business) BusinessProcess() {
     type User struct {
         Dep *Dep `gone:"*"`
     }
-    
+
     var user User
     err := b.structInjector.InjectStruct(&user)
     if err != nil {
