@@ -30,7 +30,8 @@ type Component struct {
 	dep *Dep        `gone:"*"` //Dependency injection
 	log gone.Logger `gone:"*"` //Inject gone.Logger
 
-  // Inject configuration, get value from environment variable GONE_NAME; if using components like goner/viper, values can be obtained from config files or config centers.
+  // Inject configuration, get value from environment variable GONE_NAME; 
+  // if using components like goner/viper, values can be obtained from config files or config centers.
   // Reference documentation: https://github.com/gone-io/goner
   name string     `gone:"config:name"`
 }
@@ -79,6 +80,12 @@ cd myproject
 go mod tidy
 gonectl run ./cmd/server
 ```
+
+## More Documents
+
+👉🏻 [./docs](./docs)
+👉🏻 [goner](https://github.com/gone-io/goner)
+👉🏻 [gonectl](https://github.com/gone-io/gonectl)
 
 ## Release Notes
 

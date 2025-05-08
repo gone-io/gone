@@ -30,7 +30,8 @@ type Component struct {
 	dep *Dep        `gone:"*"` //依赖注入
 	log gone.Logger `gone:"*"` //注入 gone.Logger
 
-  // 注入配置, 从环境变量 GONE_NAME 中获取值；如果使用goner/viper 等组件可以可以从配置文件或者配置中心获取值。
+  // 注入配置, 从环境变量 GONE_NAME 中获取值；
+  // 如果使用goner/viper 等组件可以可以从配置文件或者配置中心获取值。
   // 参考文档：https://github.com/gone-io/goner
   name string     `gone:"config:name"`
 }
@@ -79,6 +80,12 @@ cd myproject
 go mod tidy
 gonectl run ./cmd/server
 ```
+
+## 更多文档
+
+👉🏻 [./docs](./docs)
+👉🏻 [goner](https://github.com/gone-io/goner)
+👉🏻 [gonectl](https://github.com/gone-io/gonectl)
 
 ## 更新记录
 
