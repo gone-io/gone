@@ -701,6 +701,20 @@ func (mr *MockLoaderMockRecorder) MustLoad(goner any, options ...any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MustLoad", reflect.TypeOf((*MockLoader)(nil).MustLoad), varargs...)
 }
 
+// MustLoadX mocks base method.
+func (m *MockLoader) MustLoadX(x any) gone.Loader {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MustLoadX", x)
+	ret0, _ := ret[0].(gone.Loader)
+	return ret0
+}
+
+// MustLoadX indicates an expected call of MustLoadX.
+func (mr *MockLoaderMockRecorder) MustLoadX(x any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MustLoadX", reflect.TypeOf((*MockLoader)(nil).MustLoadX), x)
+}
+
 // MockGonerKeeper is a mock of GonerKeeper interface.
 type MockGonerKeeper struct {
 	ctrl     *gomock.Controller

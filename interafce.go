@@ -601,6 +601,8 @@ type Loader interface {
 	//   - error: Any error that occurred during loading
 	Load(goner Goner, options ...Option) error
 
+	MustLoadX(x any) Loader
+
 	// MustLoad adds a component to the Gone container with optional configuration.
 	// If an error occurs during loading, it panics.
 	//

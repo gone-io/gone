@@ -95,13 +95,7 @@ func Load(goner Goner, options ...Option) *Application {
 //   - *Application: Returns the Application instance itself for method chaining
 func (s *Application) Loads(loads ...LoadFunc) *Application {
 	for _, fn := range loads {
-		if s.loader.Loaded(genLoaderKey(fn)) {
-			return s
-		}
-		err := fn(s.loader)
-		if err != nil {
-			panic(err)
-		}
+		s.loader.MustLoadX(fn)
 	}
 	return s
 }
