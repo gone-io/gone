@@ -19,9 +19,7 @@ func TestAllowNil(t *testing.T) {
 		dep *Dep `gone:"*" option:"allowNil"`
 	}
 
-	provider := gone.WrapFunctionProvider(func(extend string, in struct {
-		core *gone.Core `gone:"*"`
-	}) (*Dep, error) {
+	provider := gone.WrapFunctionProvider(func(extend string, in struct{}) (*Dep, error) {
 		if extend == "ok" {
 			return &Dep{}, nil
 		} else {

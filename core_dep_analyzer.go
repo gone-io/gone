@@ -1,7 +1,6 @@
 package gone
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 )
@@ -108,60 +107,22 @@ func checkCircularDepsAndGetBestInitOrder[T comparable](initiatorDepsMap map[T][
 	return
 }
 
-func (s *Core) getDepByName(name string) (*coffin, error) {
-	co := s.nameMap[name]
-	if co != nil {
-		return co, nil
+func newDependenceAnalyzer(iKeeper iKeeper, logger Logger) *dependenceAnalyzer {
+	return &dependenceAnalyzer{
+		iKeeper: iKeeper,
+		logger:  logger,
 	}
-	return nil, NewInnerErrorWithParams(GonerNameNotFound, "Goner(name=%s) not found", name)
 }
 
-func (s *Core) getDepByType(t reflect.Type) (*coffin, error) {
-	co := s.getDefaultCoffinByType(t)
-	if co != nil {
-		return co, nil
-	}
-
-	co = s.typeProviderDepMap[t]
-	if co != nil {
-		return co, nil
-	}
-
-	extend := ""
-	if t.Kind() == reflect.Struct {
-		extend = "; Maybe, you should use A Pointer to this type?"
-	}
-
-	return nil, NewInnerErrorWithParams(GonerTypeNotFound, "Type(type=%s) not found%s", GetTypeName(t), extend)
+type dependenceAnalyzer struct {
+	Flag
+	iKeeper
+	logger Logger `gone:"*"`
 }
 
-func (s *Core) getSliceDepsByType(t reflect.Type) (deps []*coffin) {
-	if t.Kind() != reflect.Slice {
-		return nil
-	}
-
-	co := s.getDefaultCoffinByType(t)
-	if co != nil {
-		return []*coffin{co}
-	}
-
-	co = s.typeProviderDepMap[t]
-	if co != nil {
-		return []*coffin{co}
-	}
-
-	coffins := s.getCoffinsByType(t.Elem())
-	deps = append(deps, coffins...)
-	co = s.typeProviderDepMap[t.Elem()]
-	if co != nil {
-		deps = append(deps, co)
-	}
-	return deps
-}
-
-func (s *Core) collectDeps() (map[dependency][]dependency, error) {
+func (s *dependenceAnalyzer) collectDeps() (map[dependency][]dependency, error) {
 	depsMap := make(map[dependency][]dependency)
-	for _, co := range s.coffins {
+	for _, co := range s.iKeeper.getAllCoffins() {
 		fillDependency, initDependency, err := s.getGonerDeps(co)
 		if err != nil {
 			return nil, ToError(err)
@@ -173,15 +134,15 @@ func (s *Core) collectDeps() (map[dependency][]dependency, error) {
 			depsMap[dependency{co, initAction}] = initDependency
 		}
 	}
-	if s.log.GetLevel() <= DebugLevel {
+	if s.logger.GetLevel() <= DebugLevel {
 		for d, deps := range depsMap {
-			s.log.Debugf("Found %d dependencies for %s:\n%s\n\n", len(deps), d, deps)
+			s.logger.Debugf("Found %d dependencies for %s:\n%s\n\n", len(deps), d, deps)
 		}
 	}
 	return depsMap, nil
 }
 
-func (s *Core) getGonerDeps(co *coffin) (fillDependencies, initDependencies []dependency, err error) {
+func (s *dependenceAnalyzer) getGonerDeps(co *coffin) (fillDependencies, initDependencies []dependency, err error) {
 	fillDependencies, err = s.getGonerFillDeps(co)
 	if !co.lazyFill {
 		initDependencies = append(initDependencies, dependency{
@@ -192,7 +153,7 @@ func (s *Core) getGonerDeps(co *coffin) (fillDependencies, initDependencies []de
 	return
 }
 
-func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err error) {
+func (s *dependenceAnalyzer) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err error) {
 	of := reflect.TypeOf(co.goner)
 	if of.Kind() != reflect.Ptr {
 		return nil, NewInnerError("goner must be a pointer", GonerTypeNotMatch)
@@ -208,57 +169,92 @@ func (s *Core) getGonerFillDeps(co *coffin) (fillDependencies []dependency, err 
 				continue
 			}
 
-			if tag, ok := field.Tag.Lookup(goneTag); ok {
-				gonerName, _ := ParseGoneTag(tag)
-				if gonerName == "" || gonerName == "*" {
-					gonerName = DefaultProviderName
-				}
-				if gonerName != DefaultProviderName {
-					depCo, err := s.getDepByName(gonerName)
-					if err != nil {
-						return nil, ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem)))
-					}
-
-					if depCo.needInitBeforeUse {
-						fillDependencies = append(fillDependencies, dependency{
-							coffin: depCo,
-							action: initAction,
-						})
-					}
-				} else {
-					if field.Type.Kind() == reflect.Slice {
-						sliceDeps := s.getSliceDepsByType(field.Type)
-						for _, depCo := range sliceDeps {
-							if depCo.needInitBeforeUse {
-								fillDependencies = append(fillDependencies, dependency{
-									coffin: depCo,
-									action: initAction,
-								})
-							}
-						}
-					} else {
-						depCo, err := s.getDepByType(field.Type)
-						if err != nil {
-							if isAllowNilField(&field) {
-								continue
-							}
-							return nil, ToErrorWithMsg(err, fmt.Sprintf("Cannot find matched value for field %q of %q", field.Name, GetTypeName(elem)))
-						}
-
-						if depCo != nil {
-							if depCo.needInitBeforeUse {
-								fillDependencies = append(fillDependencies, dependency{
-									coffin: depCo,
-									action: initAction,
-								})
-							}
+			if err = s.analyzerFieldDependencies(
+				field,
+				co.Name(),
+				func(asSlice bool, extend string, depCoffins ...*coffin) error {
+					for _, depCo := range depCoffins {
+						if depCo.needInitBeforeUse {
+							fillDependencies = append(fillDependencies, dependency{
+								coffin: depCo,
+								action: initAction,
+							})
 						}
 					}
-				}
+					return nil
+				},
+			); err != nil {
+				return nil, err
 			}
 		}
 		return RemoveRepeat(fillDependencies), nil
 	default:
 		return nil, nil
 	}
+}
+
+func (s *dependenceAnalyzer) analyzerFieldDependencies(
+	field reflect.StructField,
+	coName string,
+	process func(asSlice bool, extend string, coffins ...*coffin) error,
+) error {
+	var tag string
+	var suc bool
+	if tag, suc = field.Tag.Lookup(goneTag); !suc {
+		return nil
+	}
+	gonerName, extend := ParseGoneTag(tag)
+	if gonerName == "" {
+		gonerName = "*"
+	}
+
+	isAllowNil := isAllowNilField(&field)
+
+	var depCo *coffin
+	if strings.Contains(gonerName, "*") || strings.Contains(gonerName, "?") {
+		if depCos := s.iKeeper.getByTypeAndPattern(field.Type, gonerName); depCos != nil && len(depCos) > 0 {
+			for _, c := range depCos {
+				if c.isDefault(field.Type) {
+					depCo = c
+					break
+				}
+			}
+			if depCo == nil {
+				if len(depCos) > 1 {
+					s.logger.Warnf("found multiple value without a default when filling filed %q of %q - using first one. ", field.Name, coName)
+				}
+				depCo = depCos[0]
+			}
+		}
+	} else {
+		depCo = s.iKeeper.getByName(gonerName)
+	}
+
+	if depCo != nil {
+		return process(false, extend, depCo)
+	} else if field.Type.Kind() == reflect.Slice {
+		isAllowNil = true
+		elType := field.Type.Elem()
+		depCos := s.iKeeper.getByTypeAndPattern(elType, gonerName)
+		if len(depCos) > 0 {
+			return process(true, extend, depCos...)
+		}
+	}
+
+	if !isAllowNil {
+		return NewInnerErrorWithParams(GonerTypeNotMatch,
+			"no compatible value found for field %q of %q",
+			field.Name, coName,
+		)
+	}
+	return nil
+}
+
+func (s *dependenceAnalyzer) checkCircularDepsAndGetBestInitOrder() (circularDeps []dependency, initOrder []dependency, err error) {
+	var deps map[dependency][]dependency
+	if deps, err = s.collectDeps(); err != nil {
+		return
+	}
+	circularDeps, initOrder = checkCircularDepsAndGetBestInitOrder(deps)
+	return
 }

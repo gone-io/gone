@@ -30,91 +30,8 @@ import "fmt"
 //   - Any option.Apply() fails
 //   - A Goner with same name already exists (without forceReplace)
 //   - A Provider for same type already exists (without forceReplace)
-func (s *Core) Load(goner Goner, options ...Option) error {
-	if goner == nil {
-		return NewInnerError("goner cannot be nil - must provide a valid Goner instance", LoadedError)
-	}
-	co := newCoffin(goner)
-
-	if namedGoner, ok := goner.(NamedGoner); ok {
-		co.name = namedGoner.GonerName()
-	}
-
-	for _, option := range options {
-		if err := option.Apply(co); err != nil {
-			return ToError(err)
-		}
-	}
-
-	if co.name != "" {
-		if oldCo, ok := s.nameMap[co.name]; ok {
-			if co.forceReplace {
-				for i := range s.coffins {
-					if s.coffins[i] == oldCo {
-						s.coffins[i] = co
-					}
-				}
-				s.nameMap[co.name] = co
-			} else {
-				return NewInnerErrorWithParams(LoadedError, "goner with name %q is already loaded - use ForceReplace() option to override", co.name)
-			}
-		} else {
-			s.nameMap[co.name] = co
-		}
-	}
-
-	var forceReplaceFind = false
-	if co.forceReplace {
-		for i := range s.coffins {
-			if s.coffins[i] == co {
-				s.coffins[i] = co
-				forceReplaceFind = true
-				break
-			}
-		}
-	}
-
-	if !forceReplaceFind {
-		s.coffins = append(s.coffins, co)
-	}
-
-	if co.provider != nil {
-		provider := co.provider
-
-		if co.onlyForName {
-			return nil
-		}
-
-		if oldCo, ok := s.typeProviderDepMap[provider.Type()]; ok {
-			if oldCo.goner == goner {
-				return NewInnerErrorWithParams(LoadedError, "provider for type %s is already registered with the same goner instance", GetTypeName(provider.Type()))
-			}
-
-			if co.forceReplace {
-				for i := range s.coffins {
-					if s.coffins[i] == oldCo {
-						s.coffins[i] = co
-					}
-				}
-				s.typeProviderDepMap[provider.Type()] = co
-				s.typeProviderMap[provider.Type()] = provider
-			} else {
-				return NewInnerErrorWithParams(LoadedError, "provider for type %s is already registered - use ForceReplace() option to override", GetTypeName(provider.Type()))
-			}
-		} else {
-			s.typeProviderMap[provider.Type()] = provider
-			s.typeProviderDepMap[provider.Type()] = co
-		}
-	}
-	if provider, ok := co.goner.(NamedProvider); ok {
-		for t := range co.defaultTypeMap {
-			if _, ok := s.typeProviderDepMap[t]; ok {
-				return NewInnerErrorWithParams(LoadedError, "provider for type %s is already registered - cannot use IsDefault option when Loading named provider: %T(name=%s)", GetTypeName(t), provider, provider.GonerName())
-			}
-			s.typeProviderDepMap[t] = co
-		}
-	}
-	return nil
+func (s *core) Load(goner Goner, options ...Option) error {
+	return s.iKeeper.load(goner, options...)
 }
 
 // MustLoad is similar to Load but panics if an error occurs during loading.
@@ -136,7 +53,7 @@ func (s *Core) Load(goner Goner, options ...Option) error {
 // Example usage:
 //
 //	loader.MustLoad(&MyComponent{}, gone.Name("myComponent"))
-func (s *Core) MustLoad(goner Goner, options ...Option) Loader {
+func (s *core) MustLoad(goner Goner, options ...Option) Loader {
 	if err := s.Load(goner, options...); err != nil {
 		panic(err)
 	}
@@ -167,7 +84,7 @@ func (s *Core) MustLoad(goner Goner, options ...Option) Loader {
 //	loader.MustLoadX(func(l Loader) error {  // Load using LoadFunc
 //	    return l.Load(&DependencyA{})
 //	})
-func (s *Core) MustLoadX(x any) Loader {
+func (s *core) MustLoadX(x any) Loader {
 	switch f := x.(type) {
 	case Goner:
 		s.MustLoad(f)
@@ -178,7 +95,7 @@ func (s *Core) MustLoadX(x any) Loader {
 			}
 		}
 	default:
-		panic(fmt.Sprintf("MustLoadX: unknown type: %T, only Goner or LoadFunc is allowed", x))
+		panic(ToError(fmt.Sprintf("MustLoadX: unknown type: %T, only Goner or LoadFunc is allowed", x)))
 	}
 	return s
 }
@@ -194,11 +111,11 @@ func (s *Core) MustLoadX(x any) Loader {
 //
 // Note: If the component hasn't been loaded, it will be marked as loaded before returning false.
 // This ensures that subsequent calls with the same key will return true.
-func (s *Core) Loaded(key LoaderKey) bool {
+func (s *core) Loaded(key LoaderKey) bool {
 	if _, ok := s.loaderMap[key]; ok {
 		return true
 	} else {
-		s.loaderMap[key] = true
+		s.loaderMap[key] = struct{}{}
 		return false
 	}
 }

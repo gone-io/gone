@@ -9,7 +9,7 @@ import (
 type Application struct {
 	Flag
 
-	loader  *Core    `gone:"*"`
+	loader  *core    `gone:"*"`
 	daemons []Daemon `gone:"*"`
 
 	beforeStartHooks []Process
@@ -45,7 +45,7 @@ func Prepare(loads ...LoadFunc) *Application {
 
 func (s *Application) init() *Application {
 	s.signal = make(chan os.Signal, 1)
-	s.loader = NewCore()
+	s.loader = newCore()
 
 	s.
 		Load(s, IsDefault()).
