@@ -21,42 +21,36 @@ type coffin struct {
 	isFill              bool
 	isInit              bool
 	provider            *wrapProvider
-	nameProvider        NamedProvider
+	namedProvider       NamedProvider
 	structFieldInjector StructFieldInjector
 }
 
 func newCoffin(goner any) *coffin {
-	_, needInitBeforeUse := goner.(Initiator)
-	if !needInitBeforeUse {
-		_, needInitBeforeUse = goner.(InitiatorNoError)
-	}
-	provider := tryWrapGonerToProvider(goner)
-	if provider != nil {
-		needInitBeforeUse = true
+	co := &coffin{
+		goner:          goner,
+		defaultTypeMap: make(map[reflect.Type]bool),
 	}
 
-	var nameProvider NamedProvider
-	if !needInitBeforeUse {
-		nameProvider, needInitBeforeUse = goner.(NamedProvider)
-	}
-
-	if !needInitBeforeUse {
-		_, needInitBeforeUse = goner.(StructFieldInjector)
-	}
-
-	var name string
 	if namedGoner, ok := goner.(NamedGoner); ok {
-		name = namedGoner.GonerName()
+		co.name = namedGoner.GonerName()
 	}
 
-	return &coffin{
-		goner:             goner,
-		name:              name,
-		defaultTypeMap:    make(map[reflect.Type]bool),
-		needInitBeforeUse: needInitBeforeUse,
-		provider:          provider,
-		nameProvider:      nameProvider,
+	if namedProvider, ok := goner.(NamedProvider); ok {
+		co.needInitBeforeUse = true
+		co.namedProvider = namedProvider
+	} else if provider := tryWrapGonerToProvider(goner); provider != nil {
+		co.needInitBeforeUse = true
+		co.provider = provider
+		co.defaultTypeMap[provider.Type()] = true
+	} else if _, ok := goner.(Initiator); ok {
+		co.needInitBeforeUse = true
+	} else if _, ok := goner.(InitiatorNoError); ok {
+		co.needInitBeforeUse = true
+	} else if _, ok := goner.(StructFieldInjector); ok {
+		co.needInitBeforeUse = true
 	}
+
+	return co
 }
 
 func (c *coffin) Name() string {
@@ -66,47 +60,49 @@ func (c *coffin) Name() string {
 	return fmt.Sprintf("%T", c.goner)
 }
 
-func (c *coffin) CoundProvide(t reflect.Type) error {
+func (c *coffin) CoundProvide(t reflect.Type, byName bool) error {
 	if IsCompatible(t, c.goner) {
 		return nil
 	}
 
-	if c.nameProvider != nil {
+	if c.provider != nil && c.provider.ProvideTypeCompatible(t) {
 		return nil
 	}
 
-	if c.provider != nil {
-		if r := c.provider.Type(); r == t || r.Implements(t) {
-			return nil
-		}
+	if c.namedProvider != nil && (byName || c.isDefault(t)) {
+		return nil
 	}
+
 	return NewInnerErrorWithParams(GonerTypeNotMatch, "gone: %s cannot provide %s value", c.Name(), GetTypeName(t))
 }
 
 func (c *coffin) AddToDefault(t reflect.Type) error {
-	if err := c.CoundProvide(t); err != nil {
+	if err := c.CoundProvide(t, true); err != nil {
 		return err
 	}
 	c.defaultTypeMap[t] = true
 	return nil
 }
 
-func (c *coffin) Provide(tagConf string, t reflect.Type) (any, error) {
+func (c *coffin) Provide(byName bool, tagConf string, t reflect.Type) (any, error) {
 	if IsCompatible(t, c.goner) {
 		return c.goner, nil
 	}
 
 	if c.isDefault(t) {
-		if c.provider != nil {
-			if r := c.provider.Type(); r == t || r.Implements(t) {
-				return c.provider.Provide(tagConf)
-			}
+		if c.provider != nil && c.provider.ProvideTypeCompatible(t) {
+			return c.provider.Provide(tagConf)
 		}
-		if c.nameProvider != nil {
-			return c.nameProvider.Provide(tagConf, t)
+		if c.namedProvider != nil {
+			return c.namedProvider.Provide(tagConf, t)
 		}
 	}
-	return NewInnerErrorWithParams(NotSupport, "gone: %s cannot provide %s value", c.Name(), GetTypeName(t)), nil
+
+	if c.namedProvider != nil && byName {
+		return c.namedProvider.Provide(tagConf, t)
+	}
+
+	return nil, NewInnerErrorWithParams(NotSupport, "gone: %s cannot provide %s value", c.Name(), GetTypeName(t))
 }
 
 func (c *coffin) isDefault(t reflect.Type) bool {

@@ -27,7 +27,11 @@ func (s *keeper) getByName(name string) *coffin {
 
 func (s *keeper) getByTypeAndPattern(t reflect.Type, pattern string) (coffins []*coffin) {
 	for _, co := range s.coffins {
-		if err := co.CoundProvide(t); err == nil && isMatch(co.name, pattern) {
+		if co.onlyForName {
+			continue
+		}
+
+		if err := co.CoundProvide(t, false); err == nil && isMatch(co.name, pattern) {
 			coffins = append(coffins, co)
 		}
 	}

@@ -172,7 +172,7 @@ func (s *dependenceAnalyzer) getGonerFillDeps(co *coffin) (fillDependencies []de
 			if err = s.analyzerFieldDependencies(
 				field,
 				co.Name(),
-				func(asSlice bool, extend string, depCoffins ...*coffin) error {
+				func(asSlice, byName bool, extend string, depCoffins ...*coffin) error {
 					for _, depCo := range depCoffins {
 						if depCo.needInitBeforeUse {
 							fillDependencies = append(fillDependencies, dependency{
@@ -196,7 +196,7 @@ func (s *dependenceAnalyzer) getGonerFillDeps(co *coffin) (fillDependencies []de
 func (s *dependenceAnalyzer) analyzerFieldDependencies(
 	field reflect.StructField,
 	coName string,
-	process func(asSlice bool, extend string, coffins ...*coffin) error,
+	process func(asSlice, byName bool, extend string, coffins ...*coffin) error,
 ) error {
 	var tag string
 	var suc bool
@@ -211,33 +211,38 @@ func (s *dependenceAnalyzer) analyzerFieldDependencies(
 	isAllowNil := isAllowNilField(&field)
 
 	var depCo *coffin
+	var byName bool
 	if strings.Contains(gonerName, "*") || strings.Contains(gonerName, "?") {
 		if depCos := s.iKeeper.getByTypeAndPattern(field.Type, gonerName); depCos != nil && len(depCos) > 0 {
-			for _, c := range depCos {
-				if c.isDefault(field.Type) {
-					depCo = c
-					break
-				}
-			}
-			if depCo == nil {
-				if len(depCos) > 1 {
-					s.logger.Warnf("found multiple value without a default when filling filed %q of %q - using first one. ", field.Name, coName)
-				}
+			l := len(depCos)
+			if l == 1 {
 				depCo = depCos[0]
+			} else if l > 1 {
+				for _, c := range depCos {
+					if c.isDefault(field.Type) {
+						depCo = c
+						break
+					}
+				}
+				if depCo == nil {
+					s.logger.Warnf("found multiple value without a default when filling filed %q of %q - using first one. ", field.Name, coName)
+					depCo = depCos[0]
+				}
 			}
 		}
 	} else {
 		depCo = s.iKeeper.getByName(gonerName)
+		byName = depCo != nil
 	}
 
 	if depCo != nil {
-		return process(false, extend, depCo)
+		return process(false, byName, extend, depCo)
 	} else if field.Type.Kind() == reflect.Slice {
 		isAllowNil = true
 		elType := field.Type.Elem()
 		depCos := s.iKeeper.getByTypeAndPattern(elType, gonerName)
 		if len(depCos) > 0 {
-			return process(true, extend, depCos...)
+			return process(true, byName, extend, depCos...)
 		}
 	}
 

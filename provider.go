@@ -59,4 +59,14 @@ func (p *wrapProvider) Type() reflect.Type {
 	return p.t
 }
 
+func (p *wrapProvider) ProvideTypeCompatible(t reflect.Type) bool {
+	if p.t == t {
+		return true
+	}
+	if p.t.Kind() == reflect.Interface && t.Implements(p.t) {
+		return true
+	}
+	return false
+}
+
 var errType = reflect.TypeOf((*error)(nil)).Elem()

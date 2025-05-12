@@ -19,7 +19,7 @@ type installer struct {
 }
 
 func (s *installer) injectField(
-	asSlice bool, extend string, depCoffins []*coffin,
+	asSlice, byName bool, extend string, depCoffins []*coffin,
 	field reflect.StructField, v reflect.Value, coName string,
 ) error {
 	if !field.IsExported() {
@@ -29,15 +29,15 @@ func (s *installer) injectField(
 	if asSlice {
 		return s.injectFieldAsSlice(extend, depCoffins, field, v, coName)
 	} else {
-		return s.injectFieldAsNotSlice(extend, depCoffins[0], field, v, coName)
+		return s.injectFieldAsNotSlice(byName, extend, depCoffins[0], field, v, coName)
 	}
 }
 
 func (s *installer) injectFieldAsSlice(extend string, depCoffins []*coffin, field reflect.StructField, v reflect.Value, coName string) error {
 	elType := field.Type.Elem()
-	slice := reflect.MakeSlice(elType, 0, len(depCoffins))
+	slice := reflect.MakeSlice(field.Type, 0, len(depCoffins))
 	for _, depCo := range depCoffins {
-		if value, err := depCo.Provide(extend, elType); err != nil {
+		if value, err := depCo.Provide(false, extend, elType); err != nil {
 			return ToErrorWithMsg(err, fmt.Sprintf("%q failed to provide value for filed %q element of %q",
 				depCo.Name(), field.Name, coName),
 			)
@@ -55,8 +55,8 @@ func (s *installer) injectFieldAsSlice(extend string, depCoffins []*coffin, fiel
 	return nil
 }
 
-func (s *installer) injectFieldAsNotSlice(extend string, depCo *coffin, field reflect.StructField, v reflect.Value, coName string) error {
-	if value, err := depCo.Provide(extend, field.Type); err != nil {
+func (s *installer) injectFieldAsNotSlice(byName bool, extend string, depCo *coffin, field reflect.StructField, v reflect.Value, coName string) error {
+	if value, err := depCo.Provide(byName, extend, field.Type); err != nil {
 		return ToErrorWithMsg(err,
 			fmt.Sprintf("%q failed to provide value for field %q of %q", depCo.Name(), field.Name, coName),
 		)
@@ -96,8 +96,8 @@ func (s *installer) fillOne(co *coffin) error {
 	for i := 0; i < elem.NumField(); i++ {
 		field := elem.Field(i)
 
-		injectProcess := func(asSlice bool, extend string, depCoffins ...*coffin) error {
-			return s.injectField(asSlice, extend, depCoffins, field, elemV.Field(i), co.Name())
+		injectProcess := func(asSlice, byName bool, extend string, depCoffins ...*coffin) error {
+			return s.injectField(asSlice, byName, extend, depCoffins, field, elemV.Field(i), co.Name())
 		}
 
 		if err := s.iDependenceAnalyzer.analyzerFieldDependencies(field, co.Name(), injectProcess); err != nil {

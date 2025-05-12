@@ -10,6 +10,13 @@ func newCore() *core {
 	l := GetDefaultLogger()
 	a := newDependenceAnalyzer(k, l)
 	i := newInstaller(a, l)
+	c := &core{
+		iKeeper:             k,
+		iDependenceAnalyzer: a,
+		iInstaller:          i,
+		logger:              l,
+		loaderMap:           make(map[LoaderKey]struct{}),
+	}
 
 	_ = k.load(k)
 	_ = k.load(a)
@@ -17,17 +24,13 @@ func newCore() *core {
 	_ = k.load(&ConfigProvider{})
 	_ = k.load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)))
 	_ = k.load(l.(Goner), IsDefault(new(Logger)))
+	_ = k.load(c, Name(DefaultProviderName))
 
-	return &core{
-		iKeeper:             k,
-		iDependenceAnalyzer: a,
-		iInstaller:          i,
-		logger:              l,
-		loaderMap:           make(map[LoaderKey]struct{}),
-	}
+	return c
 }
 
 type core struct {
+	Flag
 	iKeeper             iKeeper
 	iInstaller          iInstaller
 	iDependenceAnalyzer iDependenceAnalyzer
@@ -66,8 +69,10 @@ func (s *core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 		}
 
 		if !injected {
-			if v := s.GetGonerByType(pt); v != nil {
-				args = append(args, reflect.ValueOf(v))
+			if v, err := s.ProvideNth(i+1, pt, GetFuncName(fn)); err != nil {
+				return nil, err
+			} else if !v.IsZero() {
+				args = append(args, v)
 				injected = true
 			}
 		}
@@ -175,9 +180,25 @@ func (s *core) GetGonerByName(name string) any {
 func (s *core) GetGonerByType(t reflect.Type) any {
 	coSlice := s.iKeeper.getByTypeAndPattern(t, "*")
 	if len(coSlice) > 0 {
-		return coSlice[0]
+		return coSlice[0].goner
 	}
 	return nil
+}
+
+func (s *core) ProvideNth(n int, t reflect.Type, funcName string) (reflect.Value, error) {
+	field := reflect.StructField{
+		Name: fmt.Sprintf("The%dthParameter", n),
+		Type: t,
+		Tag:  `gone:"*" option:"allowNil"`,
+	}
+	v := reflect.New(t).Elem()
+
+	if err := s.iInstaller.analyzerFieldDependencies(field, funcName, func(asSlice, byName bool, extend string, coffins ...*coffin) error {
+		return s.iInstaller.injectField(asSlice, byName, extend, coffins, field, v, funcName)
+	}); err != nil {
+		return v, ToErrorWithMsg(err, fmt.Sprintf("can not provide nth parameter for %s", funcName))
+	}
+	return v, nil
 }
 
 // Check performs dependency validation and determines initialization order:

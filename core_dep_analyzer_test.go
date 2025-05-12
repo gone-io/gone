@@ -199,7 +199,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 	type args struct {
 		field   reflect.StructField
 		coName  string
-		process func(asSlice bool, extend string, coffins ...*coffin) error
+		process func(asSlice, byName bool, extend string, coffins ...*coffin) error
 	}
 	tests := []struct {
 		name    string
@@ -212,7 +212,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  NormalField,
 				coName: "",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					t.Fatalf("should not call this")
 					return nil
 				},
@@ -227,7 +227,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  GoneField,
 				coName: "g1",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					t.Fatalf("should not call this")
 					return nil
 				},
@@ -245,7 +245,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  GoneFieldWithAllowNil,
 				coName: "g1",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					t.Fatalf("should not call this")
 					return nil
 				},
@@ -273,7 +273,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  injectField,
 				coName: "g1",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					record = true
 					if len(coffins) != 1 {
 						t.Fatalf("should find 2 goner")
@@ -309,7 +309,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  injectField,
 				coName: "g1",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					record = true
 					if len(coffins) != 1 {
 						t.Fatalf("should find 2 goner")
@@ -326,7 +326,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  nameInjectedField,
 				coName: "g1",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					record = true
 					if len(coffins) != 1 {
 						t.Fatalf("should find 2 goner")
@@ -350,7 +350,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  injectSliceField,
 				coName: "g1",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					record = true
 					if len(coffins) != 1 {
 						t.Fatalf("should be only one goner")
@@ -383,7 +383,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  injectSliceField,
 				coName: "g1",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					record = true
 					if len(coffins) != 2 {
 						t.Fatalf("coffins len should be 2")
@@ -420,7 +420,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			args: args{
 				field:  injectSliceField,
 				coName: "g1",
-				process: func(asSlice bool, extend string, coffins ...*coffin) error {
+				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
 					record = true
 					return nil
 				},

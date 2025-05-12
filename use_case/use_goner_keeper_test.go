@@ -8,7 +8,7 @@ import (
 type useKeeper struct {
 	gone.Flag
 	keeper gone.GonerKeeper `gone:"*"`
-	core   *gone.Loader     `gone:"*"`
+	core   gone.Loader      `gone:"*"`
 }
 
 func (u *useKeeper) Test(t *testing.T) {

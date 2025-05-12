@@ -1,7 +1,6 @@
 package gone
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -35,12 +34,15 @@ func TestWrapFunctionProvider_Error(t *testing.T) {
 		return test, ToError("test error")
 	})
 
-	NewApp().
-		Load(provider).
-		Test(func(core *Core) {
-			_, err := core.Provide("", reflect.TypeOf(test))
-			if err == nil {
-				t.Errorf("Expected error, got nil")
-			}
-		})
+	err := SafeExecute(func() error {
+		NewApp().
+			Load(provider).
+			Test(func(core Test) {
+			})
+		return nil
+	})
+
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+	}
 }

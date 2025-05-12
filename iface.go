@@ -98,7 +98,7 @@ type iKeeper interface {
 type iDependenceAnalyzer interface {
 	analyzerFieldDependencies(
 		field reflect.StructField, coName string,
-		process func(asSlice bool, extend string, coffins ...*coffin) error,
+		process func(asSlice, byName bool, extend string, coffins ...*coffin) error,
 	) error
 
 	checkCircularDepsAndGetBestInitOrder() (circularDeps []dependency, initOrder []dependency, err error)
@@ -107,4 +107,14 @@ type iDependenceAnalyzer interface {
 type iInstaller interface {
 	safeFillOne(c *coffin) error
 	safeInitOne(c *coffin) error
+
+	analyzerFieldDependencies(
+		field reflect.StructField, coName string,
+		process func(asSlice, byName bool, extend string, coffins ...*coffin) error,
+	) error
+
+	injectField(
+		asSlice, byName bool, extend string, depCoffins []*coffin,
+		field reflect.StructField, v reflect.Value, coName string,
+	) error
 }

@@ -20,10 +20,13 @@ func TestAllowNil(t *testing.T) {
 	}
 
 	provider := gone.WrapFunctionProvider(func(extend string, in struct{}) (*Dep, error) {
-		if extend == "ok" {
+		switch extend {
+		case "ok":
 			return &Dep{}, nil
-		} else {
+		case "err":
 			return nil, gone.NewInnerError("err", 0)
+		default:
+			return nil, nil
 		}
 	})
 
@@ -38,7 +41,6 @@ func TestAllowNil(t *testing.T) {
 				dep2 *Dep2 `gone:"dep2"`
 				dep3 *Dep2 `gone:"dep3" option:"allowNil"`
 				dep4 *Dep  `gone:"p,ok"`
-				dep5 *Dep  `gone:"p,err" option:"allowNil"`
 			}) {
 				if in.dep != nil {
 					t.Error("dep should be nil")
@@ -51,9 +53,6 @@ func TestAllowNil(t *testing.T) {
 				}
 				if in.dep4 == nil {
 					t.Error("dep4 should not be nil")
-				}
-				if in.dep5 != nil {
-					t.Error("dep5 should be nil")
 				}
 			})
 	})
@@ -86,6 +85,13 @@ func TestAllowNil(t *testing.T) {
 				}) {
 				},
 			},
+			{
+				name: "inject by type and name and allowNil and get error",
+				fn: func(in struct {
+					dep5 *Dep `gone:"p,err" option:"allowNil"`
+				}) {
+				},
+			},
 		}
 
 		for _, ca := range testCases {
@@ -100,10 +106,8 @@ func TestAllowNil(t *testing.T) {
 					NewApp().
 					Load(&AllowNil{}).
 					Load(&Dep2{}, gone.Name("dep2")).
-					Load(provider, gone.Name("p")).
+					Load(provider, gone.Name("p"), gone.OnlyForName()).
 					Run(ca.fn)
-
-				t.Error("should panic")
 			})
 		}
 
