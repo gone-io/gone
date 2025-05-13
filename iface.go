@@ -52,10 +52,7 @@ const (
 
 func filedHasOption(filed *reflect.StructField, tagName string, optionName string) bool {
 	value, ok := filed.Tag.Lookup(tagName)
-	if !ok {
-		return false
-	}
-	if value == "" {
+	if !ok || value == "" {
 		return false
 	}
 	split := strings.Split(value, ",")
