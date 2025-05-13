@@ -63,7 +63,7 @@ func (p *wrapProvider) ProvideTypeCompatible(t reflect.Type) bool {
 	if p.t == t {
 		return true
 	}
-	if p.t.Kind() == reflect.Interface && t.Implements(p.t) {
+	if t.Kind() == reflect.Interface && p.t.Implements(t) {
 		return true
 	}
 	return false

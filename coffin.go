@@ -73,7 +73,7 @@ func (c *coffin) CoundProvide(t reflect.Type, byName bool) error {
 		return nil
 	}
 
-	return NewInnerErrorWithParams(GonerTypeNotMatch, "gone: %s cannot provide %s value", c.Name(), GetTypeName(t))
+	return NewInnerErrorWithParams(GonerTypeNotMatch, "%q cannot provide %q value", c.Name(), GetTypeName(t))
 }
 
 func (c *coffin) AddToDefault(t reflect.Type) error {
@@ -89,16 +89,11 @@ func (c *coffin) Provide(byName bool, tagConf string, t reflect.Type) (any, erro
 		return c.goner, nil
 	}
 
-	if c.isDefault(t) {
-		if c.provider != nil && c.provider.ProvideTypeCompatible(t) {
-			return c.provider.Provide(tagConf)
-		}
-		if c.namedProvider != nil {
-			return c.namedProvider.Provide(tagConf, t)
-		}
+	if c.provider != nil && c.provider.ProvideTypeCompatible(t) {
+		return c.provider.Provide(tagConf)
 	}
 
-	if c.namedProvider != nil && byName {
+	if c.namedProvider != nil && (byName || c.isDefault(t)) {
 		return c.namedProvider.Provide(tagConf, t)
 	}
 
