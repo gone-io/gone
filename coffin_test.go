@@ -151,10 +151,11 @@ func formatLessTest(a, b *coffin) string {
 
 type testInitiator struct {
 	Flag
+	err error
 }
 
 func (t *testInitiator) Init() error {
-	return nil
+	return t.err
 }
 
 type testInitiatorNoError struct {

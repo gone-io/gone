@@ -125,7 +125,7 @@ func (m *MockiDependenceAnalyzer) EXPECT() *MockiDependenceAnalyzerMockRecorder 
 }
 
 // analyzerFieldDependencies mocks base method.
-func (m *MockiDependenceAnalyzer) analyzerFieldDependencies(field reflect.StructField, coName string, process func(bool, string, ...*coffin) error) error {
+func (m *MockiDependenceAnalyzer) analyzerFieldDependencies(field reflect.StructField, coName string, process func(bool, bool, string, ...*coffin) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "analyzerFieldDependencies", field, coName, process)
 	ret0, _ := ret[0].(error)
@@ -176,6 +176,34 @@ func NewMockiInstaller(ctrl *gomock.Controller) *MockiInstaller {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockiInstaller) EXPECT() *MockiInstallerMockRecorder {
 	return m.recorder
+}
+
+// analyzerFieldDependencies mocks base method.
+func (m *MockiInstaller) analyzerFieldDependencies(field reflect.StructField, coName string, process func(bool, bool, string, ...*coffin) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "analyzerFieldDependencies", field, coName, process)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// analyzerFieldDependencies indicates an expected call of analyzerFieldDependencies.
+func (mr *MockiInstallerMockRecorder) analyzerFieldDependencies(field, coName, process any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "analyzerFieldDependencies", reflect.TypeOf((*MockiInstaller)(nil).analyzerFieldDependencies), field, coName, process)
+}
+
+// injectField mocks base method.
+func (m *MockiInstaller) injectField(asSlice, byName bool, extend string, depCoffins []*coffin, field reflect.StructField, v reflect.Value, coName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "injectField", asSlice, byName, extend, depCoffins, field, v, coName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// injectField indicates an expected call of injectField.
+func (mr *MockiInstallerMockRecorder) injectField(asSlice, byName, extend, depCoffins, field, v, coName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "injectField", reflect.TypeOf((*MockiInstaller)(nil).injectField), asSlice, byName, extend, depCoffins, field, v, coName)
 }
 
 // safeFillOne mocks base method.

@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
@@ -42,12 +43,6 @@ func (s *installer) injectFieldAsSlice(extend string, depCoffins []*coffin, fiel
 				depCo.Name(), field.Name, coName),
 			)
 		} else {
-			if !IsCompatible(elType, value) {
-				return NewInnerErrorWithParams(GonerTypeNotMatch,
-					"value provided by %q is not compatible for field %q element of %q",
-					depCo.Name(), field.Name, coName,
-				)
-			}
 			slice = reflect.Append(slice, reflect.ValueOf(value))
 		}
 	}
@@ -57,26 +52,24 @@ func (s *installer) injectFieldAsSlice(extend string, depCoffins []*coffin, fiel
 
 func (s *installer) injectFieldAsNotSlice(byName bool, extend string, depCo *coffin, field reflect.StructField, v reflect.Value, coName string) error {
 	if value, err := depCo.Provide(byName, extend, field.Type); err != nil {
+		var e Error
+		if errors.As(err, &e) && e.Code() == NotSupport {
+			if injector, ok := depCo.goner.(StructFieldInjector); ok {
+				if err := injector.Inject(extend, field, v); err != nil {
+					return ToErrorWithMsg(err,
+						fmt.Sprintf("%q failed to inject for field %q in %q", depCo.Name(), field.Name, coName),
+					)
+				}
+				return nil
+			}
+		}
 		return ToErrorWithMsg(err,
 			fmt.Sprintf("%q failed to provide value for field %q of %q", depCo.Name(), field.Name, coName),
 		)
-	} else if IsCompatible(field.Type, value) {
+	} else {
 		v.Set(reflect.ValueOf(value))
 		return nil
 	}
-
-	if injector, ok := depCo.goner.(StructFieldInjector); ok {
-		if err := injector.Inject(extend, field, v); err != nil {
-			return ToErrorWithMsg(err,
-				fmt.Sprintf("%q failed to inject for field %q in %q", depCo.Name(), field.Name, coName),
-			)
-		}
-		return nil
-	}
-	return NewInnerErrorWithParams(GonerTypeNotMatch,
-		"value provided by %q is not compatible for field %q of %q",
-		depCo.Name(), field.Name, coName,
-	)
 }
 
 func (s *installer) fillOne(co *coffin) error {
