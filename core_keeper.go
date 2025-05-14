@@ -59,9 +59,9 @@ func (s *keeper) load(goner Goner, options ...Option) error {
 	}
 
 	var forceReplaceFind = false
-	if co.forceReplace {
+	if co.forceReplace && co.name != "" {
 		for i := range s.coffins {
-			if s.coffins[i] == co {
+			if s.coffins[i].name == co.name {
 				s.coffins[i] = co
 				forceReplaceFind = true
 				break
