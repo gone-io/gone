@@ -2,6 +2,7 @@ package gone
 
 import (
 	"errors"
+	"go.uber.org/mock/gomock"
 	"reflect"
 	"testing"
 )
@@ -400,6 +401,196 @@ func Test_core_InjectWrapFunc(t *testing.T) {
 						}
 					}
 				})
+		})
+	}
+}
+
+func Test_core_Check(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	analyzer := NewMockiDependenceAnalyzer(controller)
+	mockiKeeper := NewMockiKeeper(controller)
+	logger := NewMockLogger(controller)
+
+	s := &core{
+		logger:              logger,
+		iKeeper:             mockiKeeper,
+		iDependenceAnalyzer: analyzer,
+	}
+
+	var x struct {
+		Flag
+	}
+
+	tests := []struct {
+		name    string
+		setUp   func() func()
+		want    []dependency
+		wantErr bool
+	}{
+		{
+			name: "err",
+			setUp: func() func() {
+				analyzer.EXPECT().checkCircularDepsAndGetBestInitOrder().Return(nil, nil, errors.New("err"))
+				return func() {}
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "circular deps",
+			setUp: func() func() {
+				analyzer.EXPECT().checkCircularDepsAndGetBestInitOrder().Return([]dependency{{
+					action: initAction,
+					coffin: newCoffin(&struct{}{}),
+				}, {
+					action: initAction,
+					coffin: newCoffin(&struct{}{}),
+				}}, nil, nil)
+				return func() {}
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "print debug info && success",
+			setUp: func() func() {
+				analyzer.EXPECT().checkCircularDepsAndGetBestInitOrder().Return(nil, []dependency{{
+					action: initAction,
+					coffin: newCoffin(&x),
+				}}, nil)
+				logger.EXPECT().GetLevel().Return(DebugLevel)
+				logger.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
+
+				mockiKeeper.EXPECT().getAllCoffins().Return([]*coffin{
+					newCoffin(&x),
+				})
+				return func() {}
+			},
+			want: []dependency{
+				{action: initAction, coffin: newCoffin(&x)},
+				{action: fillAction, coffin: newCoffin(&x)},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer tt.setUp()()
+			got, err := s.Check()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Check() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Check() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_core_Install(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	analyzer := NewMockiDependenceAnalyzer(controller)
+	mockiKeeper := NewMockiKeeper(controller)
+	logger := NewMockLogger(controller)
+	mockiInstaller := NewMockiInstaller(controller)
+
+	s := &core{
+		logger:              logger,
+		iKeeper:             mockiKeeper,
+		iDependenceAnalyzer: analyzer,
+		iInstaller:          mockiInstaller,
+	}
+
+	var x struct {
+		Flag
+	}
+
+	tests := []struct {
+		name    string
+		setUp   func() func()
+		wantErr bool
+	}{
+		{
+			name: "err",
+			setUp: func() func() {
+				analyzer.EXPECT().checkCircularDepsAndGetBestInitOrder().Return(nil, nil, errors.New("err"))
+				return func() {}
+			},
+			wantErr: true,
+		},
+
+		{
+			name: "print debug info && success",
+			setUp: func() func() {
+				analyzer.EXPECT().checkCircularDepsAndGetBestInitOrder().Return(nil, []dependency{{
+					action: initAction,
+					coffin: newCoffin(&x),
+				}}, nil)
+				logger.EXPECT().GetLevel().Return(DebugLevel)
+				logger.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
+
+				mockiKeeper.EXPECT().getAllCoffins().Return([]*coffin{
+					newCoffin(&x),
+				})
+				mockiInstaller.EXPECT().safeFillOne(gomock.Any()).Return(nil)
+				mockiInstaller.EXPECT().safeInitOne(gomock.Any()).Return(nil)
+				return func() {}
+			},
+			wantErr: false,
+		},
+		{
+			name: "init error",
+			setUp: func() func() {
+				analyzer.EXPECT().checkCircularDepsAndGetBestInitOrder().Return(nil, []dependency{{
+					action: initAction,
+					coffin: newCoffin(&x),
+				}}, nil)
+
+				logger.EXPECT().GetLevel().Return(InfoLevel)
+				logger.EXPECT().Debugf(gomock.Any(), gomock.Any())
+
+				mockiKeeper.EXPECT().getAllCoffins().Return([]*coffin{
+					newCoffin(&x),
+				})
+				mockiInstaller.EXPECT().safeInitOne(gomock.Any()).Return(errors.New("err"))
+
+				return func() {}
+			},
+			wantErr: true,
+		},
+		{
+			name: "init error",
+			setUp: func() func() {
+				analyzer.EXPECT().checkCircularDepsAndGetBestInitOrder().Return(nil, []dependency{{
+					action: initAction,
+					coffin: newCoffin(&x),
+				}}, nil)
+
+				logger.EXPECT().GetLevel().Return(InfoLevel)
+				logger.EXPECT().Debugf(gomock.Any(), gomock.Any())
+
+				mockiKeeper.EXPECT().getAllCoffins().Return([]*coffin{
+					newCoffin(&x),
+				})
+				mockiInstaller.EXPECT().safeFillOne(gomock.Any()).Return(errors.New("err"))
+				mockiInstaller.EXPECT().safeInitOne(gomock.Any()).Return(nil)
+
+				return func() {}
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer tt.setUp()()
+			err := s.Install()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Check() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 		})
 	}
 }
