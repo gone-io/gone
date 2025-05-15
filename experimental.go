@@ -36,10 +36,19 @@ func WrapFunctionProvider[P, T any](fn FunctionProvider[P, T]) *XProvider[T] {
 			return *new(T), err
 		}
 		results := f()
-		if results[1] == nil {
-			return results[0].(T), nil
+
+		var t T
+		if results[0] == nil {
+			t = *new(T)
+		} else {
+			t = results[0].(T)
 		}
-		return *new(T), ToError(results[1])
+		if results[1] == nil {
+			err = nil
+		} else {
+			err = results[1].(error)
+		}
+		return t, err
 	}
 	return &p
 }

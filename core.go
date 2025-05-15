@@ -61,8 +61,7 @@ func (s *core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 		injected := false
 
 		if injectBefore != nil {
-			v := injectBefore(pt, i, false)
-			if v != nil {
+			if v := injectBefore(pt, i, false); v != nil {
 				args = append(args, reflect.ValueOf(v))
 				injected = true
 			}
@@ -98,8 +97,7 @@ func (s *core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 		}
 
 		if injectAfter != nil {
-			v := injectAfter(pt, i, injected)
-			if v != nil {
+			if v := injectAfter(pt, i, injected); v != nil {
 				args = append(args, reflect.ValueOf(v))
 				injected = true
 			}
@@ -133,24 +131,16 @@ func (s *core) InjectWrapFunc(fn any, injectBefore FuncInjectHook, injectAfter F
 	return func() (results []any) {
 		values := reflect.ValueOf(fn).Call(args)
 		for _, arg := range values {
-			if arg.Kind() == reflect.Interface {
-				elem := arg.Elem()
-				switch elem.Kind() {
-				case reflect.Chan,
-					reflect.Func,
-					reflect.Interface,
-					reflect.Map,
-					reflect.Ptr,
-					reflect.Slice,
-					reflect.UnsafePointer:
-					if elem.IsNil() {
-						results = append(results, nil)
-						continue
-					}
-				default:
+			switch arg.Kind() {
+			case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
+				if arg.IsNil() {
+					results = append(results, nil)
+					continue
 				}
+				fallthrough
+			default:
+				results = append(results, arg.Interface())
 			}
-			results = append(results, arg.Interface())
 		}
 		return results
 	}, nil

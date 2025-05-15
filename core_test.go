@@ -136,3 +136,270 @@ func Test_core_InjectStruct(t *testing.T) {
 			})
 	})
 }
+
+func Test_core_InjectFuncParameters(t *testing.T) {
+
+	type X struct {
+		ID int
+	}
+
+	type args struct {
+		fn           any
+		injectBefore FuncInjectHook
+		injectAfter  FuncInjectHook
+	}
+	tests := []struct {
+		name string
+
+		load    func(loader Loader) error
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "fn is not a func",
+			load: func(loader Loader) error {
+				return nil
+			},
+			args: args{
+				fn:           "test",
+				injectBefore: nil,
+				injectAfter:  nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "provide value err",
+			load: func(loader Loader) error {
+				return nil
+			},
+			args: args{
+				fn: func(in struct {
+					x *X `gone:"*"`
+				}) {
+					t.Error("should not be called")
+				},
+				injectBefore: nil,
+				injectAfter:  nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "provide value suc",
+			load: func(loader Loader) error {
+				return loader.Load(WrapFunctionProvider(func(tagConf string, param struct{}) (*X, error) {
+					return &X{ID: 1001}, nil
+				}))
+			},
+			args: args{
+				fn: func(in struct {
+					x *X `gone:"*"`
+				}) {
+				},
+				injectBefore: nil,
+				injectAfter:  nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "provide value err with struct pointer",
+			load: func(loader Loader) error {
+				return nil
+			},
+			args: args{
+				fn: func(in *struct {
+					x *X `gone:"*"`
+				}) {
+					t.Error("should not be called")
+				},
+				injectBefore: nil,
+				injectAfter:  nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "provide value suc with struct pointer",
+			load: func(loader Loader) error {
+				return loader.Load(WrapFunctionProvider(func(tagConf string, param struct{}) (*X, error) {
+					return &X{ID: 1001}, nil
+				}))
+			},
+			args: args{
+				fn: func(in *struct {
+					x *X `gone:"*"`
+				}) {
+					if in.x == nil {
+						t.Error("in.x is nil")
+						return
+					}
+					if in.x.ID != 1001 {
+						t.Error("in.x.ID is not 1001")
+						return
+					}
+				},
+				injectBefore: nil,
+				injectAfter:  nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "use hook",
+			load: func(loader Loader) error {
+				return loader.Load(WrapFunctionProvider(func(tagConf string, param struct{}) (*X, error) {
+					return &X{ID: 1001}, nil
+				}))
+			},
+			args: args{
+				fn: func(
+					x string,
+					in *struct {
+						x *X `gone:"*"`
+					},
+					y int,
+				) {
+					if x != "test" {
+						t.Errorf("x is not test")
+						return
+					}
+					if in.x == nil {
+						t.Error("in.x is nil")
+						return
+					}
+					if in.x.ID != 1001 {
+						t.Error("in.x.ID is not 1001")
+						return
+					}
+					if y != 1002 {
+						t.Error("y is not 1002")
+						return
+					}
+				},
+				injectBefore: func(pt reflect.Type, i int, injected bool) any {
+					if i == 0 {
+						return reflect.ValueOf("test")
+					}
+					return nil
+				},
+				injectAfter: func(pt reflect.Type, i int, injected bool) any {
+					if i != 2 {
+						return nil
+					}
+					return reflect.ValueOf(1002)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "injected err",
+			load: func(loader Loader) error {
+				return loader.Load(WrapFunctionProvider(func(tagConf string, param struct{}) (*X, error) {
+					return &X{ID: 1001}, nil
+				}))
+			},
+			args: args{
+				fn: func(
+					x string,
+					in *struct {
+						x X `gone:"*"`
+					},
+					y int,
+				) {
+					t.Error("should not be called")
+				},
+				injectBefore: nil,
+				injectAfter:  nil,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			NewApp(tt.load).
+				Run(func(fj FuncInjector) {
+					_, err := fj.InjectFuncParameters(tt.args.fn, tt.args.injectBefore, tt.args.injectAfter)
+					if (err != nil) != tt.wantErr {
+						t.Errorf("InjectFuncParameters() error = %v, wantErr %v", err, tt.wantErr)
+						return
+					}
+				})
+		})
+	}
+}
+
+func Test_core_InjectWrapFunc(t *testing.T) {
+	type X struct {
+		ID int
+	}
+
+	var x = &X{ID: 1001}
+
+	type args struct {
+		fn           any
+		injectBefore FuncInjectHook
+		injectAfter  FuncInjectHook
+	}
+	tests := []struct {
+		name    string
+		load    func(loader Loader) error
+		args    args
+		want    []any
+		wantErr bool
+	}{
+		{
+			name: "return nil",
+			load: func(loader Loader) error {
+				return nil
+			},
+			args: args{
+				fn: func(in struct{}) (error, *X) {
+					return nil, nil
+				},
+			},
+			want: []any{nil, nil},
+		},
+		{
+			name: "return nil",
+			load: func(loader Loader) error {
+				return nil
+			},
+			args: args{
+				fn: func(in struct{}) (error, *X) {
+					var x *X
+
+					return nil, x
+				},
+			},
+			want: []any{nil, nil},
+		},
+		{
+			name: "return not nil",
+			load: func(loader Loader) error {
+				return nil
+			},
+			args: args{
+				fn: func(in struct{}) (error, *X) {
+					return nil, x
+				},
+			},
+			want: []any{nil, x},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			NewApp(tt.load).
+				Run(func(fj FuncInjector) {
+					fn, err := fj.InjectWrapFunc(tt.args.fn, tt.args.injectBefore, tt.args.injectAfter)
+					if (err != nil) != tt.wantErr {
+						t.Errorf("InjectFuncParameters() error = %v, wantErr %v", err, tt.wantErr)
+						return
+					}
+					if tt.want != nil {
+						got := fn()
+
+						if !reflect.DeepEqual(got, tt.want) {
+							t.Errorf("InjectWrapFunc() got = %v, want %v", got, tt.want)
+						}
+					}
+				})
+		})
+	}
+}
