@@ -236,8 +236,8 @@ func (s *Application) Run(fn ...any) {
 	s.stop()
 }
 
-func Run(fn any) {
-	Default.Run(fn)
+func Run(fn ...any) {
+	Default.Run(fn...)
 }
 
 // Serve initializes the application, starts all daemons, and waits for termination signal.

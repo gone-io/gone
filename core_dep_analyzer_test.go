@@ -53,6 +53,27 @@ func TestCheckCircularDepsAndGetBestInitOrder(t *testing.T) {
 			wantOrderLen: 0,
 		},
 		{
+			name: "complex circular dependency",
+			initiatorDepsMap: func() map[*coffin][]*coffin {
+				a1 := createTestCoffin("A1")
+				b1 := createTestCoffin("B1")
+				b2 := createTestCoffin("B2")
+				c1 := createTestCoffin("C1")
+				c2 := createTestCoffin("C2")
+				c3 := createTestCoffin("C3")
+				c4 := createTestCoffin("C4")
+
+				return map[*coffin][]*coffin{
+					a1: {b1, b2},
+					b1: {c1, c2},
+					b2: {c3, c4},
+					c2: {a1},
+				}
+			}(),
+			wantCircular: true,
+			wantOrderLen: 4,
+		},
+		{
 			name:             "Empty dependency map",
 			initiatorDepsMap: map[*coffin][]*coffin{},
 			wantCircular:     false,
@@ -419,4 +440,100 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_dependenceAnalyzer_checkCircularDepsAndGetBestInitOrder(t *testing.T) {
+	type Dep struct {
+		Flag
+	}
+	type X struct {
+		Flag
+		dep *Dep `gone:"*"`
+	}
+
+	t.Run("checkCircularDepsAndGetBestInitOrder err", func(t *testing.T) {
+		NewApp().
+			Run(func(analyzer *dependenceAnalyzer, k iKeeper) {
+				_ = k.load(&X{})
+				_, _, err := analyzer.checkCircularDepsAndGetBestInitOrder()
+				if err == nil {
+					t.Fatalf("should be error")
+				}
+			})
+	})
+}
+
+func Test_dependenceAnalyzer_collectDeps(t *testing.T) {
+	t.Run("print debug info", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+		mockLogger := NewMockLogger(controller)
+
+		NewApp().
+			Run(func(analyzer *dependenceAnalyzer) {
+				analyzer.logger = mockLogger
+				mockLogger.EXPECT().GetLevel().Return(DebugLevel)
+				mockLogger.EXPECT().Debugf("Found %d dependencies for %s:\n%s\n\n", gomock.Any()).AnyTimes()
+				_, _ = analyzer.collectDeps()
+			})
+	})
+}
+
+func Test_dependenceAnalyzer_getGonerFillDeps(t *testing.T) {
+	type Dep struct {
+		Flag
+	}
+	type X struct {
+		Flag
+		dep *Dep `gone:"*" option:"lazy"`
+	}
+
+	t.Run("goner is not a pointer", func(t *testing.T) {
+		NewApp().
+			Run(func(analyzer *dependenceAnalyzer) {
+				c := newCoffin(X{})
+
+				_, err := analyzer.getGonerFillDeps(c)
+				if err == nil {
+					t.Fatalf("should be error")
+					return
+				}
+
+				if !strings.Contains(err.Error(), "goner must be a pointer") {
+					t.Fatalf("err should contain `goner must be a pointer`")
+					return
+				}
+			})
+	})
+
+	t.Run("with lazy field", func(t *testing.T) {
+		NewApp().
+			Run(func(analyzer *dependenceAnalyzer) {
+				c := newCoffin(&X{})
+
+				deps, err := analyzer.getGonerFillDeps(c)
+				if err != nil {
+					t.Fatalf("should not be error")
+				}
+				if len(deps) != 0 {
+					t.Fatalf("should be only one dep")
+				}
+			})
+	})
+
+	t.Run("without goner", func(t *testing.T) {
+		NewApp().
+			Run(func(analyzer *dependenceAnalyzer) {
+				x := func() {}
+				c := newCoffin(&x)
+
+				deps, err := analyzer.getGonerFillDeps(c)
+				if err != nil {
+					t.Fatalf("should not be error")
+				}
+				if deps != nil {
+					t.Fatalf("should be nil")
+				}
+			})
+	})
 }

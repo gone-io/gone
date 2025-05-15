@@ -82,17 +82,16 @@ func checkCircularDepsAndGetBestInitOrder[T comparable](initiatorDepsMap map[T][
 					return true
 				}
 			}
-			return false
-		}
-
-		visited[node] = true
-		path = append(path, node)
-		for _, dep := range initiatorDepsMap[node] {
-			if dfs(dep) {
-				return true
+		} else {
+			visited[node] = true
+			path = append(path, node)
+			for _, dep := range initiatorDepsMap[node] {
+				if dfs(dep) {
+					return true
+				}
 			}
+			path = path[:len(path)-1]
 		}
-		path = path[:len(path)-1]
 		return false
 	}
 

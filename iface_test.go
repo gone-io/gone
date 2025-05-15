@@ -143,3 +143,44 @@ func Test_filedHasOption(t *testing.T) {
 		})
 	}
 }
+
+func Test_testFlag_forTest(t *testing.T) {
+	type fields struct {
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{
+			name: "test",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			te := &testFlag{}
+			te.forTest()
+		})
+	}
+}
+
+func Test_install(t *testing.T) {
+	type Dep struct {
+	}
+	type X struct {
+		Flag
+		dep *Dep `gone:"*"`
+	}
+
+	t.Run("install panic", func(t *testing.T) {
+		err := SafeExecute(func() error {
+			NewApp().
+				Load(&X{}).
+				install()
+			return nil
+		})
+		if err == nil {
+			t.Errorf("install panic")
+		}
+	})
+
+}
