@@ -170,3 +170,81 @@ func TestLazyFill(t *testing.T) {
 		t.Error("LazyFill() did not set lazyFill to true")
 	}
 }
+
+func TestIsDefault(t *testing.T) {
+	type args struct {
+		objPointers []any
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantPanic bool
+	}{
+		{
+			name:      "Valid pointer",
+			args:      args{objPointers: []any{new(int)}},
+			wantPanic: false,
+		},
+		{
+			name:      "Invalid pointer",
+			args:      args{objPointers: []any{42}},
+			wantPanic: true,
+		},
+		{
+			name:      "Nil pointer",
+			args:      args{objPointers: []any{nil}},
+			wantPanic: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := SafeExecute(func() error {
+				_ = IsDefault(tt.args.objPointers...)
+				return nil
+			})
+			if (err != nil) != tt.wantPanic {
+				t.Errorf("IsDefault() error = %v, wantPanic %v", err, tt.wantPanic)
+			}
+		})
+	}
+
+	type x struct {
+		Flag
+	}
+
+	t.Run("Valid pointer and apply suc", func(t *testing.T) {
+		isDefault := IsDefault(new(*x))
+		c := newCoffin(&x{})
+
+		if err := isDefault.Apply(c); err != nil {
+			t.Errorf("IsDefault() error = %v", err)
+		}
+	})
+
+	t.Run("Valid pointer and apply suc", func(t *testing.T) {
+		isDefault := IsDefault(new(x))
+		c := newCoffin(x{})
+
+		if err := isDefault.Apply(c); err != nil {
+			t.Errorf("IsDefault() error = %v", err)
+		}
+	})
+
+	t.Run("none parameters and apply suc", func(t *testing.T) {
+		isDefault := IsDefault()
+		c := newCoffin(x{})
+
+		if err := isDefault.Apply(c); err != nil {
+			t.Errorf("IsDefault() error = %v", err)
+		}
+	})
+
+	t.Run("Valid pointer and apply failed", func(t *testing.T) {
+		isDefault := IsDefault(new(x))
+		c := newCoffin(&x{})
+
+		if err := isDefault.Apply(c); err == nil {
+			t.Errorf("IsDefault().apply should be error")
+		}
+	})
+}
