@@ -68,7 +68,8 @@ func (s *core) InjectFuncParameters(fn any, injectBefore FuncInjectHook, injectA
 		}
 
 		if !injected {
-			if v, err := s.ProvideNth(i+1, pt, GetFuncName(fn)); err != nil {
+			var v reflect.Value
+			if v, err = s.ProvideNth(i+1, pt, GetFuncName(fn)); err != nil {
 				return nil, err
 			} else if !v.IsZero() {
 				args = append(args, v)
@@ -228,7 +229,7 @@ func (s *core) Install() error {
 
 	for i, dep := range orders {
 		if dep.action == fillAction {
-			if err := s.iInstaller.safeFillOne(dep.coffin); err != nil {
+			if err = s.iInstaller.safeFillOne(dep.coffin); err != nil {
 				s.logger.Debugf("failed to %s at order[%d]: %s", dep, i, err)
 				return ToError(err)
 			}

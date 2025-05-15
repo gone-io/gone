@@ -118,7 +118,7 @@ func Test_keeper_load(t *testing.T) {
 						t.Errorf("coffins len should be 1")
 						return
 					}
-					if gg, ok := coffins[0].goner.(*g); !ok && gg.Name != "replace-01" {
+					if gg, ok := coffins[0].goner.(*g); !ok || gg.Name != "replace-01" {
 						t.Errorf("coffins[0].goner should be *g and name should be replace-01")
 					}
 				}

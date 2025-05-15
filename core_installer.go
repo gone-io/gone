@@ -55,7 +55,7 @@ func (s *installer) injectFieldAsNotSlice(byName bool, extend string, depCo *cof
 		var e Error
 		if errors.As(err, &e) && e.Code() == NotSupport {
 			if injector, ok := depCo.goner.(StructFieldInjector); ok {
-				if err := injector.Inject(extend, field, v); err != nil {
+				if err = injector.Inject(extend, field, v); err != nil {
 					return ToErrorWithMsg(err,
 						fmt.Sprintf("%q failed to inject for field %q in %q", depCo.Name(), field.Name, coName),
 					)

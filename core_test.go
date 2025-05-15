@@ -364,9 +364,8 @@ func Test_core_InjectWrapFunc(t *testing.T) {
 			},
 			args: args{
 				fn: func(in struct{}) (error, *X) {
-					var x *X
-
-					return nil, x
+					var z *X
+					return nil, z
 				},
 			},
 			want: []any{nil, nil},
