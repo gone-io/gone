@@ -213,23 +213,9 @@ func (s *dependenceAnalyzer) analyzerFieldDependencies(
 	var depCo *coffin
 	var byName bool
 	if strings.Contains(gonerName, "*") || strings.Contains(gonerName, "?") {
-		if depCos := s.iKeeper.getByTypeAndPattern(field.Type, gonerName); depCos != nil && len(depCos) > 0 {
-			l := len(depCos)
-			if l == 1 {
-				depCo = depCos[0]
-			} else if l > 1 {
-				for _, c := range depCos {
-					if c.isDefault(field.Type) {
-						depCo = c
-						break
-					}
-				}
-				if depCo == nil {
-					s.logger.Warnf("found multiple value without a default when filling filed %q of %q - using first one. ", field.Name, coName)
-					depCo = depCos[0]
-				}
-			}
-		}
+		depCo = s.selectOneCoffin(field.Type, gonerName, func() {
+			s.logger.Warnf("found multiple value without a default when filling filed %q of %q - using first one.", field.Name, coName)
+		})
 	} else {
 		depCo = s.iKeeper.getByName(gonerName)
 		byName = depCo != nil

@@ -41,7 +41,7 @@ func newCoffin(goner any) *coffin {
 	} else if provider := tryWrapGonerToProvider(goner); provider != nil {
 		co.needInitBeforeUse = true
 		co.provider = provider
-		co.defaultTypeMap[provider.Type()] = true
+		//co.defaultTypeMap[provider.Type()] = true
 	} else if _, ok := goner.(Initiator); ok {
 		co.needInitBeforeUse = true
 	} else if _, ok := goner.(InitiatorNoError); ok {

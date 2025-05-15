@@ -145,3 +145,97 @@ func Test_keeper_load(t *testing.T) {
 		})
 	}
 }
+
+func Test_keeper_selectOneCoffin(t *testing.T) {
+
+	var k *keeper
+
+	type X struct {
+		Flag
+		ID int
+	}
+
+	var record = false
+
+	type args struct {
+		t         reflect.Type
+		gonerName string
+		warn      func()
+	}
+	tests := []struct {
+		name      string
+		setUp     func() func()
+		args      args
+		gonerName string
+	}{
+		{
+			name: "multi coffin with default",
+			setUp: func() func() {
+				k = newKeeper()
+				_ = k.load(&X{ID: 10}, Name("name-10"))
+				_ = k.load(&X{ID: 20}, IsDefault(), Name("name-11"))
+
+				return func() {}
+			},
+			args: args{
+				t:         reflect.TypeOf(&X{}),
+				gonerName: "*",
+				warn: func() {
+					t.Errorf("should not warn")
+				},
+			},
+			gonerName: "name-11",
+		},
+		{
+			name: "multi coffin without default",
+			setUp: func() func() {
+				k = newKeeper()
+				_ = k.load(&X{ID: 10}, Name("name-10"))
+				_ = k.load(&X{ID: 20}, Name("name-11"))
+
+				return func() {
+					if !record {
+						t.Errorf("should warn")
+					}
+					record = false
+				}
+			},
+			args: args{
+				t:         reflect.TypeOf(&X{}),
+				gonerName: "*",
+				warn: func() {
+					record = true
+				},
+			},
+			gonerName: "name-10",
+		},
+		{
+			name: "multi coffin without default",
+			setUp: func() func() {
+				k = newKeeper()
+				_ = k.load(&X{ID: 10}, Name("name-10"))
+
+				return func() {}
+			},
+			args: args{
+				t:         reflect.TypeOf(&X{}),
+				gonerName: "*",
+				warn: func() {
+					t.Errorf("should not warn")
+				},
+			},
+			gonerName: "name-10",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setUp != nil {
+				defer tt.setUp()()
+			}
+			gotDepCo := k.selectOneCoffin(tt.args.t, tt.args.gonerName, tt.args.warn)
+			if gotDepCo != nil && gotDepCo.name != tt.gonerName {
+				t.Errorf("selectOneCoffin() name = %v, want %v", gotDepCo.Name(), tt.gonerName)
+			}
+		})
+	}
+}

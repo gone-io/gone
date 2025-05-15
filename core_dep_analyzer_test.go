@@ -221,7 +221,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 		{
 			name: "process normalField which tag with gone",
 			setUp: func() func() {
-				mockiKeeper.EXPECT().getByTypeAndPattern(GoneField.Type, "*").Return(nil)
+				mockiKeeper.EXPECT().selectOneCoffin(GoneField.Type, "*", gomock.Any()).Return(nil)
 				return func() {}
 			},
 			args: args{
@@ -239,7 +239,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 		{
 			name: "process normalField which tag with gone and option allowNil",
 			setUp: func() func() {
-				mockiKeeper.EXPECT().getByTypeAndPattern(GoneFieldWithAllowNil.Type, "*").Return(nil)
+				mockiKeeper.EXPECT().selectOneCoffin(GoneFieldWithAllowNil.Type, "*", gomock.Any()).Return(nil)
 				return func() {}
 			},
 			args: args{
@@ -254,15 +254,14 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 		{
 			name: "find multi goner",
 			setUp: func() func() {
-				mockiKeeper.EXPECT().getByTypeAndPattern(injectField.Type, "*").Return([]*coffin{
-					{
-						name: "g1",
-					},
-					{
-						name: "g2",
-					},
-				})
-				mockLogger.EXPECT().Warnf("found multiple value without a default when filling filed %q of %q - using first one. ", "inject", "g1")
+				mockiKeeper.EXPECT().
+					selectOneCoffin(injectField.Type, "*", gomock.Any()).
+					Do(func(t reflect.Type, pattern string, warn func()) {
+						warn()
+					}).
+					Return(&coffin{name: "g1"})
+
+				mockLogger.EXPECT().Warnf("found multiple value without a default when filling filed %q of %q - using first one.", "inject", "g1")
 				return func() {
 					if record != true {
 						t.Fatalf("process do not exectued")
@@ -285,42 +284,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "find multi goner with default",
-			setUp: func() func() {
-				mockiKeeper.EXPECT().getByTypeAndPattern(injectField.Type, "*").Return([]*coffin{
-					{
-						name: "g1",
-					},
-					{
-						name: "g2",
-						defaultTypeMap: map[reflect.Type]bool{
-							injectField.Type: true,
-						},
-					},
-				})
-				return func() {
-					if record != true {
-						t.Fatalf("process do not exectued")
-					}
-					record = nil
-				}
-			},
-			args: args{
-				field:  injectField,
-				coName: "g1",
-				process: func(asSlice, byName bool, extend string, coffins ...*coffin) error {
-					record = true
-					if len(coffins) != 1 {
-						t.Fatalf("should find 2 goner")
-					}
-					if coffins[0].name != "g2" {
-						t.Fatalf("should find g1")
-					}
-					return nil
-				},
-			},
-		},
+
 		{
 			name: "find goner by name",
 			args: args{
@@ -365,10 +329,8 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 				},
 			},
 			setUp: func() func() {
-				mockiKeeper.EXPECT().getByTypeAndPattern(injectSliceField.Type, "test-*").Return([]*coffin{
-					{
-						name: "test-1",
-					},
+				mockiKeeper.EXPECT().selectOneCoffin(injectSliceField.Type, "test-*", gomock.Any()).Return(&coffin{
+					name: "test-1",
 				})
 				return func() {
 					if record != true {
@@ -398,7 +360,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 				},
 			},
 			setUp: func() func() {
-				mockiKeeper.EXPECT().getByTypeAndPattern(injectSliceField.Type, "test-*").Return(nil)
+				mockiKeeper.EXPECT().selectOneCoffin(injectSliceField.Type, "test-*", gomock.Any()).Return(nil)
 				mockiKeeper.EXPECT().getByTypeAndPattern(injectSliceField.Type.Elem(), "test-*").Return([]*coffin{
 					{
 						name: "test-1",
@@ -426,7 +388,7 @@ func Test_dependenceAnalyzer_analyzerFieldDependencies(t *testing.T) {
 				},
 			},
 			setUp: func() func() {
-				mockiKeeper.EXPECT().getByTypeAndPattern(injectSliceField.Type, "test-*").Return(nil)
+				mockiKeeper.EXPECT().selectOneCoffin(injectSliceField.Type, "test-*", gomock.Any()).Return(nil)
 				mockiKeeper.EXPECT().getByTypeAndPattern(injectSliceField.Type.Elem(), "test-*").Return(nil)
 				return func() {
 					if record != nil {

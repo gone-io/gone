@@ -89,6 +89,7 @@ type iKeeper interface {
 	load(goner Goner, options ...Option) error
 	getAllCoffins() []*coffin
 	getByTypeAndPattern(t reflect.Type, pattern string) []*coffin
+	selectOneCoffin(t reflect.Type, pattern string, warn func()) (depCo *coffin)
 	getByName(name string) *coffin
 }
 

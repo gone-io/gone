@@ -164,9 +164,8 @@ func (s *core) InjectStruct(goner any) error {
 	if of.Elem().Kind() != reflect.Struct {
 		return NewInnerError("goner must be a pointer to a struct, got pointer to non-struct type", InjectError)
 	}
-	return ToError(s.iInstaller.safeFillOne(&coffin{
-		goner: goner,
-	}))
+
+	return ToError(s.iInstaller.safeFillOne(newCoffin(goner)))
 }
 
 func (s *core) GetGonerByName(name string) any {
@@ -178,9 +177,14 @@ func (s *core) GetGonerByName(name string) any {
 }
 
 func (s *core) GetGonerByType(t reflect.Type) any {
-	coSlice := s.iKeeper.getByTypeAndPattern(t, "*")
-	if len(coSlice) > 0 {
-		return coSlice[0].goner
+	if co := s.iKeeper.selectOneCoffin(t, "*", func() {
+		s.logger.Warnf("found multiple value without a default when calling GetGonerByType(%s) - using first one. ", GetTypeName(t))
+	}); co != nil {
+		if v, err := co.Provide(false, "", t); err != nil {
+			panic(err)
+		} else {
+			return v
+		}
 	}
 	return nil
 }

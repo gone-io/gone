@@ -38,6 +38,29 @@ func (s *keeper) getByTypeAndPattern(t reflect.Type, pattern string) (coffins []
 	return coffins
 }
 
+func (s *keeper) selectOneCoffin(t reflect.Type, pattern string, warn func()) (depCo *coffin) {
+	if depCos := s.getByTypeAndPattern(t, pattern); depCos != nil && len(depCos) > 0 {
+		l := len(depCos)
+		if l == 1 {
+			depCo = depCos[0]
+		} else if l > 1 {
+			for _, c := range depCos {
+				if c.isDefault(t) {
+					depCo = c
+					break
+				}
+			}
+			if depCo == nil {
+				if warn != nil {
+					warn()
+				}
+				depCo = depCos[0]
+			}
+		}
+	}
+	return
+}
+
 func (s *keeper) load(goner Goner, options ...Option) error {
 	if goner == nil {
 		return NewInnerError("goner cannot be nil - must provide a valid Goner instance", LoadedError)
