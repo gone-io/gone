@@ -219,7 +219,7 @@ func Test_defaultLogger_SetLevel(t *testing.T) {
 		{
 			name: "unknown",
 			args: args{
-				level: 0,
+				level: 4,
 			},
 			check: func(level string) {
 				if level != "info" {
