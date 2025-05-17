@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-// MockConfigure implements Configure interface for testing
-type MockConfigure struct {
+// SimpleMockConfigure implements Configure interface for testing
+type SimpleMockConfigure struct {
 	values map[string]string
 }
 
-func (m *MockConfigure) Get(key string, v any, defaultVal string) error {
+func (m *SimpleMockConfigure) Get(key string, v any, defaultVal string) error {
 	if key == "" {
 		return errors.New("key is empty")
 	}
@@ -39,7 +39,7 @@ func TestConfigProvider_Name(t *testing.T) {
 }
 
 func TestConfigProvider_Provide(t *testing.T) {
-	mockConfigure := &MockConfigure{
+	mockConfigure := &SimpleMockConfigure{
 		values: map[string]string{
 			"test-key":   `test-value`,
 			"number-key": "42",
@@ -329,7 +329,7 @@ func TestConfigProvider_Init(t *testing.T) {
 }
 
 func TestConfigProvider_ProvideWithDefaultTag(t *testing.T) {
-	mockConfigure := &MockConfigure{
+	mockConfigure := &SimpleMockConfigure{
 		values: map[string]string{},
 	}
 
@@ -880,7 +880,7 @@ func TestEnvConfigure_GetEmptyEnvWithDefaults(t *testing.T) {
 }
 
 func TestConfigProvider_ProvidePointerType(t *testing.T) {
-	mockConfigure := &MockConfigure{
+	mockConfigure := &SimpleMockConfigure{
 		values: map[string]string{
 			"ptr-string": "test-value",
 		},
@@ -988,7 +988,7 @@ func TestEnvConfigure_GetInvalidNumericValues(t *testing.T) {
 }
 
 func TestConfigProvider_ProvideMultipleKeys(t *testing.T) {
-	mockConfigure := &MockConfigure{
+	mockConfigure := &SimpleMockConfigure{
 		values: map[string]string{
 			"second-key": "found-value",
 		},
@@ -1043,7 +1043,7 @@ func TestConfigProvider_ProvideMultipleKeys(t *testing.T) {
 }
 
 func TestConfigProvider_ProvideInvalidJSON(t *testing.T) {
-	mockConfigure := &MockConfigure{
+	mockConfigure := &SimpleMockConfigure{
 		values: map[string]string{
 			"invalid-json": "{invalid-json}",
 		},
@@ -1128,7 +1128,7 @@ func TestEnvConfigure_GetWithNilValue(t *testing.T) {
 }
 
 func TestConfigProvider_ProvideWithInvalidType(t *testing.T) {
-	mockConfigure := &MockConfigure{
+	mockConfigure := &SimpleMockConfigure{
 		values: map[string]string{
 			"test-key": "test-value",
 		},
@@ -1206,7 +1206,7 @@ func TestEnvConfigure_GetWithComplexTypes(t *testing.T) {
 }
 
 func TestConfigProvider_ProvideWithEmptyKeys(t *testing.T) {
-	mockConfigure := &MockConfigure{
+	mockConfigure := &SimpleMockConfigure{
 		values: map[string]string{},
 	}
 
