@@ -70,20 +70,18 @@ func withErrOption() option {
 }
 
 func Test_keeper_load(t *testing.T) {
-	k := newKeeper()
+	//k := newKeeper()
 	type g struct {
 		Flag
 		Name string
 	}
-
-	_ = k.load(&g{Name: "instance-01"}, Name("food-01"), IsDefault())
 
 	type args struct {
 		goner   Goner
 		options []Option
 	}
 	tests := []struct {
-		setUp   func() func()
+		setUp   func(k *keeper) func()
 		name    string
 		args    args
 		wantErr bool
@@ -111,7 +109,7 @@ func Test_keeper_load(t *testing.T) {
 				options: []Option{ForceReplace(), Name("food-01")},
 			},
 			wantErr: false,
-			setUp: func() func() {
+			setUp: func(k *keeper) func() {
 				return func() {
 					coffins := k.getByTypeAndPattern(reflect.TypeOf(&g{}), "*-01")
 					if len(coffins) != 1 {
@@ -135,10 +133,12 @@ func Test_keeper_load(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			s := newKeeper()
+			_ = s.load(&g{Name: "instance-01"}, Name("food-01"), IsDefault())
 			if tt.setUp != nil {
-				defer tt.setUp()()
+				defer tt.setUp(s)()
 			}
-			s := k
+
 			if err := s.load(tt.args.goner, tt.args.options...); (err != nil) != tt.wantErr {
 				t.Errorf("load() error = %v, wantErr %v", err, tt.wantErr)
 			}
