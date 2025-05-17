@@ -48,6 +48,10 @@ func TestCore_MustLoadX(t *testing.T) {
 			Flag
 			Name string
 		}
+		type X struct {
+			Flag
+			g *g `gone:"*"`
+		}
 
 		loadFunc := func(loader Loader) error {
 			loader.
@@ -58,12 +62,16 @@ func TestCore_MustLoadX(t *testing.T) {
 		NewApp(func(loader Loader) error {
 			loader.MustLoadX(loadFunc).MustLoadX(loadFunc)
 			return nil
-		}).Run(func(gList []*g) {
+		}).Run(func(gList []*g, w X) {
 			if len(gList) != 1 {
+				t.Fatal("load duplicated")
+			}
+			if w.g != gList[0] {
 				t.Fatal("load duplicated")
 			}
 		})
 	})
+
 	t.Run("load unsupported type", func(t *testing.T) {
 		err := SafeExecute(func() error {
 			NewApp(func(loader Loader) error {

@@ -544,3 +544,17 @@ func TestMustLoadPanic(t *testing.T) {
 		t.Errorf("Expected duplicate name error, got %s", err.Error())
 	}
 }
+
+func TestPrepare(t *testing.T) {
+	gone.Prepare().Run()
+}
+
+func TestEnd(t *testing.T) {
+	gone.
+		Default.
+		AfterStart(func() {
+			time.Sleep(1 * time.Millisecond)
+			gone.End()
+		}).
+		Serve()
+}

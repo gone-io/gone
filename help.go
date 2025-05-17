@@ -307,3 +307,40 @@ func IsError(err error, code int) bool {
 	}
 	return false
 }
+
+func isMatch(s string, p string) bool {
+	m, n := len(s), len(p)
+	// 初始化动态规划数组
+	dp := make([][]bool, m+1)
+	for i := range dp {
+		dp[i] = make([]bool, n+1)
+	}
+	dp[0][0] = true // 空字符串匹配空模式
+
+	// 处理模式开头连续的'*'情况
+	for j := 1; j <= n; j++ {
+		if p[j-1] == '*' {
+			dp[0][j] = dp[0][j-1]
+		} else {
+			break // 非'*'时中断，后续无法匹配空字符串
+		}
+	}
+
+	// 填充dp数组
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			switch {
+			case p[j-1] == '*':
+				// '*' 匹配空字符或任意多个字符
+				dp[i][j] = dp[i][j-1] || dp[i-1][j]
+			case p[j-1] == '?' || s[i-1] == p[j-1]:
+				// '?' 或字符匹配，继承之前状态
+				dp[i][j] = dp[i-1][j-1]
+			default:
+				dp[i][j] = false
+			}
+		}
+	}
+
+	return dp[m][n]
+}

@@ -9,7 +9,7 @@ import (
 type Application struct {
 	Flag
 
-	loader  *Core    `gone:"*"`
+	loader  *core    `gone:"*"`
 	daemons []Daemon `gone:"*"`
 
 	beforeStartHooks []Process
@@ -45,7 +45,7 @@ func Prepare(loads ...LoadFunc) *Application {
 
 func (s *Application) init() *Application {
 	s.signal = make(chan os.Signal, 1)
-	s.loader = NewCore()
+	s.loader = newCore()
 
 	s.
 		Load(s, IsDefault()).
@@ -236,8 +236,8 @@ func (s *Application) Run(fn ...any) {
 	s.stop()
 }
 
-func Run(fn any) {
-	Default.Run(fn)
+func Run(fn ...any) {
+	Default.Run(fn...)
 }
 
 // Serve initializes the application, starts all daemons, and waits for termination signal.

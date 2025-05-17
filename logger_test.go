@@ -82,3 +82,159 @@ func TestLogOutput(t *testing.T) {
 		})
 	}
 }
+
+var strPointer = func(str string) *string {
+	return &str
+}
+
+func Test_defaultLogger_Level(t *testing.T) {
+
+	tests := []struct {
+		name  string
+		level *string
+		want  LoggerLevel
+	}{
+		{
+			name:  "debug",
+			level: nil,
+			want:  InfoLevel,
+		},
+		{
+			name:  "info",
+			level: new(string),
+			want:  InfoLevel,
+		},
+		{
+			name:  "warn",
+			level: strPointer("warn"),
+			want:  WarnLevel,
+		},
+		{
+			name:  "error",
+			level: strPointer("error"),
+			want:  ErrorLevel,
+		},
+		{
+			name:  "unknown",
+			level: strPointer("unknown"),
+			want:  InfoLevel,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &defaultLogger{
+				level: tt.level,
+			}
+			if got := l.Level(); got != tt.want {
+				t.Errorf("Level() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_defaultLogger_Debugf(t *testing.T) {
+	type args struct {
+		msg  string
+		args []any
+	}
+	tests := []struct {
+		name  string
+		level *string
+		args  args
+	}{
+		{
+			name:  "debug",
+			level: strPointer("debug"),
+			args: args{
+				msg:  "debug message",
+				args: []any{"arg1", "arg2"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &defaultLogger{
+				level: tt.level,
+			}
+			l.Debugf(tt.args.msg, tt.args.args...)
+		})
+	}
+}
+
+func Test_defaultLogger_SetLevel(t *testing.T) {
+
+	type args struct {
+		level LoggerLevel
+	}
+
+	tests := []struct {
+		name  string
+		args  args
+		check func(level string)
+	}{
+		{
+			name: "debug",
+			args: args{
+				level: DebugLevel,
+			},
+			check: func(level string) {
+				if level != "debug" {
+					t.Errorf("SetLevel() = %v, want %v", level, "debug")
+				}
+			},
+		},
+		{
+			name: "info",
+			args: args{
+				level: InfoLevel,
+			},
+			check: func(level string) {
+				if level != "info" {
+					t.Errorf("SetLevel() = %v, want %v", level, "info")
+				}
+			},
+		},
+		{
+			name: "warn",
+			args: args{
+				level: WarnLevel,
+			},
+			check: func(level string) {
+				if level != "warn" {
+					t.Errorf("SetLevel() = %v, want %v", level, "warn")
+				}
+			},
+		},
+		{
+			name: "error",
+			args: args{
+				level: ErrorLevel,
+			},
+			check: func(level string) {
+				if level != "error" {
+					t.Errorf("SetLevel() = %v, want %v", level, "error")
+				}
+			},
+		},
+		{
+			name: "unknown",
+			args: args{
+				level: 4,
+			},
+			check: func(level string) {
+				if level != "info" {
+					t.Errorf("SetLevel() = %v, want %v", level, "info")
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &defaultLogger{
+				level: new(string),
+			}
+			l.SetLevel(tt.args.level)
+			tt.check(*l.level)
+		})
+	}
+}

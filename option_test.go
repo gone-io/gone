@@ -1,7 +1,6 @@
 package gone
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -120,68 +119,6 @@ func TestForceReplace(t *testing.T) {
 	}
 }
 
-func TestIsDefault(t *testing.T) {
-	type testStruct struct{}
-	tests := []struct {
-		name      string
-		input     []any
-		wantPanic bool
-	}{
-		{
-			name:      "Valid pointer",
-			input:     []any{&testStruct{}},
-			wantPanic: false,
-		},
-		{
-			name:      "Multiple valid pointers",
-			input:     []any{&testStruct{}, &testStruct{}},
-			wantPanic: false,
-		},
-		{
-			name:      "Non-pointer value should panic",
-			input:     []any{testStruct{}},
-			wantPanic: true,
-		},
-		{
-			name:      "Empty input",
-			input:     []any{},
-			wantPanic: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			defer func() {
-				r := recover()
-				if (r != nil) != tt.wantPanic {
-					t.Errorf("IsDefault() panic = %v, wantPanic = %v", r != nil, tt.wantPanic)
-				}
-			}()
-
-			c := &coffin{
-				defaultTypeMap: make(map[reflect.Type]bool),
-			}
-			opt := IsDefault(tt.input...)
-			err := opt.Apply(c)
-
-			if err != nil && !tt.wantPanic {
-				t.Errorf("IsDefault().Apply() error = %v", err)
-			}
-
-			// 验证类型是否被正确标记为默认
-			if !tt.wantPanic && len(tt.input) > 0 {
-				for _, input := range tt.input {
-					if ptr, ok := input.(*testStruct); ok {
-						if !c.defaultTypeMap[reflect.TypeOf(ptr).Elem()] {
-							t.Errorf("Type %v was not marked as default", reflect.TypeOf(ptr).Elem())
-						}
-					}
-				}
-			}
-		})
-	}
-}
-
 func TestPriorityOptions(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -232,4 +169,82 @@ func TestLazyFill(t *testing.T) {
 	if !c.lazyFill {
 		t.Error("LazyFill() did not set lazyFill to true")
 	}
+}
+
+func TestIsDefault(t *testing.T) {
+	type args struct {
+		objPointers []any
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantPanic bool
+	}{
+		{
+			name:      "Valid pointer",
+			args:      args{objPointers: []any{new(int)}},
+			wantPanic: false,
+		},
+		{
+			name:      "Invalid pointer",
+			args:      args{objPointers: []any{42}},
+			wantPanic: true,
+		},
+		{
+			name:      "Nil pointer",
+			args:      args{objPointers: []any{nil}},
+			wantPanic: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := SafeExecute(func() error {
+				_ = IsDefault(tt.args.objPointers...)
+				return nil
+			})
+			if (err != nil) != tt.wantPanic {
+				t.Errorf("IsDefault() error = %v, wantPanic %v", err, tt.wantPanic)
+			}
+		})
+	}
+
+	type x struct {
+		Flag
+	}
+
+	t.Run("Valid pointer and apply suc", func(t *testing.T) {
+		isDefault := IsDefault(new(*x))
+		c := newCoffin(&x{})
+
+		if err := isDefault.Apply(c); err != nil {
+			t.Errorf("IsDefault() error = %v", err)
+		}
+	})
+
+	t.Run("Valid pointer and apply suc", func(t *testing.T) {
+		isDefault := IsDefault(new(x))
+		c := newCoffin(x{})
+
+		if err := isDefault.Apply(c); err != nil {
+			t.Errorf("IsDefault() error = %v", err)
+		}
+	})
+
+	t.Run("none parameters and apply suc", func(t *testing.T) {
+		isDefault := IsDefault()
+		c := newCoffin(x{})
+
+		if err := isDefault.Apply(c); err != nil {
+			t.Errorf("IsDefault() error = %v", err)
+		}
+	})
+
+	t.Run("Valid pointer and apply failed", func(t *testing.T) {
+		isDefault := IsDefault(new(x))
+		c := newCoffin(&x{})
+
+		if err := isDefault.Apply(c); err == nil {
+			t.Errorf("IsDefault().apply should be error")
+		}
+	})
 }

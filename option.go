@@ -30,6 +30,7 @@ func (o option) Apply(c *coffin) error {
 //
 // This marks EnvConfigure as the default implementation to use when injecting its interface type.
 func IsDefault(objPointers ...any) Option {
+	typeMap := make(map[reflect.Type]bool)
 	for i, p := range objPointers {
 		if p == nil {
 			panic(NewInnerErrorWithParams(LoadedError, "gone: IsDefault() requires a non-nil pointer, %dth parameter got nil", i+1))
@@ -38,30 +39,18 @@ func IsDefault(objPointers ...any) Option {
 		if of.Kind() != reflect.Ptr {
 			panic(NewInnerErrorWithParams(LoadedError, "gone: IsDefault() requires a pointer, %dth parameter got <%T> ", i+1, p))
 		}
+		typeMap[of.Elem()] = true
 	}
 
 	return option{
 		apply: func(c *coffin) error {
-			typeMap := make(map[reflect.Type]bool)
-			for i, p := range objPointers {
-				of := reflect.TypeOf(p)
-				if of.Kind() != reflect.Ptr {
-					return NewInnerErrorWithParams(LoadedError, "gone: IsDefault() requires a pointer, %dth parameter got <%T> ", i+1, p)
-				}
-				if _, ok := typeMap[of.Elem()]; !ok {
-					typeMap[of.Elem()] = true
-				}
-			}
-			if len(objPointers) == 0 {
-				of := reflect.TypeOf(c.goner)
-				typeMap[of] = true
-			}
-
-			for t := range typeMap {
-				c.defaultTypeMap[t] = true
-			}
 			if len(typeMap) == 0 {
-				c.defaultTypeMap[reflect.TypeOf(c.goner)] = true
+				typeMap[reflect.TypeOf(c.goner)] = true
+			}
+			for t := range typeMap {
+				if err := c.AddToDefault(t); err != nil {
+					return err
+				}
 			}
 			return nil
 		},
