@@ -6,7 +6,7 @@ func newKeeper() *keeper {
 	return &keeper{
 		coffins:        []*coffin{},
 		nameMap:        make(map[string]*coffin),
-		defaultTypeMap: make(map[reflect.Type]bool),
+		defaultTypeMap: make(map[reflect.Type]*coffin),
 	}
 }
 
@@ -14,7 +14,7 @@ type keeper struct {
 	Flag
 	coffins        []*coffin
 	nameMap        map[string]*coffin
-	defaultTypeMap map[reflect.Type]bool
+	defaultTypeMap map[reflect.Type]*coffin
 }
 
 func (s *keeper) getAllCoffins() []*coffin {
@@ -83,11 +83,18 @@ func (s *keeper) load(goner Goner, options ...Option) error {
 
 	var forceReplaceFind = false
 	if co.forceReplace && co.name != "" {
+		var replacedCo *coffin
 		for i := range s.coffins {
 			if s.coffins[i].name == co.name {
+				replacedCo = s.coffins[i]
 				s.coffins[i] = co
 				forceReplaceFind = true
 				break
+			}
+		}
+		for t, typeCo := range s.defaultTypeMap {
+			if typeCo == replacedCo {
+				delete(s.defaultTypeMap, t)
 			}
 		}
 	}
@@ -105,7 +112,7 @@ func (s *keeper) load(goner Goner, options ...Option) error {
 				co.Name(),
 			)
 		} else {
-			s.defaultTypeMap[t] = true
+			s.defaultTypeMap[t] = co
 		}
 	}
 	return nil
