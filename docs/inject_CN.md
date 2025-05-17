@@ -2,6 +2,29 @@
     <a href="inject.md">English</a>&nbsp ｜&nbsp 中文
 </p>
 
+- [深入理解Gone框架的依赖注入机制](#深入理解gone框架的依赖注入机制)
+  - [什么是依赖注入？](#什么是依赖注入)
+    - [核心概念](#核心概念)
+    - [`gone`标签的格式](#gone标签的格式)
+    - [函数参数注入](#函数参数注入)
+  - [依赖注入的多种分类](#依赖注入的多种分类)
+    - [按接受注入对象的类型分类](#按接受注入对象的类型分类)
+    - [按注入时的匹配方式分类](#按注入时的匹配方式分类)
+    - [按被注入对象的来源分类](#按被注入对象的来源分类)
+  - [Gone框架的启动流程](#gone框架的启动流程)
+    - [`gone.NewApp`方法](#gonenewapp方法)
+    - [`gone.Application`的`Run`方法](#goneapplication的run方法)
+    - [`gone.Application`的`Serve`方法](#goneapplication的serve方法)
+    - [`gone.Default`默认实例](#gonedefault默认实例)
+  - [将对象加载到Gone框架](#将对象加载到gone框架)
+    - [`gone.Loader`和`gone.LoadFunc`](#goneloader和goneloadfunc)
+    - [多种加载方式的综合示例](#多种加载方式的综合示例)
+  - [手动控制依赖注入](#手动控制依赖注入)
+    - [结构体注入（StructInjector）](#结构体注入structinjector)
+    - [函数参数注入（FuncInjector）](#函数参数注入funcinjector)
+  - [总结](#总结)
+
+
 # 深入理解Gone框架的依赖注入机制
 
 依赖注入是现代软件架构中的一个核心概念，它能够让我们构建松耦合、易测试且高度可维护的应用程序。Gone框架提供了一套优雅而强大的依赖注入机制，让我们能够轻松管理复杂的组件依赖关系。本文将带您深入了解Gone框架的注入机制，通过清晰的概念解释和实用的示例，帮助您掌握这一强大的设计模式。
