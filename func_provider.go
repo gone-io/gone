@@ -2,10 +2,11 @@ package gone
 
 import "reflect"
 
-// FunctionProvider is an experimental type that may change or be removed in future releases.
+// FunctionProvider is a function, which first parameter is tagConf, and second parameter is a struct that can be injected.
+// And the function must return a T type value and error.
 type FunctionProvider[P, T any] func(tagConf string, param P) (T, error)
 
-// XProvider is an experimental type that may change or be removed in future releases.
+// XProvider is a Goner Provider was created by WrapFunctionProvider.
 type XProvider[T any] struct {
 	Flag
 	injector FuncInjector `gone:"*"`
@@ -20,7 +21,7 @@ func (p *XProvider[T]) Provide(tagConf string) (T, error) {
 	return obj, nil
 }
 
-// WrapFunctionProvider is an experimental function that may change or be removed in future releases.
+// WrapFunctionProvider can wrap a FunctionProvider to a Provider.
 func WrapFunctionProvider[P, T any](fn FunctionProvider[P, T]) *XProvider[T] {
 	p := XProvider[T]{}
 
@@ -51,4 +52,12 @@ func WrapFunctionProvider[P, T any](fn FunctionProvider[P, T]) *XProvider[T] {
 		return t, err
 	}
 	return &p
+}
+
+// WarpThirdComponent can wrap a third component to a Goner Provider which can make third component to inject Goners.
+func WarpThirdComponent[T any](t T) Goner {
+	provider := WrapFunctionProvider(func(tagConf string, param struct{}) (T, error) {
+		return t, nil
+	})
+	return provider
 }

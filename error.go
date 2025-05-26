@@ -131,16 +131,48 @@ func ToError(input any) Error {
 	if input == nil {
 		return nil
 	}
-	switch input := input.(type) {
+	switch err := input.(type) {
 	case Error:
-		return input
+		return err
 	case error:
-		return NewInnerErrorSkip(input.Error(), http.StatusInternalServerError, 2)
+		return newIError(err, http.StatusInternalServerError, 2)
 	case string:
-		return NewInnerErrorSkip(input, http.StatusInternalServerError, 2)
+		return NewInnerErrorSkip(err, http.StatusInternalServerError, 2)
 	default:
 		return NewInnerErrorSkip(fmt.Sprintf("%v", input), http.StatusInternalServerError, 2)
 	}
+}
+
+var _ Error = (*withMessage)(nil)
+
+type withMessage struct {
+	cause Error
+	msg   string
+}
+
+func (e *withMessage) Code() int {
+	return e.cause.Code()
+}
+
+func (e *withMessage) GetStatusCode() int {
+	return e.cause.GetStatusCode()
+}
+
+func (e *withMessage) Error() string {
+	return e.msg + ";" + e.cause.Error()
+}
+func (e *withMessage) Msg() string {
+	if e.msg == "" {
+		return e.cause.Msg()
+	}
+	return e.msg
+}
+func (e *withMessage) SetMsg(msg string) {
+	e.msg = msg
+}
+
+func (e *withMessage) Unwrap() error {
+	return e.cause
 }
 
 // ToErrorWithMsg converts any input to an Error type with an additional message prefix.
@@ -151,16 +183,20 @@ func ToErrorWithMsg(input any, msg string) Error {
 	if input == nil {
 		return nil
 	}
-	err := ToError(input)
-	if msg != "" {
-		err.SetMsg(fmt.Sprintf("%s: %s", msg, err.Msg()))
+	return &withMessage{
+		cause: ToError(input),
+		msg:   msg,
 	}
-	return err
+}
+
+func ToErrorf(input any, format string, params ...any) error {
+	return ToErrorWithMsg(input, fmt.Sprintf(format, params...))
 }
 
 type iError struct {
 	*defaultErr
 	trace []byte
+	cause error
 }
 
 func (e *iError) Error() string {
@@ -170,6 +206,10 @@ func (e *iError) Error() string {
 
 func (e *iError) Stack() []byte {
 	return e.trace
+}
+
+func (e *iError) Unwrap() error {
+	return e.cause
 }
 
 // NewInnerError creates a new InnerError with message and code, skipping one stack frame.
@@ -238,6 +278,14 @@ func NewInnerErrorSkip(msg string, code int, skip int) Error {
 	return &iError{
 		defaultErr: &defaultErr{code: code, msg: msg, statusCode: http.StatusInternalServerError},
 		trace:      PanicTrace(2, skip),
+	}
+}
+
+func newIError(err error, code int, skip int) Error {
+	return &iError{
+		defaultErr: &defaultErr{code: code, msg: err.Error(), statusCode: http.StatusInternalServerError},
+		trace:      PanicTrace(2, skip),
+		cause:      err,
 	}
 }
 
