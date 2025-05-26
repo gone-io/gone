@@ -1,6 +1,7 @@
 package gone
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -200,7 +201,7 @@ func TestToErrorWithMsg(t *testing.T) {
 			name:    "with prefix",
 			input:   "test error",
 			msg:     "prefix",
-			wantMsg: "prefix: test error",
+			wantMsg: "prefix",
 		},
 		{
 			name:    "without prefix",
@@ -342,4 +343,41 @@ func TestBError_SetMsg(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestToErrorf(t *testing.T) {
+	t.Run("input nil", func(t *testing.T) {
+		err := ToErrorf(nil, "test error")
+		if err != nil {
+			t.Error("must be nil")
+		}
+	})
+
+	t.Run("input error", func(t *testing.T) {
+		var err = errors.New("test error")
+		newErr := ToErrorf(err, "my-test")
+
+		if !errors.Is(newErr, err) {
+			t.Error("must be input error")
+		}
+
+		var gErr Error
+		if !errors.As(newErr, &gErr) {
+			t.Error("must be GoneError")
+		}
+
+		if gErr.GetStatusCode() != http.StatusInternalServerError {
+			t.Error("must be 500")
+		}
+
+		if gErr.Msg() != "my-test" {
+			t.Error("must be my-test")
+		}
+
+		gErr.SetMsg("my-test2")
+		if gErr.Msg() != "my-test2" {
+			t.Error("must be my-test2")
+		}
+
+	})
 }
