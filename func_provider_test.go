@@ -66,3 +66,21 @@ func TestWrapFunctionProvider(t *testing.T) {
 		}
 	})
 }
+
+func TestWarpThirdComponent(t *testing.T) {
+	type ThirdComponent struct {
+		ID string
+	}
+
+	var thirdComponent = ThirdComponent{
+		ID: "third",
+	}
+
+	NewApp().
+		Load(WarpThirdComponent(thirdComponent)).
+		Run(func(thirdComponent ThirdComponent) {
+			if thirdComponent.ID != "third" {
+				t.Errorf("Expected %v, got %v", "third", thirdComponent.ID)
+			}
+		})
+}
