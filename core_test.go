@@ -593,3 +593,22 @@ func Test_core_Install(t *testing.T) {
 		})
 	}
 }
+
+func Test_core_GetGonerByPattern(t *testing.T) {
+	type X struct {
+		Flag
+		Id int
+	}
+
+	NewApp().
+		Load(&X{Id: 1}, Name("x1")).
+		Load(&X{Id: 2}, Name("x2")).
+		Load(&X{Id: 3}, Name("x311")).
+		Load(&X{Id: 4}, Name("y3")).
+		Run(func(k Keeper) {
+			goners := k.GetGonerByPattern(reflect.TypeOf(&X{}), "x*")
+			if !reflect.DeepEqual(goners, []any{&X{Id: 1}, &X{Id: 2}, &X{Id: 3}}) {
+				t.Errorf("GetGonerByPattern error")
+			}
+		})
+}
