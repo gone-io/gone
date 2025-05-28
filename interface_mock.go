@@ -752,6 +752,20 @@ func (mr *MockGonerKeeperMockRecorder) GetGonerByName(name any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGonerByName", reflect.TypeOf((*MockGonerKeeper)(nil).GetGonerByName), name)
 }
 
+// GetGonerByPattern mocks base method.
+func (m *MockGonerKeeper) GetGonerByPattern(t reflect.Type, pattern string) []any {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGonerByPattern", t, pattern)
+	ret0, _ := ret[0].([]any)
+	return ret0
+}
+
+// GetGonerByPattern indicates an expected call of GetGonerByPattern.
+func (mr *MockGonerKeeperMockRecorder) GetGonerByPattern(t, pattern any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGonerByPattern", reflect.TypeOf((*MockGonerKeeper)(nil).GetGonerByPattern), t, pattern)
+}
+
 // GetGonerByType mocks base method.
 func (m *MockGonerKeeper) GetGonerByType(t reflect.Type) any {
 	m.ctrl.T.Helper()
