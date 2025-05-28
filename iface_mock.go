@@ -101,17 +101,17 @@ func (mr *MockiKeeperMockRecorder) load(goner any, options ...any) *gomock.Call 
 }
 
 // selectOneCoffin mocks base method.
-func (m *MockiKeeper) selectOneCoffin(t reflect.Type, gonerName string, warn func()) *coffin {
+func (m *MockiKeeper) selectOneCoffin(t reflect.Type, pattern string, warn func()) *coffin {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "selectOneCoffin", t, gonerName, warn)
+	ret := m.ctrl.Call(m, "selectOneCoffin", t, pattern, warn)
 	ret0, _ := ret[0].(*coffin)
 	return ret0
 }
 
 // selectOneCoffin indicates an expected call of selectOneCoffin.
-func (mr *MockiKeeperMockRecorder) selectOneCoffin(t, gonerName, warn any) *gomock.Call {
+func (mr *MockiKeeperMockRecorder) selectOneCoffin(t, pattern, warn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "selectOneCoffin", reflect.TypeOf((*MockiKeeper)(nil).selectOneCoffin), t, gonerName, warn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "selectOneCoffin", reflect.TypeOf((*MockiKeeper)(nil).selectOneCoffin), t, pattern, warn)
 }
 
 // MockiDependenceAnalyzer is a mock of iDependenceAnalyzer interface.
