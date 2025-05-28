@@ -2,6 +2,7 @@ package gone
 
 import (
 	"errors"
+	"fmt"
 	"go.uber.org/mock/gomock"
 	"reflect"
 	"testing"
@@ -600,15 +601,36 @@ func Test_core_GetGonerByPattern(t *testing.T) {
 		Id int
 	}
 
-	NewApp().
-		Load(&X{Id: 1}, Name("x1")).
-		Load(&X{Id: 2}, Name("x2")).
-		Load(&X{Id: 3}, Name("x311")).
-		Load(&X{Id: 4}, Name("y3")).
-		Run(func(k Keeper) {
-			goners := k.GetGonerByPattern(reflect.TypeOf(&X{}), "x*")
-			if !reflect.DeepEqual(goners, []any{&X{Id: 1}, &X{Id: 2}, &X{Id: 3}}) {
-				t.Errorf("GetGonerByPattern error")
-			}
+	t.Run("success", func(t *testing.T) {
+		NewApp().
+			Load(&X{Id: 1}, Name("x1")).
+			Load(&X{Id: 2}, Name("x2")).
+			Load(&X{Id: 3}, Name("x311")).
+			Load(&X{Id: 4}, Name("y3")).
+			Run(func(k Keeper) {
+				goners := k.GetGonerByPattern(reflect.TypeOf(&X{}), "x*")
+				if !reflect.DeepEqual(goners, []any{&X{Id: 1}, &X{Id: 2}, &X{Id: 3}}) {
+					t.Errorf("GetGonerByPattern error")
+				}
+			})
+	})
+
+	t.Run("panic", func(t *testing.T) {
+		provider := WrapFunctionProvider(func(tagConf string, param struct{}) (*X, error) {
+			return nil, errors.New("error")
 		})
+
+		err := SafeExecute(func() error {
+			NewApp().
+				Load(provider, Name("x110")).
+				Run(func(k Keeper) {
+					goners := k.GetGonerByPattern(reflect.TypeOf(&X{}), "x*")
+					fmt.Printf("%#v", goners)
+				})
+			return nil
+		})
+		if err == nil {
+			t.Errorf("should be error")
+		}
+	})
 }
