@@ -676,4 +676,8 @@ type GonerKeeper interface {
 	// Returns:
 	//   - any: The component instance if found, nil otherwise
 	GetGonerByType(t reflect.Type) any
+
+	GetGonerByPattern(t reflect.Type, pattern string) []any
 }
+
+type Keeper = GonerKeeper

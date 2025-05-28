@@ -180,6 +180,18 @@ func (s *core) GetGonerByType(t reflect.Type) any {
 	return nil
 }
 
+func (s *core) GetGonerByPattern(t reflect.Type, pattern string) (list []any) {
+	coffins := s.iKeeper.getByTypeAndPattern(t, pattern)
+	for _, co := range coffins {
+		if v, err := co.Provide(false, "", t); err != nil {
+			panic(err)
+		} else {
+			list = append(list, v)
+		}
+	}
+	return
+}
+
 func (s *core) ProvideNth(n int, t reflect.Type, funcName string) (reflect.Value, error) {
 	field := reflect.StructField{
 		Name: fmt.Sprintf("The%dthParameter", n),
