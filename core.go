@@ -22,6 +22,7 @@ func newCore() *core {
 	_ = k.load(a)
 	_ = k.load(i)
 	_ = k.load(&ConfigProvider{})
+	_ = k.load(&confWatcherProvider{})
 	_ = k.load(&EnvConfigure{}, Name("configure"), IsDefault(new(Configure)))
 	_ = k.load(l.(Goner), IsDefault(new(Logger)))
 	_ = k.load(c, Name(DefaultProviderName))

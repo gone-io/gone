@@ -3,6 +3,7 @@ package gone
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -16,6 +17,42 @@ const ConfigureName = "configure"
 // Get retrieves a configuration value by key, storing it in v, with a default value if not found
 type Configure interface {
 	Get(key string, v any, defaultVal string) error
+}
+
+type DynamicConfigure interface {
+	Configure
+	Notify(key string, callback ConfWatchFunc)
+}
+
+type ConfWatchFunc func(oldVal, newVal any)
+
+type ConfWatcher func(key string, callback ConfWatchFunc)
+
+type confWatcherProvider struct {
+	Flag
+	logger    Logger    `gone:"*"`
+	configure Configure `gone:"configure"`
+	m         map[string][]ConfWatchFunc
+}
+
+func (p *confWatcherProvider) Init() {
+	p.m = make(map[string][]ConfWatchFunc)
+}
+
+func (p *confWatcherProvider) Provide(string) (ConfWatcher, error) {
+	if configure, ok := p.configure.(DynamicConfigure); !ok {
+		return nil, NewInnerError(fmt.Sprintf("configure(%T) is not DynamicConfigure, cannot support watch", configure), InjectError)
+	} else {
+		return func(key string, callback ConfWatchFunc) {
+			p.m[key] = append(p.m[key], callback)
+			configure.Notify(key, func(oldVal, newVal any) {
+				funcs := p.m[key]
+				for _, f := range funcs {
+					f(oldVal, newVal)
+				}
+			})
+		}, nil
+	}
 }
 
 // ConfigProvider implements a provider for injecting configuration values
