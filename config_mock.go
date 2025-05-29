@@ -52,3 +52,54 @@ func (mr *MockConfigureMockRecorder) Get(key, v, defaultVal any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockConfigure)(nil).Get), key, v, defaultVal)
 }
+
+// MockDynamicConfigure is a mock of DynamicConfigure interface.
+type MockDynamicConfigure struct {
+	Flag
+	ctrl     *gomock.Controller
+	recorder *MockDynamicConfigureMockRecorder
+	isgomock struct{}
+}
+
+// MockDynamicConfigureMockRecorder is the mock recorder for MockDynamicConfigure.
+type MockDynamicConfigureMockRecorder struct {
+	mock *MockDynamicConfigure
+}
+
+// NewMockDynamicConfigure creates a new mock instance.
+func NewMockDynamicConfigure(ctrl *gomock.Controller) *MockDynamicConfigure {
+	mock := &MockDynamicConfigure{ctrl: ctrl}
+	mock.recorder = &MockDynamicConfigureMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDynamicConfigure) EXPECT() *MockDynamicConfigureMockRecorder {
+	return m.recorder
+}
+
+// Get mocks base method.
+func (m *MockDynamicConfigure) Get(key string, v any, defaultVal string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", key, v, defaultVal)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockDynamicConfigureMockRecorder) Get(key, v, defaultVal any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDynamicConfigure)(nil).Get), key, v, defaultVal)
+}
+
+// Notify mocks base method.
+func (m *MockDynamicConfigure) Notify(key string, callback ConfWatchFunc) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Notify", key, callback)
+}
+
+// Notify indicates an expected call of Notify.
+func (mr *MockDynamicConfigureMockRecorder) Notify(key, callback any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockDynamicConfigure)(nil).Notify), key, callback)
+}

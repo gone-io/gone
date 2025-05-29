@@ -3,8 +3,10 @@ package gone
 import (
 	"encoding/json"
 	"errors"
+	"go.uber.org/mock/gomock"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -1290,4 +1292,49 @@ func TestEnvConfigure_GetWithInvalidDefaultValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_confWatcherProvider_Provide(t *testing.T) {
+	t.Run("not support want", func(t *testing.T) {
+		err := SafeExecute(func() error {
+			NewApp().
+				Run(func(watcher ConfWatcher) {})
+			return nil
+		})
+		if !strings.Contains(err.Error(), "cannot support watch") {
+			t.Errorf("error = %v, wantErr %v", err, true)
+		}
+	})
+
+	t.Run("watch config change", func(t *testing.T) {
+		controller := gomock.NewController(t)
+		defer controller.Finish()
+		ch := make(chan struct{})
+
+		configure := NewMockDynamicConfigure(controller)
+		configure.EXPECT().Notify("key", gomock.Any()).Do(func(key string, callback ConfWatchFunc) {
+			go func() {
+				callback("old", "new")
+				close(ch)
+			}()
+		})
+		configure.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+		NewApp().
+			Load(configure, Name("configure"), IsDefault(), ForceReplace()).
+			Run(func(watcher ConfWatcher) {
+				executed := false
+				watcher("key", func(oldVal, newVal any) {
+					if oldVal != "old" || newVal != "new" {
+						t.Errorf("watcher error")
+					}
+					executed = true
+				})
+				<-ch
+				if !executed {
+					t.Errorf("watcher not executed")
+				}
+			})
+	})
+
 }
