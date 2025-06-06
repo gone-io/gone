@@ -221,18 +221,29 @@ func (s *Application) install() {
 // Panics if dependency injection or execution fails.
 //
 // Parameters:
-//   - fn: The function to execute with injected dependencies
-func (s *Application) Run(fn ...any) {
+//   - funcList: The function to execute with injected dependencies
+func (s *Application) Run(funcList ...any) {
 	s.install()
 	s.start()
 
-	for _, fn := range fn {
+	var options []RunOption
+	for _, fn := range funcList {
+		if r, ok := fn.(RunOption); ok {
+			options = append(options, r)
+			continue
+		}
+
 		f, err := s.loader.InjectWrapFunc(fn, nil, nil)
 		if err != nil {
 			panic(err)
 		}
 		_ = f()
 	}
+
+	for _, o := range options {
+		o.Apply(s)
+	}
+
 	s.stop()
 }
 
@@ -240,13 +251,25 @@ func Run(fn ...any) {
 	Default.Run(fn...)
 }
 
+type RunOption interface {
+	Apply(*Application)
+}
+
+type waitEnd struct{}
+
+func (waitEnd) Apply(s *Application) {
+	s.WaitEnd()
+}
+
+func OpWaitEnd() RunOption {
+	return waitEnd{}
+}
+
 // Serve initializes the application, starts all daemons, and waits for termination signal.
 // After receiving termination signal, performs cleanup by stopping all daemons.
-func (s *Application) Serve() {
-	s.install()
-	s.start()
-	s.WaitEnd()
-	s.stop()
+func (s *Application) Serve(funcList ...any) {
+	funcList = append(funcList, OpWaitEnd())
+	s.Run(funcList...)
 }
 
 func Serve() {

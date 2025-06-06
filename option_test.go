@@ -12,12 +12,12 @@ func TestOption_Apply(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Nil apply function",
+			name:    "Nil Apply function",
 			apply:   nil,
 			wantErr: false,
 		},
 		{
-			name: "Valid apply function",
+			name: "Valid Apply function",
 			apply: func(c *coffin) error {
 				c.name = "test"
 				return nil
@@ -212,7 +212,7 @@ func TestIsDefault(t *testing.T) {
 		Flag
 	}
 
-	t.Run("Valid pointer and apply suc", func(t *testing.T) {
+	t.Run("Valid pointer and Apply suc", func(t *testing.T) {
 		isDefault := IsDefault(new(*x))
 		c := newCoffin(&x{})
 
@@ -221,7 +221,7 @@ func TestIsDefault(t *testing.T) {
 		}
 	})
 
-	t.Run("Valid pointer and apply suc", func(t *testing.T) {
+	t.Run("Valid pointer and Apply suc", func(t *testing.T) {
 		isDefault := IsDefault(new(x))
 		c := newCoffin(x{})
 
@@ -230,7 +230,7 @@ func TestIsDefault(t *testing.T) {
 		}
 	})
 
-	t.Run("none parameters and apply suc", func(t *testing.T) {
+	t.Run("none parameters and Apply suc", func(t *testing.T) {
 		isDefault := IsDefault()
 		c := newCoffin(x{})
 
@@ -239,12 +239,12 @@ func TestIsDefault(t *testing.T) {
 		}
 	})
 
-	t.Run("Valid pointer and apply failed", func(t *testing.T) {
+	t.Run("Valid pointer and Apply failed", func(t *testing.T) {
 		isDefault := IsDefault(new(x))
 		c := newCoffin(&x{})
 
 		if err := isDefault.Apply(c); err == nil {
-			t.Errorf("IsDefault().apply should be error")
+			t.Errorf("IsDefault().Apply should be error")
 		}
 	})
 }
