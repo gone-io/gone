@@ -3,7 +3,6 @@ package gone
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -41,14 +40,21 @@ func (p *confWatcherProvider) Init() {
 
 func (p *confWatcherProvider) Provide(string) (ConfWatcher, error) {
 	if configure, ok := p.configure.(DynamicConfigure); !ok {
-		return nil, NewInnerError(fmt.Sprintf("configure(%T) is not DynamicConfigure, cannot support watch", configure), InjectError)
+		p.logger.Warnf("configure(%T) is not DynamicConfigure, cannot support watch", configure)
+		return nil, nil
 	} else {
 		return func(key string, callback ConfWatchFunc) {
 			p.m[key] = append(p.m[key], callback)
 			configure.Notify(key, func(oldVal, newVal any) {
 				funcs := p.m[key]
 				for _, f := range funcs {
-					f(oldVal, newVal)
+					err := SafeExecute(func() error {
+						f(oldVal, newVal)
+						return nil
+					})
+					if err != nil {
+						p.logger.Warnf("call %T err:%v", f, err)
+					}
 				}
 			})
 		}, nil
