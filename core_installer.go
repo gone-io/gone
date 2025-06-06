@@ -63,6 +63,10 @@ func (s *installer) injectFieldAsNotSlice(byName bool, extend string, depCo *cof
 				return nil
 			}
 		}
+		if isAllowNilField(&field) {
+			return nil
+		}
+
 		return ToErrorWithMsg(err,
 			fmt.Sprintf("%q failed to provide value for field %q of %q", depCo.Name(), field.Name, coName),
 		)

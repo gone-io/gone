@@ -1337,4 +1337,15 @@ func Test_confWatcherProvider_Provide(t *testing.T) {
 			})
 	})
 
+	t.Run("tag watcher with allowNil", func(t *testing.T) {
+		NewApp().
+			Run(func(i struct {
+				watcher ConfWatcher `gone:"*" option:"allowNil"`
+			}) {
+				if i.watcher != nil {
+					t.Errorf("watcher not nil")
+				}
+			})
+	})
+
 }
