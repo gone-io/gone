@@ -13,6 +13,7 @@ const (
 	ErrorLevel LoggerLevel = 2
 )
 
+// Logger Interface which can be injected and provided by gone framework core
 type Logger interface {
 	Infof(msg string, args ...any)
 	Errorf(msg string, args ...any)

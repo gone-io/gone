@@ -57,8 +57,7 @@ func (c *Component) Init() {
 ### 架构
 <img src="docs/assert/architecture.png" width = "600" alt="architecture"/>
 
-### 生命周期
-<img src="docs/assert/flow.png" width = "600" alt="flow"/>
+
 
 ## 🏁 快速开始
 
