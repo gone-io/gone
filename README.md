@@ -56,10 +56,8 @@ func (c *Component) Init() {
 - Provides [scaffolding tool gonectl](https://github.com/gone-io/gonectl) supporting project creation, component management, code generation, test mocking, compilation and running.
 
 ### Architecture
-<img src="docs/assert/architecture.png" width = "600" alt="architecture"/>
+<img src="docs/assert/architecture.png" width = "800" alt="architecture"/>
 
-### Lifecycle
-<img src="docs/assert/flow.png" width = "600" alt="flow"/>
 
 ## 🏁 Quick Start
 

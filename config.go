@@ -18,13 +18,18 @@ type Configure interface {
 	Get(key string, v any, defaultVal string) error
 }
 
+// ConfWatchFunc defines the callback function for configuration changes
+type ConfWatchFunc func(oldVal, newVal any)
+
+// DynamicConfigure defines the interface for dynamic configuration providers
 type DynamicConfigure interface {
 	Configure
+
+	// Notify registers a callback function to be called when the specified key changes
 	Notify(key string, callback ConfWatchFunc)
 }
 
-type ConfWatchFunc func(oldVal, newVal any)
-
+// ConfWatcher which can be injected, to register a callback function to be called when the specified key changes
 type ConfWatcher func(key string, callback ConfWatchFunc)
 
 type confWatcherProvider struct {
