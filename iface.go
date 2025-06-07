@@ -82,6 +82,7 @@ type FuncInjectHook func(pt reflect.Type, i int, injected bool) any
 
 //go:generate mockgen  -source=./iface.go    -package=gone -destination=iface_mock.go
 //go:generate mockgen -source=./interface.go -package=gone -destination=interface_mock.go
+//go:generate mockgen -source=./stage_interface.go -package=gone -destination=stage_mock.go
 //go:generate mockgen -source=./logger.go    -package=gone -destination=./logger_mock.go
 //go:generate mockgen -source=./config.go    -package=gone -destination=./config_mock.go
 

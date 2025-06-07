@@ -2,6 +2,7 @@ package gone_test
 
 import (
 	"errors"
+	"go.uber.org/mock/gomock"
 	"reflect"
 	"strings"
 	"sync"
@@ -557,4 +558,62 @@ func TestEnd(t *testing.T) {
 			gone.End()
 		}).
 		Serve()
+}
+
+func TestApplication_collectHooks(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	var order, beforeStartOrder, afterStartOrder, beforeStopOrder, afterStopOrder int
+
+	starter := gone.NewMockBeforeStarter(controller)
+	starter.EXPECT().BeforeStart().Do(func() {
+		order++
+		beforeStartOrder = order
+	})
+	afterStarter := gone.NewMockAfterStarter(controller)
+	afterStarter.EXPECT().AfterStart().Do(func() {
+		order++
+		afterStartOrder = order
+	})
+
+	stoper := gone.NewMockBeforeStoper(controller)
+	stoper.EXPECT().BeforeStop().Do(func() {
+		order++
+		beforeStopOrder = order
+	})
+
+	afterStoper := gone.NewMockAfterStoper(controller)
+
+	afterStoper.EXPECT().AfterStop().Do(func() {
+		order++
+		afterStopOrder = order
+	})
+	gone.
+		NewApp().
+		Load(stoper).
+		Load(afterStoper).
+		Load(starter).
+		Load(afterStarter).
+		Run(func() {
+			if beforeStartOrder != 1 {
+				t.Errorf("beforeStartOrder = %d, want %d", beforeStartOrder, 1)
+			}
+			if afterStartOrder != 2 {
+				t.Errorf("afterStartOrder = %d, want %d", afterStartOrder, 2)
+			}
+			if beforeStopOrder != 0 {
+				t.Errorf("beforeStopOrder = %d, want %d", beforeStopOrder, 0)
+			}
+			if afterStopOrder != 0 {
+				t.Errorf("afterStopOrder = %d, want %d", afterStopOrder, 0)
+			}
+		})
+
+	if beforeStopOrder != 3 {
+		t.Errorf("beforeStopOrder = %d, want %d", beforeStopOrder, 3)
+	}
+	if afterStopOrder != 4 {
+		t.Errorf("afterStopOrder = %d, want %d", afterStopOrder, 4)
+	}
 }

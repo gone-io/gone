@@ -20,8 +20,6 @@ type Application struct {
 	signal chan os.Signal
 }
 
-var Default = NewApp()
-
 // NewApp creates and initializes a new Application instance.
 // It creates an empty Application struct and calls init() to:
 // 1. Initialize signal channel
@@ -80,10 +78,6 @@ func (s *Application) Load(goner Goner, options ...Option) *Application {
 	return s
 }
 
-func Load(goner Goner, options ...Option) *Application {
-	return Default.Load(goner, options...)
-}
-
 // Loads executes multiple LoadFuncs in sequence to load goner for Application
 // Parameters:
 //   - loads: Variadic LoadFunc parameters that will be executed in order
@@ -98,10 +92,6 @@ func (s *Application) Loads(loads ...LoadFunc) *Application {
 		s.loader.MustLoadX(fn)
 	}
 	return s
-}
-
-func Loads(loads ...LoadFunc) *Application {
-	return Default.Loads(loads...)
 }
 
 // BeforeStart registers a function to be called before starting the application.
@@ -167,13 +157,6 @@ func (s *Application) End() *Application {
 	return s
 }
 
-// End triggers application termination
-// It terminates the application by sending a SIGINT signal to the default Application instance
-// This is a convenience method equivalent to calling Default.End()
-func End() {
-	Default.End()
-}
-
 func (s *Application) start() {
 	for _, fn := range s.beforeStartHooks {
 		fn()
@@ -215,6 +198,34 @@ func (s *Application) install() {
 	}
 }
 
+func (s *Application) collectHooks() {
+	coffins := s.loader.iKeeper.getAllCoffins()
+	for _, co := range coffins {
+		if co.goner != nil {
+			if start, ok := co.goner.(BeforeStarter); ok {
+				s.beforeStart(func() {
+					start.BeforeStart()
+				})
+			}
+			if afterStart, ok := co.goner.(AfterStarter); ok {
+				s.afterStart(func() {
+					afterStart.AfterStart()
+				})
+			}
+			if stop, ok := co.goner.(BeforeStoper); ok {
+				s.beforeStop(func() {
+					stop.BeforeStop()
+				})
+			}
+			if afterStop, ok := co.goner.(AfterStoper); ok {
+				s.afterStop(func() {
+					afterStop.AfterStop()
+				})
+			}
+		}
+	}
+}
+
 // Run initializes the application, injects dependencies into the provided function,
 // executes it, and then performs cleanup.
 // The function can have dependencies that will be automatically injected.
@@ -224,6 +235,7 @@ func (s *Application) install() {
 //   - funcList: The function to execute with injected dependencies
 func (s *Application) Run(funcList ...any) {
 	s.install()
+	s.collectHooks()
 	s.start()
 
 	var options []RunOption
@@ -247,8 +259,11 @@ func (s *Application) Run(funcList ...any) {
 	s.stop()
 }
 
-func Run(fn ...any) {
-	Default.Run(fn...)
+// Serve initializes the application, starts all daemons, and waits for termination signal.
+// After receiving termination signal, performs cleanup by stopping all daemons.
+func (s *Application) Serve(funcList ...any) {
+	funcList = append(funcList, OpWaitEnd())
+	s.Run(funcList...)
 }
 
 type RunOption interface {
@@ -265,17 +280,6 @@ func OpWaitEnd() RunOption {
 	return waitEnd{}
 }
 
-// Serve initializes the application, starts all daemons, and waits for termination signal.
-// After receiving termination signal, performs cleanup by stopping all daemons.
-func (s *Application) Serve(funcList ...any) {
-	funcList = append(funcList, OpWaitEnd())
-	s.Run(funcList...)
-}
-
-func Serve() {
-	Default.Serve()
-}
-
 type TestFlag interface {
 	forTest()
 }
@@ -289,11 +293,6 @@ func (*testFlag) forTest() {}
 func (s *Application) Test(fn any) {
 	s.Load(&testFlag{})
 	s.Run(fn)
-}
-
-// Test for run tests
-func Test(fn any) {
-	Default.Test(fn)
 }
 
 // RunTest Deprecated, use Test instead
