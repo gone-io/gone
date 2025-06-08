@@ -35,6 +35,8 @@ func (s *keeper) getByTypeAndPattern(t reflect.Type, pattern string) (coffins []
 			coffins = append(coffins, co)
 		}
 	}
+
+	SortCoffins(coffins)
 	return coffins
 }
 

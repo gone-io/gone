@@ -100,19 +100,101 @@ type BeforeInitiatorNoError interface {
 	BeforeInit()
 }
 
+// BeforeStarter interface defines components that need to perform actions before the application starts.
+// Components implementing this interface will have their BeforeStart() method called during Gone's startup phase,
+// before any daemons are started but after all components have been initialized.
+//
+// The BeforeStart() method should:
+// - Perform any setup needed before daemons start
+// - Initialize resources that daemons depend on
+// - Handle errors internally since no error is returned
+//
+// Example usage:
+//
+//	type MyComponent struct {
+//	    gone.Flag
+//	    logger *Logger `gone:"*"`
+//	}
+//
+//	func (c *MyComponent) BeforeStart() {
+//	    c.logger.Info("Preparing for application start")
+//	    // perform pre-start setup...
+//	}
 type BeforeStarter interface {
 	BeforeStart()
 }
 
+// AfterStarter interface defines components that need to perform actions after the application starts.
+// Components implementing this interface will have their AfterStart() method called during Gone's startup phase,
+// after all daemons have been started successfully.
+//
+// The AfterStart() method should:
+// - Perform any setup that requires all services to be running
+// - Register with external services or health checks
+// - Handle errors internally since no error is returned
+//
+// Example usage:
+//
+//	type MyComponent struct {
+//	    gone.Flag
+//	    healthCheck *HealthCheck `gone:"*"`
+//	}
+//
+//	func (c *MyComponent) AfterStart() {
+//	    c.healthCheck.Register()
+//	    // perform post-start setup...
+//	}
 type AfterStarter interface {
 	AfterStart()
 }
 
-type BeforeStoper interface {
+// BeforeStopper interface defines components that need to perform actions before the application stops.
+// Components implementing this interface will have their BeforeStop() method called during Gone's shutdown phase,
+// before any daemons are stopped but after termination signal is received.
+//
+// The BeforeStop() method should:
+// - Perform cleanup tasks while all services are still running
+// - Save important state or data
+// - Gracefully disconnect from external services
+// - Handle errors internally since no error is returned
+//
+// Example usage:
+//
+//	type MyComponent struct {
+//	    gone.Flag
+//	    cache *Cache `gone:"*"`
+//	}
+//
+//	func (c *MyComponent) BeforeStop() {
+//	    c.cache.Flush()
+//	    // perform pre-stop cleanup...
+//	}
+type BeforeStopper interface {
 	BeforeStop()
 }
 
-type AfterStoper interface {
+// AfterStopper interface defines components that need to perform actions after the application stops.
+// Components implementing this interface will have their AfterStop() method called during Gone's shutdown phase,
+// after all daemons have been stopped successfully.
+//
+// The AfterStop() method should:
+// - Perform final cleanup tasks
+// - Release any remaining resources
+// - Log shutdown completion
+// - Handle errors internally since no error is returned
+//
+// Example usage:
+//
+//	type MyComponent struct {
+//	    gone.Flag
+//	    logger *Logger `gone:"*"`
+//	}
+//
+//	func (c *MyComponent) AfterStop() {
+//	    c.logger.Info("Application shutdown complete")
+//	    // perform final cleanup...
+//	}
+type AfterStopper interface {
 	AfterStop()
 }
 
@@ -151,33 +233,13 @@ type AfterStoper interface {
 //    - AfterStop hooks are executed
 //    - Application terminates
 //
-// Hook Functions:
-// Gone provides several hook functions that components can use to execute code at specific lifecycle points:
-//
-// - BeforeInit/BeforeInitNoError: Called before component initialization
-//   Usage: Implement BeforeInitiator or BeforeInitiatorNoError interface
-//
-// - Init/InitNoError: Called during component initialization
-//   Usage: Implement Initiator or InitiatorNoError interface
-//
-// - BeforeStart: Executed before application startup
-//   Usage: Inject BeforeStart type and register callback functions
-//
-// - AfterStart: Executed after all components have started
-//   Usage: Inject AfterStart type and register callback functions
-//
-// - BeforeStop: Executed before components begin shutting down
-//   Usage: Inject BeforeStop type and register callback functions
-//
-// - AfterStop: Executed after all components have stopped
-//   Usage: Inject AfterStop type and register callback functions
-//
+
 // Hook functions allow components to properly initialize, cleanup, and coordinate
 // with other components during the application lifecycle.
 
 // Process represents a function that performs some operation without taking parameters or returning values.
-// It is commonly used for hook functions in the application lifecycle, such as BeforeStart, AfterStart,
-// BeforeStop and AfterStop hooks.
+// It is commonly used for Hook functions in the application lifecycle, such as BeforeStart, AfterStart,
+// BeforeStop and AfterStop Hook.
 //
 // Example usage:
 // ```go
@@ -198,7 +260,7 @@ type AfterStoper interface {
 // ```
 type Process func()
 
-// BeforeStart is a hook function type that can be injected into Goners to register callbacks
+// BeforeStart is a HookReg function type that can be injected into Goners to register callbacks
 // that will execute before the application starts.
 //
 // Example usage:
@@ -206,7 +268,7 @@ type Process func()
 //
 //	type XGoner struct {
 //	    Flag
-//	    before BeforeStart `gone:"*"` // Inject the BeforeStart hook
+//	    before BeforeStart `gone:"*"` // Inject the BeforeStart HookReg
 //	}
 //
 //	func (x *XGoner) Init() error {
@@ -224,7 +286,7 @@ type Process func()
 // begins its main operations.
 type BeforeStart func(Process)
 
-// AfterStart is a hook function type that can be injected into Goners to register callbacks
+// AfterStart is a HookReg function type that can be injected into Goners to register callbacks
 // that will execute after the application starts.
 //
 // Example usage:
@@ -232,7 +294,7 @@ type BeforeStart func(Process)
 //
 //	type XGoner struct {
 //	    Flag
-//	    after AfterStart `gone:"*"` // Inject the AfterStart hook
+//	    after AfterStart `gone:"*"` // Inject the AfterStart HookReg
 //	}
 //
 //	func (x *XGoner) Init() error {
@@ -249,7 +311,7 @@ type BeforeStart func(Process)
 // This allows components to perform tasks that require all services to be running.
 type AfterStart func(Process)
 
-// BeforeStop is a hook function type that can be injected into Goners to register callbacks
+// BeforeStop is a HookReg function type that can be injected into Goners to register callbacks
 // that will execute before the application stops.
 //
 // Example usage:
@@ -257,7 +319,7 @@ type AfterStart func(Process)
 //
 //	type XGoner struct {
 //	    Flag
-//	    before BeforeStop `gone:"*"` // Inject the BeforeStop hook
+//	    before BeforeStop `gone:"*"` // Inject the BeforeStop HookReg
 //	}
 //
 //	func (x *XGoner) Init() error {
@@ -274,7 +336,7 @@ type AfterStart func(Process)
 // This allows components to perform cleanup tasks while services are still running.
 type BeforeStop func(Process)
 
-// AfterStop is a hook function type that can be injected into Goners to register callbacks
+// AfterStop is a HookReg function type that can be injected into Goners to register callbacks
 // that will execute after the application stops.
 //
 // Example usage:
@@ -282,7 +344,7 @@ type BeforeStop func(Process)
 //
 //	type XGoner struct {
 //	    Flag
-//	    after AfterStop `gone:"*"` // Inject the AfterStop hook
+//	    after AfterStop `gone:"*"` // Inject the AfterStop HookReg
 //	}
 //
 //	func (x *XGoner) Init() error {

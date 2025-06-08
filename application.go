@@ -6,6 +6,27 @@ import (
 	"syscall"
 )
 
+// Application represents the core container and orchestrator for the Gone framework.
+// Think of it as the "command center" or "central dispatch" of your application - it's like
+// the conductor of an orchestra who knows every musician (component), their instruments (capabilities),
+// and how they should work together to create beautiful music (your application).
+//
+// The Application acts as the central hub that:
+// - Loads and manages all components (like a "personnel manager")
+// - Handles dependency injection between components (like a "matchmaker")
+// - Manages application lifecycle with hooks (like a "stage director")
+// - Provides access to components via the GonerKeeper interface (like a "directory service")
+//
+// Design Philosophy:
+// - Single Responsibility: Each Application instance manages one complete application context
+// - Composition over Inheritance: Built by composing various specialized components
+// - Encapsulation: Internal complexity is hidden behind simple, intuitive interfaces
+//
+// Key responsibilities:
+// - Component registration and loading ("hiring and onboarding")
+// - Dependency resolution and injection ("team building and collaboration")
+// - Lifecycle management with hooks ("project management")
+// - Graceful shutdown handling ("orderly dismissal")
 type Application struct {
 	Flag
 
@@ -21,6 +42,15 @@ type Application struct {
 }
 
 // NewApp creates and initializes a new Application instance.
+// Think of it as "founding a new company" where LoadFuncs are like "department setup plans"
+// that define how to establish different parts of your application. Each LoadFunc knows
+// how to "hire" and "organize" specific types of components.
+//
+// The Creation Process:
+// - Establishes the "company headquarters" (Application instance)
+// - Registers "department setup plans" (LoadFuncs)
+// - Prepares the "organizational structure" for component management
+//
 // It creates an empty Application struct and calls init() to:
 // 1. Initialize signal channel
 // 2. Create new Core
@@ -55,11 +85,19 @@ func (s *Application) init() *Application {
 }
 
 // Load loads a Goner into the Application's loader with optional configuration options.
+// Think of it as "hiring a new employee" where you bring a specific person (component)
+// into your company (application) and give them their "employee handbook" (options).
 // It wraps the Core.Load() method and panics if loading fails.
 //
+// The Hiring Process:
+// - Verify the candidate has proper "credentials" (implements Goner interface)
+// - Assign them a unique "employee ID" (internal tracking)
+// - Set up their "workspace" and "job description" (configuration)
+// - Add them to the "company directory" (component registry)
+//
 // Parameters:
-//   - goner: The Goner instance to load
-//   - options: Optional configuration options for the Goner
+//   - goner: The Goner instance to load - the "new hire"
+//   - options: Optional configuration options for the Goner - the "employment terms"
 //
 // Available Options:
 //   - Name(name string): Set custom name for the Goner
@@ -79,8 +117,16 @@ func (s *Application) Load(goner Goner, options ...Option) *Application {
 }
 
 // Loads executes multiple LoadFuncs in sequence to load goner for Application
+// Think of it as "batch hiring" where you bring multiple new employees into your
+// company at once, like during a "recruitment drive" or "team expansion".
+//
+// The Batch Hiring Process:
+// - Process each LoadFunc in sequence
+// - Each LoadFunc acts like a "department setup plan"
+// - Stop the process if any "hiring" fails
+//
 // Parameters:
-//   - loads: Variadic LoadFunc parameters that will be executed in order
+//   - loads: Variadic LoadFunc parameters that will be executed in order - the "batch of hiring plans"
 //
 // Each LoadFunc typically loads goner components.
 // If any LoadFunc fails during execution, it will trigger a panic.
@@ -95,7 +141,16 @@ func (s *Application) Loads(loads ...LoadFunc) *Application {
 }
 
 // BeforeStart registers a function to be called before starting the application.
-// The function will be executed before any daemons are started.
+// Think of it as scheduling a "pre-opening meeting" where you can perform final preparations
+// before your "business" officially opens its doors. The function will be executed before
+// any daemons are started.
+//
+// Typical Use Cases:
+// - Final system checks and validations
+// - Cache warming and data preloading
+// - External service connections
+// - Configuration validation
+//
 // Returns the Application instance for method chaining.
 func (s *Application) BeforeStart(fn Process) *Application {
 	s.beforeStart(fn)
@@ -107,7 +162,16 @@ func (s *Application) beforeStart(fn Process) {
 }
 
 // AfterStart registers a function to be called after starting the application.
-// The function will be executed after all daemons have been started.
+// Think of it as scheduling a "grand opening celebration" or "post-launch activities"
+// that happen after your "business" is officially open and running. The function will
+// be executed after all daemons have been started.
+//
+// Typical Use Cases:
+// - Success notifications and logging
+// - Health check registrations
+// - Monitoring and metrics setup
+// - External service announcements
+//
 // Returns the Application instance for method chaining.
 func (s *Application) AfterStart(fn Process) *Application {
 	s.afterStart(fn)
@@ -119,7 +183,16 @@ func (s *Application) afterStart(fn Process) {
 }
 
 // BeforeStop registers a function to be called before stopping the application.
-// The function will be executed before any daemons are stopped.
+// Think of it as scheduling "closing preparations" where you perform necessary tasks
+// before your "business" officially closes. The function will be executed before
+// any daemons are stopped.
+//
+// Typical Use Cases:
+// - Graceful connection closures
+// - Data persistence and state saving
+// - Resource cleanup and release
+// - Shutdown notifications
+//
 // Returns the Application instance for method chaining.
 func (s *Application) BeforeStop(fn Process) *Application {
 	s.beforeStop(fn)
@@ -131,7 +204,16 @@ func (s *Application) beforeStop(fn Process) {
 }
 
 // AfterStop registers a function to be called after stopping the application.
-// The function will be executed after all daemons have been stopped.
+// Think of it as "post-closure activities" that happen after your "business" has
+// officially closed its doors. The function will be executed after all daemons
+// have been stopped.
+//
+// Typical Use Cases:
+// - Final cleanup and resource release
+// - Shutdown success logging
+// - External service deregistration
+// - Final state persistence
+//
 // Returns the Application instance for method chaining.
 func (s *Application) AfterStop(fn Process) *Application {
 	s.afterStop(fn)
@@ -143,6 +225,15 @@ func (s *Application) afterStop(fn Process) {
 }
 
 // WaitEnd blocks until the application receives a termination signal (SIGINT, SIGTERM, or SIGQUIT).
+// Think of it as a "security guard" who watches the door and waits for the "closing time signal".
+// This method listens for termination signals (like Ctrl+C or system shutdown) and returns when
+// one is received, allowing for graceful shutdown procedures.
+//
+// Signal Monitoring:
+// - SIGINT: Usually triggered by Ctrl+C ("manual closing")
+// - SIGTERM: System shutdown or process termination ("scheduled closing")
+// - SIGQUIT: Quit signal ("emergency closing")
+//
 // Returns the Application instance for method chaining.
 func (s *Application) WaitEnd() *Application {
 	signal.Notify(s.signal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -151,6 +242,10 @@ func (s *Application) WaitEnd() *Application {
 }
 
 // End triggers application termination by sending a SIGINT signal.
+// Think of it as the "official closing procedure" where you send the "closing signal"
+// to initiate graceful shutdown. This method triggers application termination by
+// sending a SIGINT signal.
+//
 // Returns the Application instance for method chaining.
 func (s *Application) End() *Application {
 	s.signal <- syscall.SIGINT
@@ -212,12 +307,12 @@ func (s *Application) collectHooks() {
 					afterStart.AfterStart()
 				})
 			}
-			if stop, ok := co.goner.(BeforeStoper); ok {
+			if stop, ok := co.goner.(BeforeStopper); ok {
 				s.beforeStop(func() {
 					stop.BeforeStop()
 				})
 			}
-			if afterStop, ok := co.goner.(AfterStoper); ok {
+			if afterStop, ok := co.goner.(AfterStopper); ok {
 				s.afterStop(func() {
 					afterStop.AfterStop()
 				})
@@ -228,11 +323,20 @@ func (s *Application) collectHooks() {
 
 // Run initializes the application, injects dependencies into the provided function,
 // executes it, and then performs cleanup.
+// Think of it as "opening your business for a specific task" - you unlock the doors,
+// turn on all systems, perform the specific work, then properly close everything down.
 // The function can have dependencies that will be automatically injected.
 // Panics if dependency injection or execution fails.
 //
+// The Complete Business Day Process:
+// 1. "System setup" - Install and initialize all components
+// 2. "Team coordination" - Collect and register lifecycle hooks
+// 3. "Open for business" - Execute start procedures
+// 4. "Main work" - Execute provided functions with dependency injection
+// 5. "Proper closure" - Execute stop procedures
+//
 // Parameters:
-//   - funcList: The function to execute with injected dependencies
+//   - funcList: The function to execute with injected dependencies - the "main business tasks"
 func (s *Application) Run(funcList ...any) {
 	s.install()
 	s.collectHooks()
@@ -260,7 +364,14 @@ func (s *Application) Run(funcList ...any) {
 }
 
 // Serve initializes the application, starts all daemons, and waits for termination signal.
+// Think of it as "opening your business for continuous operation" - you unlock the doors,
+// start all services, and keep the business running until you receive a "closing signal".
 // After receiving termination signal, performs cleanup by stopping all daemons.
+//
+// The Continuous Operation Process:
+// - Same as Run() but includes OpWaitEnd() to wait for termination signals
+// - Ideal for long-running applications like web servers or background services
+//
 func (s *Application) Serve(funcList ...any) {
 	funcList = append(funcList, OpWaitEnd())
 	s.Run(funcList...)
@@ -290,6 +401,20 @@ type testFlag struct {
 
 func (*testFlag) forTest() {}
 
+// Test runs the application in test mode with dependency injection.
+// Think of it as setting up a "testing laboratory" where you can experiment with your
+// components in a controlled environment. This method is designed for testing scenarios
+// where you need to execute test functions with proper dependency injection.
+//
+// The Testing Laboratory Process:
+// - Loads a test flag to indicate test mode
+// - Executes the test function using Run() with full dependency injection
+//
+// Key Features:
+// - Full dependency injection support
+// - Simplified execution for testing purposes
+// - Test mode indication via testFlag
+//
 func (s *Application) Test(fn any) {
 	s.Load(&testFlag{})
 	s.Run(fn)
