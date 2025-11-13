@@ -381,3 +381,50 @@ func TestToErrorf(t *testing.T) {
 
 	})
 }
+
+func TestWrapError(t *testing.T) {
+	t.Run("wrap err", func(t *testing.T) {
+		tests := []struct {
+			name string
+			err  error
+		}{
+			{
+				name: "wrap normal error",
+				err:  fmt.Errorf("normal error"),
+			},
+			{
+				name: "wrap gone InnerError",
+				err:  NewInnerError("test error", http.StatusInternalServerError),
+			},
+			{
+				name: "wrap gone BusinessError",
+				err:  NewBusinessError("test error", http.StatusOK),
+			},
+			{
+				name: "wrap gone ParameterError",
+				err:  NewParameterError("test error", http.StatusBadRequest),
+			},
+			{
+				name: "wrap gone Error",
+				err:  NewError(1101, "test error", http.StatusBadRequest),
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				wrapError := WrapError(tt.err, "wrap error")
+				if !errors.Is(wrapError, tt.err) {
+					t.Error("must be input error")
+				}
+			})
+		}
+	})
+	t.Run("wrap none error", func(t *testing.T) {
+		wrapError := WrapError("some thing", "wrap error")
+
+		msg := wrapError.Msg()
+		if msg != "wrap error" {
+			t.Error("must be wrap error")
+		}
+	})
+}

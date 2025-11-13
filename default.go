@@ -34,8 +34,8 @@ func Run(fn ...any) {
 
 // Serve starts all daemons and waits for termination signal using the default application instance.
 // This function will start all registered daemons and block until a shutdown signal is received.
-func Serve() {
-	Default.Serve()
+func Serve(fn ...any) {
+	Default.Serve(fn...)
 }
 
 // End triggers application termination
