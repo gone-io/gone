@@ -15,6 +15,8 @@ type Error interface {
 	Code() int
 
 	GetStatusCode() int
+
+	Unwrap() error
 }
 
 // InnerError which has stack, and which is used for Internal error
@@ -33,6 +35,10 @@ type BusinessError interface {
 type BError struct {
 	err  Error
 	data any
+}
+
+func (e *BError) Unwrap() error {
+	return e.err
 }
 
 func (e *BError) SetMsg(msg string) {
@@ -60,6 +66,11 @@ type defaultErr struct {
 	code       int
 	msg        string
 	statusCode int
+	cause      error
+}
+
+func (e *defaultErr) Unwrap() error {
+	return e.cause
 }
 
 func (e *defaultErr) Error() string {
@@ -190,6 +201,16 @@ func ToErrorWithMsg(input any, msg string) Error {
 }
 
 func ToErrorf(input any, format string, params ...any) error {
+	return ToErrorWithMsg(input, fmt.Sprintf(format, params...))
+}
+
+// WrapError wraps any input error with an additional message prefix.
+// Parameters:
+//
+//	input: any input error or message,
+//	format: format string for the message,
+//	params: parameters to format the message string
+func WrapError(input any, format string, params ...any) Error {
 	return ToErrorWithMsg(input, fmt.Sprintf(format, params...))
 }
 
